@@ -3,11 +3,10 @@ import { useState, useEffect } from 'react';
 function App() {
   // 1. フォームの入力値を管理するためのState
   const [inputValue, setInputValue] = useState('');
-  // 2. TODOリスト全体を管理するためのState (今はまだ使いません)
-  const [todos, setTodos] = useState([]);
   // 2. TODOリスト全体を管理するためのState
   const [todos, setTodos] = useState([
     { id: 1, text: 'Reactの学習' },
+    { id: 1, text: 'Reactの学習', completed: false },
   ]);
 
   // 3. コンポーネントが最初に表示された時に一度だけ実行される副作用
@@ -20,27 +19,36 @@ function App() {
   const handleSubmit = (e) => {
     e.preventDefault(); // フォーム送信時のリロードを防止
 
-    if (!inputValue) return; // 入力が空の場合は何もしない
     if (!inputValue.trim()) return; // 入力が空、またはスペースだけの場合は何もしない
 
-    console.log('新しいTODOを追加:', inputValue);
     // 4a. 新しいTODOオブジェクトを作成
     const newTodo = {
       id: Date.now(), // ユニークなIDとして現在時刻のタイムスタンプを使用
       text: inputValue,
+      completed: false, // 新しいTODOは常に未完了で作成
     };
 
-    // ここにTODOリストに項目を追加する処理を後で書きます
     // 4b. todosリストの末尾に新しいTODOを追加 (不変性を保つ)
     setTodos([...todos, newTodo]);
 
     setInputValue(''); // 入力フォームを空にする
   };
 
+  // 5. TODOの完了状態を切り替える処理
+  const handleToggleComplete = (id) => {
+    setTodos(
+      todos.map((todo) =>
+        // IDが一致するTODOを見つけたら、completedプロパティを反転させる
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  };
+
   return (
     <div>
       <h1>My TODO App</h1>
       {/* 5. TODO追加フォーム */}
+      {/* TODO追加フォーム */}
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -55,6 +63,14 @@ function App() {
       <ul>
         {todos.map((todo) => (
           <li key={todo.id}>{todo.text}</li>
+          <li key={todo.id} style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => handleToggleComplete(todo.id)}
+            />
+            {todo.text}
+          </li>
         ))}
       </ul>
     </div>
