@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React学習記録 - JavaScriptの関数</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .comparison>div {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .role-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .role-table th,
+        .role-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .role-table th {
+            background-color: #f2f2f2;
+        }
+
+        .comparison h4 {
+            margin-top: 0;
+            color: #457b9d;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>React学習記録 - JavaScriptの関数</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>Reactの学習を進める中で、JavaScriptの関数の様々な書き方や概念が登場しました。特にアロー関数やコールバック関数はReactコンポーネントを記述する上で頻繁に使われます。このページでは、それらの重要な概念を整理し、学習の記録としてまとめます。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>1. 関数宣言 vs 関数式</h2>
+        <p>JavaScriptで関数を定義するには、主に「関数宣言」と「関数式」の2つの方法があります。React開発では、この違いを理解しておくことが重要です。</p>
+        <div class="comparison">
+            <div>
+                <h4>関数宣言 (Function Declaration)</h4>
+                <pre><code class="language-javascript">
+function myFunction() {
+  console.log('Hello!');
+}
+        </code></pre>
+                <p><strong>特徴:</strong> 巻き上げ（Hoisting）が発生します。つまり、コードが実行される前に宣言がファイルの先頭に引き上げられるため、定義より前で呼び出すことが可能です。</p>
+            </div>
+            <div>
+                <h4>関数式 (Function Expression)</h4>
+                <pre><code class="language-javascript">
+const myFunction = () => {
+  console.log('Hello!');
+};
+        </code></pre>
+                <p><strong>特徴:</strong> 変数への代入として扱われるため、巻き上げは起こりません。定義される前に呼び出すとエラーになります。これにより、コードが上から下へ直感的に読めるようになります。
+                </p>
+            </div>
+        </div>
+        <h3>Reactでの使い分け</h3>
+        <p>モダンなJavaScript開発、特にReactでは、予測しやすさから<strong>関数式（特にアロー関数）</strong>が好まれる傾向にあります。</p>
+        <ul>
+            <li><strong>コンポーネント本体:</strong> <code>function App() { ... }</code> のように関数宣言で書かれることが多い。</li>
+            <li><strong>コンポーネント内のイベントハンドラなど:</strong> <code>const handleClick = () => { ... }</code> のように関数式で書くのが主流。
+            </li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <h2>2. 関数の「定義」と「呼び出し」</h2>
+        <p>JavaScriptにおいて、<code>()</code>の使われ方には文脈によって大きく2つの意味があります。この違いを理解することは、特にReactを扱う上で非常に重要です。</p>
+        <div class="comparison">
+            <div>
+                <h4>1. 定義 (引数の宣言)</h4>
+                <pre><code class="language-javascript">
+// 'name' という引数を受け取る関数を「定義」
+const greet = (name) => {
+  console.log(`こんにちは、${name}さん！`);
+};
+        </code></pre>
+                <p>関数を新しく作る際に、その関数が受け取る値（引数）を指定するために使います。この<code>()</code>の中に書かれたものは、関数が呼び出されたときに渡される値を受け取るための「仮の入れ物（変数）」になります。
+                </p>
+            </div>
+            <div>
+                <h4>2. 呼び出し (実行)</h4>
+                <pre><code class="language-javascript">
+// greet関数を「実行」
+greet('Tori-Take');
+
+// 引数なしの関数を実行
+Date.now();
+        </code></pre>
+                <p>すでにある関数の名前の後ろに<code>()</code>を付けると、「今すぐこの関数を実行してください」という命令になります。</p>
+            </div>
+        </div>
+
+        <h3>Reactにおける具体例: <code>onClick</code></h3>
+        <p>この「定義」と「実行」の違いは、Reactでイベントを扱う際に特に重要になります。<code>TodoItem.jsx</code>のコードを見てみましょう。</p>
+        <pre><code class="language-javascript">
+// TodoItem.jsx
+&lt;button onClick={() => onDelete(todo.id)}&gt;削除&lt;/button&gt;
+        </code></pre>
+        <p>ここで<code>onClick</code>に渡すべきなのは、<strong>関数そのもの</strong>です。</p>
+        <div class="comparison">
+            <div>
+                <h4>正しい書き方</h4>
+                <pre><code>onClick={() => onDelete(todo.id)}</code></pre>
+                <p>これは「<code>onDelete(todo.id)</code>
+                    を実行する<strong>新しい無名関数</strong>」を<strong>定義</strong>して、その関数自体を<code>onClick</code>に渡しています。ボタンがクリックされた時に、Reactがこの渡された関数を<strong>実行</strong>します。
+                </p>
+            </div>
+            <div>
+                <h4>間違いやすい書き方</h4>
+                <pre><code>onClick={onDelete(todo.id)}</code></pre>
+                <p>こう書くと、コンポーネントが描画される瞬間に<code>onDelete(todo.id)</code>が<strong>実行</strong>されてしまいます。そして、その<strong>実行結果</strong>（この場合は<code>undefined</code>）が<code>onClick</code>に渡されます。結果、ボタンをクリックしても何も起こりません。
+                </p>
+            </div>
+        </div>
+
+        <h3>まとめ</h3>
+        <table class="role-table">
+            <thead>
+                <tr>
+                    <th>使われ方</th>
+                    <th>意味</th>
+                    <th>例</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>const myFunc = (arg) => {}</code></td>
+                    <td>関数の<strong>定義</strong>（引数の宣言）</td>
+                    <td>「<code>arg</code>という引数を受け取る関数を作ります」</td>
+                </tr>
+                <tr>
+                    <td><code>myFunc('hello')</code></td>
+                    <td>関数の<strong>実行</strong>（呼び出し）</td>
+                    <td>「<code>myFunc</code>という関数を<code>'hello'</code>という値で実行します」</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="container">
+        <h2>3. returnの役割</h2>
+        <p><code>return</code>文は、関数を理解する上で欠かせないキーワードです。主に2つの重要な役割を持っています。</p>
+
+        <h3>1. 関数から値を返す（戻り値）</h3>
+        <p><code>return</code>の最も基本的な役割は、関数の実行結果として特定の値を呼び出し元に返すことです。この返された値（戻り値）を変数に代入したり、別の関数の引数として使ったりできます。</p>
+        <pre><code class="language-javascript">
+function add(a, b) {
+  // a + b の計算結果を返す
+  return a + b;
+}
+
+const result = add(3, 5); // add関数の戻り値（8）がresultに代入される
+console.log(result); // -> 8
+        </code></pre>
+
+        <h4>Reactコンポーネントにおけるreturn</h4>
+        <p>Reactの関数コンポーネントでは、<code>return</code>文を使って表示したいUI（ユーザーインターフェース）をJSXの形で返します。Reactは、このコンポーネントから返されたJSXを受け取って、実際の画面（DOM）に描画します。これはReactの最も基本的な仕組みです。
+        </p>
+        <pre><code class="language-javascript">
+// Greeting.jsx
+function Greeting(props) {
+  // このコンポーネントが画面に表示すべき内容をJSXで返す
+  return &lt;h1&gt;こんにちは、{props.name}さん！&lt;/h1&gt;;
+}
+        </code></pre>
+
+        <h3>2. 関数の実行を終了する（早期リターン）</h3>
+        <p><code>return</code>文が実行されると、その関数の処理はそこで中断され、それ以降のコードは実行されません。これを利用して、特定の条件を満たした場合に処理を途中で打ち切ることができます。これを<strong>早期リターン（Early
+                Return）</strong>と呼びます。</p>
+        <pre><code class="language-javascript">
+function processPayment(user) {
+  // ユーザーが有料会員でなければ、ここで処理を終了する
+  if (!user.isPremium) {
+    console.log('この機能は有料会員のみ利用できます。');
+    return; // ここで関数が終了する
+  }
+
+  // この下のコードは、isPremiumがtrueの場合のみ実行される
+  console.log('決済処理を開始します...');
+  // ...決済処理が続く
+}
+        </code></pre>
+        <p>早期リターンは、<code>if-else</code>のネスト（入れ子）を減らし、コードをシンプルで読みやすくするのに役立ちます。</p>
+
+        <h3>3. <code>return</code>がない場合</h3>
+        <p>もし関数内に<code>return</code>文が明示的に書かれていない場合、その関数は自動的に<code>undefined</code>という値を返します。何かを表示したり状態を変更したりするだけで、結果を返す必要がない（副作用が目的の）関数では、<code>return</code>を省略することがよくあります。
+        </p>
+        <pre><code class="language-javascript">
+function sayHello(name) {
+  console.log(`こんにちは、${name}さん`);
+  // return文がない
+}
+
+const returnValue = sayHello('Tori-Take');
+// コンソールには「こんにちは、Tori-Takeさん」と表示される
+
+console.log(returnValue); // -> undefined
+        </code></pre>
+    </div>
+
+    <div class="container">
+        <h2>1. アロー関数 (Arrow Functions)</h2>
+        <p>従来の<code>function</code>キーワードを使った関数式を、より短く、分かりやすく書くための構文です。</p>
+        <pre><code class="language-javascript">
+// 従来の書き方
+const add_old = function(a, b) {
+  return a + b;
+};
+
+// アロー関数を使った書き方
+const add_new = (a, b) => {
+  return a + b;
+};
+    </code></pre>
+        <h3>暗黙の戻り値 (Implicit Return)</h3>
+        <p>アロー関数の大きな特徴として、処理が1行の式である場合に<code>{}</code>と<code>return</code>を省略できます。これにより、コードが非常に簡潔になります。</p>
+        <pre><code class="language-javascript">
+// 上記のadd_new関数をさらに短く
+const add_new_short = (a, b) => a + b;
+
+// 配列のmapメソッドで使う例
+const numbers = [1, 2, 3];
+const doubled = numbers.map(number => number * 2); // [2, 4, 6]
+    </code></pre>
+        <h3>複数行の処理</h3>
+        <p>一方、処理が2行以上になる場合は、<code>{}</code>（波括弧）でブロックを作り、値を返す必要がある場合は<code>return</code>文を明示的に記述します。</p>
+        <pre><code class="language-javascript">
+const addAndLog = (a, b) => {
+  // 1行目の処理
+  console.log(`Calculating ${a} + ${b}...`);
+  
+  // 2行目の処理（return文）
+  return a + b;
+};
+    </code></pre>
+    </div>
+
+    <div class="container">
+        <h2>5. 無名関数 (Anonymous Functions)</h2>
+        <p>その名の通り、<strong>名前を持たない関数</strong>のことです。一度しか使わないような、その場限りの処理を記述するのに便利です。</p>
+        <p>コールバック関数は、無名関数として定義されることが非常に多いです。</p>
+        <div class="comparison">
+            <div>
+                <h4>伝統的な無名関数</h4>
+                <pre><code class="language-javascript">
+numbers.map(function(number) {
+  return number * 2;
+});
+        </code></pre>
+            </div>
+            <div>
+                <h4>アロー関数による無名関数</h4>
+                <pre><code class="language-javascript">
+numbers.map(number => number * 2);
+        </code></pre>
+            </div>
+        </div>
+        <h3>変数への代入</h3>
+        <p>無名関数を変数や定数に代入することで、後から名前で呼び出すことができます。これは「関数式」の基本的な考え方です。</p>
+        <pre><code class="language-javascript">
+// (arg) => { ... } という無名関数に
+// `myFunction` という名前を付けている
+const myFunction = (arg) => {
+  // ...処理
+};
+    </code></pre>
+    </div>
+
+    <div class="container">
+        <h2>6. コールバック関数 (Callback Functions)</h2>
+        <p>コールバック関数とは、<strong>「後で呼び出してね」と、別の関数に引数として渡される関数</strong>のことです。非同期処理やイベント処理、配列操作などで頻繁に使われます。</p>
+        <p>ReactのTODOアプリでは、<code>filter</code>メソッドにコールバック関数を渡して、特定のTODOを削除する処理を実装しました。</p>
+        <pre><code class="language-javascript">
+// `todo => todo.id !== idToDelete` の部分がコールバック関数
+setTodos(todos.filter(todo => todo.id !== idToDelete));
+    </code></pre>
+        <p>このコールバック関数は、<code>todos</code>配列の各要素（<code>todo</code>）に対して実行され、条件式（<code>todo.id !== idToDelete</code>）が<code>true</code>を返す要素だけを集めて新しい配列を作ります。
+        </p>
+    </div>
+
+</body>
+
+</html>
+</p>
+</div>
+<div>
+    <h4>呼び出し (実行)</h4>
+    <pre><code class="language-javascript">
+// () は関数を実行する合図
+myFunction('Hello');
+
+Date.now();
+        </code></pre>
+    <p>すでにある関数の名前の後ろに<code>()</code>を付けることで、その関数を「今すぐ実行してください」という命令になります。</p>
+</div>
+</div>
+</div>
+
+</body>
+
+</html>
+
+```
+
+<!--
+[PROMPT_SUGGESTION]Reactの `key` はなぜ必要なのですか？[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]`TodoItem.jsx` の `onClick={() => onDelete(todo.id)}` はなぜアロー関数で囲む必要があるのですか？[/PROMPT_SUGGESTION]

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React 学習の記録</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        code {
+            background-color: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        strong {
+            color: #e74c3c;
+        }
+
+        .role-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .role-table th,
+        .role-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .role-table th {
+            background-color: #3498db;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>React 学習の記録</h1>
+
+        <h2>1. 参加者のロール</h2>
+        <table class="role-table">
+            <tr>
+                <th>参加者</th>
+                <th>ロール</th>
+            </tr>
+            <tr>
+                <td>Gemini</td>
+                <td>ベテランSE / React講師</td>
+            </tr>
+            <tr>
+                <td>Tori-Take</td>
+                <td>React初学者 / 生徒</td>
+            </tr>
+        </table>
+
+        <h2>2. 今回の学習内容と結果</h2>
+        <p>Reactの最も基本的な3つの概念を中心に、サンプルプログラムの作成と解説を通じて学習しました。</p>
+        <ul>
+            <li><strong>コンポーネント (Component):</strong> UIを構成する再利用可能な「部品」であるという概念を理解しました。<code>Greeting.jsx</code>,
+                <code>LikeButton.jsx</code>, <code>Counter.jsx</code>を作成し、部品化のメリットを体験しました。
+            </li>
+            <li><strong>Props (プロップス):</strong> 親コンポーネントから子コンポーネントへデータを渡す仕組みを学びました。これにより、コンポーネントの再利用性が高まることを確認しました。</li>
+            <li><strong>State (ステート):</strong>
+                コンポーネントが内部で持つ「状態」であり、<code>useState</code>フックを使って管理することを学びました。Stateが更新されるとUIが自動で再描画される、Reactのインタラクティブな動作の核となる部分を実践しました。
+            </li>
+            <li><strong>JSX:</strong>
+                JavaScript内でHTMLのようにUIの構造を記述する構文に慣れました。<code>className</code>や<code>onClick</code>などの基本的な使い方を習得しました。
+            </li>
+            <li><strong>イベントハンドリング:</strong> <code>onClick</code>属性に関数を渡すことで、ユーザーの操作に応じた処理を実行する方法を学びました。</li>
+            <li>
+                <strong>状態のリフトアップ (Lifting State Up):</strong>
+                <p>複数の子コンポーネントで状態を共有するために、状態を共通の親コンポーネントに引き上げる（リフトアップする）方法を学びました。これにより、コンポーネント間の連携が可能になることを確認しました。</p>
+            </li>
+            <li>
+                <strong>コールバック関数による親子間の連携:</strong>
+                <p>親が子に「関数」を渡し、子のイベント（クリックなど）をきっかけに親の関数を実行させることで、子が親の状態を変更する仕組みを実装しました。</p>
+            </li>
+            <li>
+                <strong>リストの動的レンダリング:</strong>
+                <p>JavaScriptの<code>.map()</code>メソッドを使い、データの配列からコンポーネントのリストを動的に生成する方法を学びました。これにより、より柔軟でデータ駆動なUI構築が可能になりました。
+                </p>
+            </li>
+            <li>
+                <strong>Reactにおける状態更新の不変性 (Immutability):</strong>
+                <p>State（特に配列やオブジェクト）を更新する際は、直接変更するのではなく、スプレッド構文(<code>[...array]</code>)などを使ってコピーを作成してから変更する、というReactの重要な原則を学びました。
+                </p>
+            </li>
+        </ul>
+        <h3>結果</h3>
+        <p>Reactの基本的な考え方に加え、複数のコンポーネントが連携する際のデータフローや状態管理の設計思想について深く理解されました。ご自身でコードの意図を読み解き、応用的な質問もできるレベルに到達しています。</p>
+
+        <h2>3. 次回の学習項目</h2>
+        <p>今回の基礎を元に、より実践的なアプリケーションを構築するための次のステップです。</p>
+        <ul>
+            <li>
+                <strong>副作用を扱う (<code>useEffect</code>フック):</strong>
+                <p>コンポーネントのレンダリング以外の処理（APIからのデータ取得、DOMの直接操作、タイマー処理など）を扱うための<code>useEffect</code>フックについて学びます。</p>
+            </li>
+            <li>
+                <strong>フォームの扱い方:</strong>
+                <p>入力フォーム（<code>&lt;input&gt;</code>,
+                    <code>&lt;textarea&gt;</code>など）の値をStateで管理し、ユーザーの入力をハンドリングする方法を学びます。</p>
+            </li>
+        </ul>
+    </div>
+</body>
+
+</html>
