@@ -5,7 +5,6 @@ function App() {
   const [inputValue, setInputValue] = useState('');
   // 2. TODOリスト全体を管理するためのState
   const [todos, setTodos] = useState([
-    { id: 1, text: 'Reactの学習' },
     { id: 1, text: 'Reactの学習', completed: false },
   ]);
 
@@ -36,6 +35,7 @@ function App() {
 
   // 5. TODOの完了状態を切り替える処理
   const handleToggleComplete = (id) => {
+    console.log(`TODO ID ${id} の完了状態を切り替えます。`);
     setTodos(
       todos.map((todo) =>
         // IDが一致するTODOを見つけたら、completedプロパティを反転させる
@@ -47,7 +47,6 @@ function App() {
   return (
     <div>
       <h1>My TODO App</h1>
-      {/* 5. TODO追加フォーム */}
       {/* TODO追加フォーム */}
       <form onSubmit={handleSubmit}>
         <input
@@ -62,7 +61,6 @@ function App() {
       {/* 6. TODOリストの表示 */}
       <ul>
         {todos.map((todo) => (
-          <li key={todo.id}>{todo.text}</li>
           <li key={todo.id} style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
             <input
               type="checkbox"
