@@ -1,24 +1,27 @@
-# Logs
+# 依存関係のフォルダ
+# client/node_modules と server/node_modules の両方を無視します
+node_modules/
+
+# ビルド成果物
+# Reactアプリをビルドした際に出力されるフォルダ
+dist/
+build/
+
+# ログファイル
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# 環境変数ファイル (データベースの接続情報などの機密情報)
+.env
+.env.local
+.env.*.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# OSやエディタが自動生成するファイル
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.idea/
+.vscode/
+!.vscode/extensions.json

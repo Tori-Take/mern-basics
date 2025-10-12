@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - バックエンドとMongoDB接続</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        h1,
+        h2 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+        }
+
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        .file-path {
+            font-weight: bold;
+            margin-top: 1em;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - バックエンドとMongoDB接続</h1>
+    <p>
+        Reactで作成したTODOアプリのデータを永続化（ページをリロードしても消えないように）するため、バックエンドサーバーとデータベースを準備しました。
+        これにより、MERNスタック (MongoDB, Express, React, Node.js) の全体像が見えてきました。
+    </p>
+
+    <h2>MERNスタックの全体像</h2>
+    <pre><code>[ユーザー] &lt;=&gt; [① React (フロントエンド)] &lt;=&gt; [② Node.js/Express (APIサーバー)] &lt;=&gt; [③ MongoDB (データベース)]</code></pre>
+    <p>
+        これまでは①の中だけで完結していましたが、②と③を構築し、連携させるステップに進みました。
+    </p>
+
+    <h2>主な学習内容</h2>
+    <ul>
+        <li><strong>プロジェクト構成の変更:</strong>
+            Reactアプリを<code>client</code>、バックエンドサーバーを<code>server</code>というディレクトリに分け、プロジェクトを整理しました。</li>
+        <li><strong>Node.js/Expressサーバーの構築:</strong>
+            <ul>
+                <li><code>npm init -y</code>でNode.jsプロジェクトを開始。</li>
+                <li>Webサーバーを構築するための<code>express</code>、MongoDBを操作するための<code>mongoose</code>、フロントエンドとの通信を許可する<code>cors</code>、機密情報を管理する<code>dotenv</code>をインストールしました。
+                </li>
+                <li>簡単なExpressサーバーを<code>server.js</code>に記述し、起動を確認しました。</li>
+            </ul>
+        </li>
+        <li><strong>MongoDB Atlasの利用:</strong>
+            <ul>
+                <li>クラウドデータベースサービスであるMongoDB Atlasに登録し、無料のデータベース(クラスター)を作成しました。</li>
+                <li>データベースにアクセスするためのユーザーを作成し、パスワードを控えました。</li>
+                <li>開発用として、任意のIPアドレスからのアクセスを許可(<code>0.0.0.0/0</code>)しました。</li>
+            </ul>
+        </li>
+        <li><strong>サーバーとデータベースの接続:</strong>
+            <ul>
+                <li>MongoDB Atlasから取得した**接続文字列(Connection
+                    String)**を、<code>.env</code>ファイルに<code>ATLAS_URI</code>として保存しました。パスワードなどの機密情報をコードに直接書かないための重要な手法です。
+                </li>
+                <li><code>server.js</code>内で<code>mongoose.connect(uri)</code>を呼び出し、データベースへの接続を確立しました。</li>
+                <li>ターミナルに「MongoDB データベースへの接続が正常に確立されました」と表示され、接続成功を確認しました。</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>最終的なコード</h2>
+
+    <p class="file-path">server/.env</p>
+    <p>データベースへの接続情報を格納します。<code>&lt;password&gt;</code>部分は実際のパスワードに置き換えます。</p>
+    <pre><code>ATLAS_URI=mongodb+srv://toritakegm_db_user:toritake20250926@telpcampcluster.f2x83eh.mongodb.net/telp-camp?retryWrites=true&w=majority&appName=TelpCampCluster
+</code></pre>
+
+    <p class="file-path">server/package.json</p>
+    <p>インストールしたライブラリの情報が記録されています。</p>
+    <pre><code>{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.4.0"
+  }
+}
+</code></pre>
+
+    <p class="file-path">server/server.js</p>
+    <p>Expressサーバーを起動し、Mongooseを使ってMongoDBに接続するメインのファイルです。</p>
+    <pre><code>const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+
+// 環境変数を .env ファイルから読み込む
+require('dotenv').config();
+
+const app = express();
+const port = process.env.PORT || 5000;
+
+// ミドルウェアの設定
+app.use(cors()); // CORSを有効にする
+app.use(express.json()); // JSON形式のリクエストボディを解析できるようにする
+
+// MongoDBへの接続
+const uri = process.env.ATLAS_URI;
+mongoose.connect(uri);
+const connection = mongoose.connection;
+connection.once('open', () => {
+  console.log("MongoDB データベースへの接続が正常に確立されました");
+})
+
+// ルートURLへのGETリクエストに対するレスポンス
+app.get('/', (req, res) => {
+  res.send('Hello from Express Server!');
+});
+
+// サーバーを起動
+app.listen(port, () => {
+    console.log(`サーバーがポート ${port} で起動しました。`);
+});
+</code></pre>
+
+</body>
+
+</html>

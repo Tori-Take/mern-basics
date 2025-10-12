@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - ReactでTODOアプリ作成</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        h1,
+        h2 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+        }
+
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - ReactでTODOアプリ作成</h1>
+    <p>
+        MERNスタック学習の第一歩として、まずはフロントエンドのReactを使い、インタラクティブなTODOリストアプリケーションを作成しました。<br>
+        この段階ではデータはブラウザのメモリ上にのみ保存されるため、ページをリロードすると消えてしまいますが、Reactの基本的な概念を理解する上で重要なステップです。
+    </p>
+
+    <h2>主な学習内容</h2>
+    <ul>
+        <li><strong>コンポーネントベースのUI構築:</strong> <code>App.jsx</code> という単一のコンポーネントでUI全体を管理しました。</li>
+        <li><strong>State管理 (<code>useState</code>):</strong>
+            フォームの入力値(<code>inputValue</code>)や、TODOリスト全体(<code>todos</code>)を状態として管理する方法を学びました。</li>
+        <li><strong>イベントハンドリング:</strong>
+            フォームの送信(<code>onSubmit</code>)、入力値の変更(<code>onChange</code>)、ボタンのクリック(<code>onClick</code>)といったユーザーのアクションを捉え、対応する関数を呼び出す方法を学びました。
+        </li>
+        <li><strong>リストのレンダリング (<code>map</code>):</strong> <code>todos</code>
+            配列を元に、<code>map</code>メソッドを使って動的に<code>&lt;li&gt;</code>要素のリストを生成しました。</li>
+        <li><strong>不変性 (Immutability):</strong>
+            Stateを更新する際に、元の配列やオブジェクトを直接変更するのではなく、コピーを作成して新しい値で置き換えるというReactの重要な原則を実践しました。
+            <ul>
+                <li>TODO追加: <code>setTodos([...todos, newTodo])</code></li>
+                <li>完了状態の更新:
+                    <code>todos.map(todo => todo.id === id ? { ...todo, completed: !todo.completed } : todo)</code></li>
+                <li>TODO削除: <code>todos.filter(todo => todo.id !== id)</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>最終的なコード (client/src/App.jsx)</h2>
+    <p>
+        TODOの追加、完了状態の切り替え、削除という基本的なCRUD操作をReactのみで実装した最終形です。
+    </p>
+    <pre><code>import { useState, useEffect } from 'react';
+
+function App() {
+  // 1. フォームの入力値を管理するためのState
+  const [inputValue, setInputValue] = useState('');
+  // 2. TODOリスト全体を管理するためのState
+  const [todos, setTodos] = useState([
+    { id: 1, text: 'Reactの学習', completed: false },
+  ]);
+
+  // 3. コンポーネントが最初に表示された時に一度だけ実行される副作用
+  useEffect(() => {
+    console.log('TODOアプリがマウントされました。');
+    document.title = 'My TODO App';
+  }, []); // 依存配列が空なので、初回の一度だけ実行
+
+  // 4. フォームが送信されたときの処理
+  const handleSubmit = (e) => {
+    e.preventDefault(); // フォーム送信時のリロードを防止
+
+    if (!inputValue.trim()) return; // 入力が空、またはスペースだけの場合は何もしない
+
+    // 4a. 新しいTODOオブジェクトを作成
+    const newTodo = {
+      id: Date.now(), // ユニークなIDとして現在時刻のタイムスタンプを使用
+      text: inputValue,
+      completed: false, // 新しいTODOは常に未完了で作成
+    };
+
+    // 4b. todosリストの末尾に新しいTODOを追加 (不変性を保つ)
+    setTodos([...todos, newTodo]);
+
+    setInputValue(''); // 入力フォームを空にする
+  };
+
+  // 5. TODOの完了状態を切り替える処理
+  const handleToggleComplete = (id) => {
+    setTodos(
+      todos.map((todo) =>
+        // IDが一致するTODOを見つけたら、completedプロパティを反転させる
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  };
+
+  // 7. TODOを削除する処理
+  const handleDelete = (id) => {
+    // 確認ダイアログを表示
+    if (window.confirm('本当にこのTODOを削除しますか？')) {
+      setTodos(todos.filter((todo) => todo.id !== id));
+    }
+  };
+
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;My TODO App&lt;/h1&gt;
+      {/* TODO追加フォーム */}
+      &lt;form onSubmit={handleSubmit}&gt;
+        &lt;input
+          type="text"
+          value={inputValue}
+          placeholder="新しいTODOを入力"
+          onChange={(e) => setInputValue(e.target.value)}
+        /&gt;
+        &lt;button type="submit"&gt;追加&lt;/button&gt;
+      &lt;/form&gt;
+
+      {/* 6. TODOリストの表示 */}
+      &lt;ul&gt;
+        {todos.map((todo) => (
+          &lt;li key={todo.id} style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}&gt;
+            &lt;input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => handleToggleComplete(todo.id)}
+            /&gt;
+            {todo.text}
+            &lt;button onClick={() => handleDelete(todo.id)} style={{ marginLeft: '10px' }}&gt;削除&lt;/button&gt;
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/div&gt;
+  );
+}
+
+export default App;
+</code></pre>
+
+</body>
+
+</html>
