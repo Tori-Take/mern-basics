@@ -44,6 +44,14 @@ function App() {
     );
   };
 
+  // 7. TODOを削除する処理
+  const handleDelete = (id) => {
+    // 確認ダイアログを表示
+    if (window.confirm('本当にこのTODOを削除しますか？')) {
+      setTodos(todos.filter((todo) => todo.id !== id));
+    }
+  };
+
   return (
     <div>
       <h1>My TODO App</h1>
@@ -68,6 +76,7 @@ function App() {
               onChange={() => handleToggleComplete(todo.id)}
             />
             {todo.text}
+            <button onClick={() => handleDelete(todo.id)} style={{ marginLeft: '10px' }}>削除</button>
           </li>
         ))}
       </ul>
