@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - TODOアプリ完成編</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1,
+        h2,
+        h3 {
+            border-bottom: 2px solid #4a90e2;
+            padding-bottom: 5px;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 2em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            margin-top: 40px;
+        }
+
+        h3 {
+            font-size: 1.2em;
+            margin-top: 30px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .file-path {
+            font-weight: bold;
+            margin-top: 1em;
+            font-family: monospace;
+            color: #d9534f;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - TODOアプリ完成編</h1>
+    <p>
+        Reactでのフロントエンド構築から始まり、バックエンドAPIの作成、データベースとの連携を経て、ついにデータが永続化される完全なTODOアプリケーションが完成しました。この記録は、その全行程の集大成です。
+    </p>
+
+    <h2>最終的なプロジェクト構成</h2>
+    <pre><code>MERN基本学習/
+├── .gitignore
+├── client/         (React フロントエンド)
+│   ├── node_modules/
+│   ├── public/
+│   └── src/
+│       └── App.jsx
+└── server/         (Node.js/Express バックエンド)
+    ├── models/
+    │   └── todo.model.js
+    ├── node_modules/
+    ├── routes/
+    │   └── todos.js
+    ├── .env
+    └── server.js
+</code></pre>
+
+    <h2>主な学習内容</h2>
+    <ul>
+        <li><strong>フロントエンド (React):</strong>
+            <ul>
+                <li><code>useState</code>による状態管理と、<code>useEffect</code>によるライフサイクル（副作用）の管理。</li>
+                <li><code>axios</code>ライブラリを使用した、バックエンドAPIとの非同期通信。</li>
+                <li>取得したデータに基づいた動的なリスト表示と、ユーザー操作に応じたUIの更新。</li>
+            </ul>
+        </li>
+        <li><strong>バックエンド (Node.js/Express):</strong>
+            <ul>
+                <li>ExpressによるWebサーバーの構築と、<code>cors</code>, <code>express.json</code>といったミドルウェアの設定。</li>
+                <li>RESTfulなAPI設計に基づき、ルーター機能を使ってAPIエンドポイントをモジュール化 (<code>/routes/todos.js</code>)。</li>
+                <li>CRUD (Create, Read, Update, Delete) 操作に対応するAPIエンドポイント (<code>GET /</code>, <code>POST /</code>,
+                    <code>PATCH /:id</code>, <code>DELETE /:id</code>) の実装。</li>
+            </ul>
+        </li>
+        <li><strong>データベース (MongoDB):</strong>
+            <ul>
+                <li>MongoDB Atlasによるクラウドデータベースのセットアップ。</li>
+                <li><code>mongoose</code>ライブラリを使用したデータベース接続。</li>
+                <li>スキーマ(Schema)によるデータ構造の定義と、モデル(Model)を介したデータベース操作。</li>
+                <li><code>.env</code>ファイルによる接続情報など、機密情報の安全な管理。</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>最終的なコード</h2>
+
+    <h3 class="file-path">client/src/App.jsx</h3>
+    <pre><code>import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const API_URL = 'http://localhost:5000/todos';
+
+function App() {
+  const [inputValue, setInputValue] = useState('');
+  const [todos, setTodos] = useState([]);
+
+  useEffect(() => {
+    document.title = 'My TODO App';
+    const fetchTodos = async () => {
+      try {
+        const response = await axios.get(API_URL);
+        setTodos(response.data);
+      } catch (error) {
+        console.error('TODOリストの取得中にエラーが発生しました:', error);
+      }
+    };
+    fetchTodos();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+    try {
+      const response = await axios.post(API_URL, { text: inputValue });
+      setTodos([...todos, response.data]);
+      setInputValue('');
+    } catch (error) {
+      console.error('TODOの追加中にエラーが発生しました:', error);
+    }
+  };
+
+  const handleToggleComplete = async (id) => {
+    try {
+      await axios.patch(`${API_URL}/${id}`);
+      setTodos(
+        todos.map((todo) =>
+          todo._id === id ? { ...todo, completed: !todo.completed } : todo
+        )
+      );
+    } catch (error) {
+      console.error('TODOの更新中にエラーが発生しました:', error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('本当にこのTODOを削除しますか？')) {
+      try {
+        await axios.delete(`${API_URL}/${id}`);
+        setTodos(todos.filter((todo) => todo._id !== id));
+      } catch (error) {
+        console.error('TODOの削除中にエラーが発生しました:', error);
+      }
+    }
+  };
+
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;My TODO App&lt;/h1&gt;
+      &lt;form onSubmit={handleSubmit}&gt;
+        &lt;input
+          type="text"
+          value={inputValue}
+          placeholder="新しいTODOを入力"
+          onChange={(e) => setInputValue(e.target.value)}
+        /&gt;
+        &lt;button type="submit"&gt;追加&lt;/button&gt;
+      &lt;/form&gt;
+      &lt;ul&gt;
+        {todos.map((todo) => (
+          &lt;li key={todo._id} style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}&gt;
+            &lt;input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => handleToggleComplete(todo._id)}
+            /&gt;
+            {todo.text}
+            &lt;button onClick={() => handleDelete(todo._id)} style={{ marginLeft: '10px' }}&gt;削除&lt;/button&gt;
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/div&gt;
+  );
+}
+
+export default App;
+</code></pre>
+
+    <h3 class="file-path">server/routes/todos.js</h3>
+    <pre><code>const router = require('express').Router();
+let Todo = require('../models/todo.model');
+
+router.route('/')
+  .get((req, res) => {
+    Todo.find()
+      .then(todos => res.json(todos))
+      .catch(err => res.status(400).json('Error: ' + err));
+  })
+  .post((req, res) => {
+    const newTodo = new Todo({ text: req.body.text });
+    newTodo.save()
+      .then((savedTodo) => res.status(201).json(savedTodo))
+      .catch(err => res.status(400).json('Error: ' + err));
+  });
+
+router.route('/:id')
+  .patch((req, res) => {
+    Todo.findById(req.params.id)
+      .then(todo => {
+        if (!todo) return res.status(404).json('Error: Todo not found');
+        todo.completed = !todo.completed;
+        todo.save()
+          .then(updatedTodo => res.json(updatedTodo))
+          .catch(err => res.status(400).json('Error: ' + err));
+      })
+      .catch(err => res.status(400).json('Error: ' + err));
+  })
+  .delete((req, res) => {
+    Todo.findByIdAndDelete(req.params.id)
+      .then(() => res.json('Todo deleted.'))
+      .catch(err => res.status(400).json('Error: ' + err));
+  });
+
+module.exports = router;
+</code></pre>
+
+</body>
+
+</html>

@@ -1,54 +1,83 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios'; // axiosをインポート
+
+// APIサーバーのURLを定数として定義
+const API_URL = 'http://localhost:5000/todos';
 
 function App() {
   // 1. フォームの入力値を管理するためのState
   const [inputValue, setInputValue] = useState('');
   // 2. TODOリスト全体を管理するためのState
-  const [todos, setTodos] = useState([
-    { id: 1, text: 'Reactの学習', completed: false },
-  ]);
+  const [todos, setTodos] = useState([]); // 初期値は空の配列にする
 
   // 3. コンポーネントが最初に表示された時に一度だけ実行される副作用
   useEffect(() => {
-    console.log('TODOアプリがマウントされました。');
     document.title = 'My TODO App';
+
+    // サーバーからTODOリストを取得する
+    const fetchTodos = async () => {
+      try {
+        const response = await axios.get(API_URL);
+        setTodos(response.data); // 取得したデータでStateを更新
+      } catch (error) {
+        console.error('TODOリストの取得中にエラーが発生しました:', error);
+      }
+    };
+
+    fetchTodos();
   }, []); // 依存配列が空なので、初回の一度だけ実行
 
   // 4. フォームが送信されたときの処理
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault(); // フォーム送信時のリロードを防止
 
     if (!inputValue.trim()) return; // 入力が空、またはスペースだけの場合は何もしない
 
-    // 4a. 新しいTODOオブジェクトを作成
-    const newTodo = {
-      id: Date.now(), // ユニークなIDとして現在時刻のタイムスタンプを使用
-      text: inputValue,
-      completed: false, // 新しいTODOは常に未完了で作成
-    };
+    try {
+      // 4a. サーバーに新しいTODOの作成をリクエスト
+      const response = await axios.post(API_URL, { text: inputValue });
+      const newTodo = response.data; // サーバーから返された新しいTODOオブジェクト
 
-    // 4b. todosリストの末尾に新しいTODOを追加 (不変性を保つ)
-    setTodos([...todos, newTodo]);
+      // 4b. 画面のリストに新しいTODOを追加
+      setTodos([...todos, newTodo]);
 
-    setInputValue(''); // 入力フォームを空にする
+      setInputValue(''); // 入力フォームを空にする
+    } catch (error) {
+      console.error('TODOの追加中にエラーが発生しました:', error);
+    }
   };
 
   // 5. TODOの完了状態を切り替える処理
-  const handleToggleComplete = (id) => {
-    console.log(`TODO ID ${id} の完了状態を切り替えます。`);
-    setTodos(
-      todos.map((todo) =>
-        // IDが一致するTODOを見つけたら、completedプロパティを反転させる
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
-    );
+  const handleToggleComplete = async (id) => {
+    try {
+      // サーバーに更新をリクエスト
+      await axios.patch(`${API_URL}/${id}`);
+
+      // 画面の状態を更新
+      setTodos(
+        todos.map((todo) =>
+          // IDが一致するTODOを見つけたら、completedプロパティを反転させる
+          todo._id === id ? { ...todo, completed: !todo.completed } : todo
+        )
+      );
+    } catch (error) {
+      console.error('TODOの更新中にエラーが発生しました:', error);
+    }
   };
 
   // 7. TODOを削除する処理
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     // 確認ダイアログを表示
     if (window.confirm('本当にこのTODOを削除しますか？')) {
-      setTodos(todos.filter((todo) => todo.id !== id));
+      try {
+        // サーバーに削除をリクエスト
+        await axios.delete(`${API_URL}/${id}`);
+
+        // 画面の状態を更新
+        setTodos(todos.filter((todo) => todo._id !== id));
+      } catch (error) {
+        console.error('TODOの削除中にエラーが発生しました:', error);
+      }
     }
   };
 
@@ -69,14 +98,14 @@ function App() {
       {/* 6. TODOリストの表示 */}
       <ul>
         {todos.map((todo) => (
-          <li key={todo.id} style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+          <li key={todo._id} style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
             <input
               type="checkbox"
               checked={todo.completed}
-              onChange={() => handleToggleComplete(todo.id)}
+              onChange={() => handleToggleComplete(todo._id)}
             />
             {todo.text}
-            <button onClick={() => handleDelete(todo.id)} style={{ marginLeft: '10px' }}>削除</button>
+            <button onClick={() => handleDelete(todo._id)} style={{ marginLeft: '10px' }}>削除</button>
           </li>
         ))}
       </ul>

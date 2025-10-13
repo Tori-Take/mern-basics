@@ -20,10 +20,10 @@ connection.once('open', () => {
   console.log("MongoDB データベースへの接続が正常に確立されました");
 })
 
-// ルートURLへのGETリクエストに対するレスポンス
-app.get('/', (req, res) => {
-  res.send('Hello from Express Server!');
-});
+// TODO APIエンドポイントのルーターを読み込む
+const todosRouter = require('./routes/todos');
+// '/todos' というパスにルーターを適用する
+app.use('/todos', todosRouter);
 
 // サーバーを起動
 app.listen(port, () => {
