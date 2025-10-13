@@ -15,12 +15,6 @@ app.use(express.json()); // JSON形式のリクエストボディを解析でき
 
 // MongoDBへの接続 (今はまだ接続文字列がありません)
 const uri = process.env.ATLAS_URI;
-mongoose.connect(uri);
-const connection = mongoose.connection;
-connection.once('open', () => {
-  console.log("MongoDB データベースへの接続が正常に確立されました");
-})
-
 // TODO APIエンドポイントのルーターを読み込む
 const todosRouter = require('./routes/todos');
 // '/todos' というパスにルーターを適用する
@@ -37,7 +31,18 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// サーバーを起動
-app.listen(port, () => {
-    console.log(`サーバーがポート ${port} で起動しました。`);
-});
+// データベースに接続してからサーバーを起動する
+const startServer = async () => {
+  try {
+    await mongoose.connect(uri);
+    console.log("MongoDB データベースへの接続が正常に確立されました");
+    app.listen(port, () => {
+      console.log(`サーバーがポート ${port} で起動しました。`);
+    });
+  } catch (error) {
+    console.error("データベースへの接続に失敗しました:", error);
+    process.exit(1); // 接続に失敗した場合はプロセスを終了
+  }
+};
+
+startServer();
