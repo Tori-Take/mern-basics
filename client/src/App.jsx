@@ -92,7 +92,7 @@ function App() {
           onChange={(e) => setInputValue(e.target.value)}
           className="form-control me-2"
         />
-        <button type="submit" className="btn btn-primary">追加</button>
+        <button type="submit" className="btn btn-primary flex-shrink-0">追加</button>
       </form>
 
       {/* 6. TODOリストの表示 */}
