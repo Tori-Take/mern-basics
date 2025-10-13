@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - モーダル実装と高度なデータ管理編</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1,
+        h2,
+        h3 {
+            border-bottom: 2px solid #4a90e2;
+            padding-bottom: 5px;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 2em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            margin-top: 40px;
+        }
+
+        h3 {
+            font-size: 1.2em;
+            margin-top: 30px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .file-path {
+            font-weight: bold;
+            margin-top: 1em;
+            font-family: monospace;
+            color: #d9534f;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - モーダル実装と高度なデータ管理編</h1>
+    <p>
+        アプリケーションをより本格的なタスク管理ツールへと進化させるため、大幅な機能拡張を実施。<br>
+        データ構造の拡張から始まり、Reactの能力を最大限に活かしたモーダルUIの実装に成功しました。
+    </p>
+
+    <h2>主な学習内容と成果</h2>
+    <ul>
+        <li><strong>データスキーマの拡張:</strong>
+            <ul>
+                <li>Mongooseスキーマに「優先度」「期日」「予定日」「タグ」「作成者」「依頼先」といった多数のフィールドを追加。アプリケーションのデータ表現能力を大幅に向上させました。</li>
+            </ul>
+        </li>
+        <li><strong>モーダルUIの実装:</strong>
+            <ul>
+                <li>インラインフォームを廃止し、新規作成と編集の両方に専用のモーダルダイアログを導入。ページ遷移のないスムーズなユーザー体験を実現しました。</li>
+                <li>ReactのStateでモーダルの表示状態を管理し、コンポーネント間でPropsを介してデータと関数を受け渡す、宣言的なUI構築を実践しました。</li>
+            </ul>
+        </li>
+        <li><strong>コンポーネントの責務分離:</strong>
+            <ul>
+                <li><code>TodoCreateModal</code>と<code>TodoEditModal</code>という専用コンポーネントを作成。<code>App</code>コンポーネントはデータフローの管理に集中し、各モーダルはフォーム入力の責務に集中する、クリーンな設計を実現しました。
+                </li>
+            </ul>
+        </li>
+        <li><strong>高度なデータ表示:</strong>
+            <ul>
+                <li>一覧画面に新しいフィールド（期日、予定日など）を追加表示。Bootstrapのグリッドシステムを活用し、情報量が増えても見やすいレイアウトを構築しました。</li>
+                <li>日付や日時の入力形式の変更（<code>date</code>, <code>datetime-local</code>）に伴い、データのフォーマット処理を適切に行うスキルを習得しました。</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>最終的なコード</h2>
+
+    <h3 class="file-path">server/models/todo.model.js (スキーマ拡張後)</h3>
+    <pre><code>const mongoose = require('mongoose');
+
+const Schema = mongoose.Schema;
+
+const todoSchema = new Schema({
+  text: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  completed: {
+    type: Boolean,
+    default: false,
+  },
+  priority: {
+    type: String,
+    enum: ['高', '中', '低'],
+    default: '中',
+  },
+  dueDate: {
+    type: Date,
+    default: null,
+  },
+  scheduledDate: {
+    type: Date,
+    default: null,
+  },
+  tags: {
+    type: [String],
+    default: [],
+  },
+  creator: {
+    type: String,
+    default: '未設定',
+  },
+  requester: {
+    type: String,
+    default: '未設定',
+  },
+}, {
+  timestamps: true,
+});
+
+const Todo = mongoose.model('Todo', todoSchema);
+
+module.exports = Todo;
+</code></pre>
+
+    <h3 class="file-path">client/src/App.jsx (モーダル制御)</h3>
+    <pre><code>import { useState, useEffect } from 'react';
+import axios from 'axios';
+import TodoList from './TodoList';
+import TodoCreateModal from './TodoCreateModal';
+import TodoEditModal from './TodoEditModal';
+
+const API_URL = '/todos';
+
+function App() {
+  const [todos, setTodos] = useState([]);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTodo, setEditingTodo] = useState(null);
+
+  useEffect(() => {
+    // ... (fetchTodos)
+  }, []);
+
+  const handleAddTodo = async (todoData) => {
+    // ...
+  };
+
+  // ... (handleToggleComplete, handleDelete)
+
+  const handleOpenEditModal = (todo) => {
+    setEditingTodo(todo);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (id, todoData) => {
+    // ...
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingTodo(null);
+  };
+
+  return (
+    &lt;div className="container mt-5" style={{ maxWidth: '600px' }}&gt;
+      &lt;h1 className="text-center mb-4"&gt;My TODO App&lt;/h1&gt;
+      &lt;div className="d-grid gap-2 mb-4"&gt;
+        &lt;button className="btn btn-primary" type="button" onClick={() => setIsCreateModalOpen(true)}&gt;
+          ＋ 新規TODOを追加
+        &lt;/button&gt;
+      &lt;/div&gt;
+      &lt;TodoList todos={todos} onToggle={handleToggleComplete} onDelete={handleDelete} onEdit={handleOpenEditModal} /&gt;
+
+      &lt;TodoCreateModal
+        show={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onAdd={handleAddTodo}
+      /&gt;
+
+      &lt;TodoEditModal
+        show={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        onSave={handleSaveEdit}
+        todo={editingTodo}
+      /&gt;
+    &lt;/div&gt;
+  );
+}
+
+export default App;
+</code></pre>
+
+    <h3 class="file-path">client/src/TodoItem.jsx (一覧表示の強化)</h3>
+    <pre><code>import React from 'react';
+
+function TodoItem({ todo, onToggle, onDelete, onEdit }) {
+  return (
+    &lt;li className="list-group-item d-flex align-items-center gap-3"&gt;
+      &lt;input type="checkbox" /* ... */ /&gt;
+      &lt;div className="flex-grow-1"&gt;
+        &lt;div&gt;
+          &lt;span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}&gt;
+            {todo.text}
+          &lt;/span&gt;
+          &lt;div className="row gx-3 gy-1 mt-1 small text-muted"&gt;
+            &lt;div className="col-auto"&gt;
+              &lt;strong&gt;作成:&lt;/strong&gt; {new Date(todo.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' })}
+            &lt;/div&gt;
+            {todo.dueDate && (
+              &lt;div className="col-auto"&gt;
+                &lt;strong&gt;期日:&lt;/strong&gt; {new Date(todo.dueDate).toLocaleDateString('ja-JP')}
+              &lt;/div&gt;
+            )}
+            {/* ... 他のフィールドも同様に表示 ... */}
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div className="flex-shrink-0"&gt;
+        &lt;button onClick={() => onEdit(todo)} className="btn btn-warning btn-sm me-2"&gt;
+          編集
+        &lt;/button&gt;
+        &lt;button onClick={() => onDelete(todo._id)} className="btn btn-danger btn-sm"&gt;
+          削除
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/li&gt;
+  );
+}
+
+export default TodoItem;
+</code></pre>
+
+</body>
+
+</html>
+
+```
+
+<!--
+[PROMPT_SUGGESTION]TODOを優先度順や期日順に並び替える機能を追加してください。[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]タグをクリックしたら、同じタグを持つTODOだけを絞り込んで表示する機能を追加してください。[/PROMPT_SUGGESTION]
