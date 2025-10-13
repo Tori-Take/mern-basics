@@ -13,7 +13,17 @@ router.route('/')
   })
   .post(async (req, res) => {
     try {
-      const newTodo = new Todo({ text: req.body.text });
+      const {
+        text,
+        priority,
+        dueDate,
+        scheduledDate,
+        tags,
+        creator,
+        requester,
+      } = req.body;
+
+      const newTodo = new Todo({ text, priority, dueDate, scheduledDate, tags, creator, requester });
       const savedTodo = await newTodo.save();
       res.status(201).json(savedTodo);
     } catch (err) {
@@ -48,14 +58,18 @@ router.route('/:id')
   // 特定のIDを持つTODOのテキストを更新する (PUT /todos/:id)
   .put(async (req, res) => {
     try {
-      const { text } = req.body;
-      if (!text) {
-        return res.status(400).json('Error: Text is required');
-      }
       const todo = await Todo.findById(req.params.id);
       if (!todo) return res.status(404).json('Error: Todo not found');
 
-      todo.text = text;
+      // リクエストボディから受け取ったデータでTODOドキュメントを更新
+      todo.text = req.body.text || todo.text;
+      todo.priority = req.body.priority || todo.priority;
+      todo.dueDate = req.body.dueDate || todo.dueDate;
+      todo.scheduledDate = req.body.scheduledDate || todo.scheduledDate;
+      todo.tags = req.body.tags || todo.tags;
+      todo.creator = req.body.creator || todo.creator;
+      todo.requester = req.body.requester || todo.requester;
+
       const updatedTodo = await todo.save();
       res.json(updatedTodo);
     } catch (err) {

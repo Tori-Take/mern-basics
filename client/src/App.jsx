@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios'; // axiosをインポート
-import TodoForm from './TodoForm';
 import TodoList from './TodoList';
+import TodoCreateModal from './TodoCreateModal';
+import TodoEditModal from './TodoEditModal';
 
 const API_URL = '/todos';
 
 function App() {
   const [todos, setTodos] = useState([]); // 初期値は空の配列にする
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTodo, setEditingTodo] = useState(null); // 編集対象のTODOを保持
 
   useEffect(() => {
     document.title = 'My TODO App';
@@ -24,12 +28,13 @@ function App() {
     fetchTodos();
   }, []); // 依存配列が空なので、初回の一度だけ実行
 
-  const handleAddTodo = async (text) => {
+  const handleAddTodo = async (todoData) => {
     try {
-      const response = await axios.post(API_URL, { text });
+      const response = await axios.post(API_URL, todoData);
       const newTodo = response.data; // サーバーから返された新しいTODOオブジェクト
 
       setTodos([...todos, newTodo]);
+      setIsCreateModalOpen(false); // 成功したらモーダルを閉じる
     } catch (error) {
       console.error('TODOの追加中にエラーが発生しました:', error);
     }
@@ -67,26 +72,56 @@ function App() {
     }
   };
 
-  const handleEditTodo = async (id, newText) => {
+  // 編集モーダルを開く処理
+  const handleOpenEditModal = (todo) => {
+    setEditingTodo(todo);
+    setIsEditModalOpen(true);
+  };
+
+  // 編集内容を保存する処理
+  const handleSaveEdit = async (id, todoData) => {
     try {
       // サーバーに更新をリクエスト
-      const response = await axios.put(`${API_URL}/${id}`, { text: newText });
+      const response = await axios.put(`${API_URL}/${id}`, todoData);
       const updatedTodo = response.data;
 
       // 画面の状態を更新
       setTodos(
         todos.map((todo) => (todo._id === id ? updatedTodo : todo))
       );
+      setIsEditModalOpen(false); // 成功したらモーダルを閉じる
     } catch (error) {
       console.error('TODOの編集中にエラーが発生しました:', error);
     }
   };
 
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingTodo(null);
+  };
+
   return (
     <div className="container mt-5" style={{ maxWidth: '600px' }}>
       <h1 className="text-center mb-4">My TODO App</h1>
-      <TodoForm onAdd={handleAddTodo} />
-      <TodoList todos={todos} onToggle={handleToggleComplete} onDelete={handleDelete} onEdit={handleEditTodo} />
+      <div className="d-grid gap-2 mb-4">
+        <button className="btn btn-primary" type="button" onClick={() => setIsCreateModalOpen(true)}>
+          ＋ 新規TODOを追加
+        </button>
+      </div>
+      <TodoList todos={todos} onToggle={handleToggleComplete} onDelete={handleDelete} onEdit={handleOpenEditModal} />
+
+      <TodoCreateModal
+        show={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onAdd={handleAddTodo}
+      />
+
+      <TodoEditModal
+        show={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        onSave={handleSaveEdit}
+        todo={editingTodo}
+      />
     </div>
   );
 }
