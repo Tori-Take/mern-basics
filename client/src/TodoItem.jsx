@@ -1,6 +1,16 @@
 import React from 'react';
 
 function TodoItem({ todo, onToggle, onDelete, onEdit }) {
+  // 優先度に応じてBootstrapのバッジクラスを返すヘルパー関数
+  const getPriorityBadge = (priority) => {
+    const colors = {
+      '高': 'danger',   // 赤
+      '中': 'warning',  // 黄
+      '低': 'success',  // 緑
+    };
+    return <span className={`badge bg-${colors[priority] || 'secondary'} me-2`}>{priority}</span>;
+  };
+
   return (
     <li className="list-group-item d-flex align-items-center gap-3">
       {/* チェックボックス */}
@@ -14,9 +24,12 @@ function TodoItem({ todo, onToggle, onDelete, onEdit }) {
       {/* テキストまたは入力欄（スペースをすべて使う） */}
       <div className="flex-grow-1">
         <div>
-          <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-            {todo.text}
-          </span>
+          <div className="d-flex align-items-center">
+            {getPriorityBadge(todo.priority)}
+            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+              {todo.text}
+            </span>
+          </div>
           <div className="row gx-3 gy-1 mt-1 small text-muted">
             <div className="col-auto">
               <strong>作成:</strong> {new Date(todo.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' })}
