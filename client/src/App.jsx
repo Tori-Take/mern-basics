@@ -81,30 +81,43 @@ function App() {
   };
 
   return (
-    <div>
-      <h1>My TODO App</h1>
+    <div className="container mt-5" style={{ maxWidth: '600px' }}>
+      <h1 className="text-center mb-4">My TODO App</h1>
       {/* TODO追加フォーム */}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="d-flex mb-4">
         <input
           type="text"
           value={inputValue}
           placeholder="新しいTODOを入力"
           onChange={(e) => setInputValue(e.target.value)}
+          className="form-control me-2"
         />
-        <button type="submit">追加</button>
+        <button type="submit" className="btn btn-primary">追加</button>
       </form>
 
       {/* 6. TODOリストの表示 */}
-      <ul>
+      <ul className="list-group">
         {todos.map((todo) => (
-          <li key={todo._id} style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-            <input
-              type="checkbox"
-              checked={todo.completed}
-              onChange={() => handleToggleComplete(todo._id)}
-            />
-            {todo.text}
-            <button onClick={() => handleDelete(todo._id)} style={{ marginLeft: '10px' }}>削除</button>
+          <li
+            key={todo._id}
+            className="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <span
+              onClick={() => handleToggleComplete(todo._id)}
+              style={{
+                textDecoration: todo.completed ? 'line-through' : 'none',
+                cursor: 'pointer',
+                flexGrow: 1,
+              }}
+            >
+              {todo.text}
+            </span>
+            <button
+              onClick={() => handleDelete(todo._id)}
+              className="btn btn-danger btn-sm"
+            >
+              削除
+            </button>
           </li>
         ))}
       </ul>
