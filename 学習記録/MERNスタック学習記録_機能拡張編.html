@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - 機能拡張とリファクタリング編</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1,
+        h2,
+        h3 {
+            border-bottom: 2px solid #4a90e2;
+            padding-bottom: 5px;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 2em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            margin-top: 40px;
+        }
+
+        h3 {
+            font-size: 1.2em;
+            margin-top: 30px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .file-path {
+            font-weight: bold;
+            margin-top: 1em;
+            font-family: monospace;
+            color: #d9534f;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - 機能拡張とリファクタリング編</h1>
+    <p>
+        基本機能の完成とRender.comへのデプロイ成功を経て、アプリケーションは新たなステージに進みました。<br>
+        ユーザーからの反響に応える形で、UI/UXの向上と新機能の追加、そして将来の拡張性を見据えたコードのリファクタリングを行いました。
+    </p>
+
+    <h2>主な学習内容と成果</h2>
+    <ul>
+        <li><strong>UI/UXの向上 (Bootstrap):</strong>
+            <ul>
+                <li>Bootstrapを導入し、フォームやリスト、ボタンにモダンなスタイルを適用。アプリケーション全体の見た目をプロフェッショナルなものに刷新しました。</li>
+            </ul>
+        </li>
+        <li><strong>コード品質の向上 (リファクタリング):</strong>
+            <ul>
+                <li>巨大化していた<code>App.jsx</code>を、役割ごとに<code>TodoForm</code>, <code>TodoList</code>,
+                    <code>TodoItem</code>の3つのコンポーネントに分割。</li>
+                <li>各コンポーネントが単一の責任を持つようになり、コードの可読性、保守性、再利用性が劇的に向上しました。</li>
+            </ul>
+        </li>
+        <li><strong>機能拡張① (編集機能):</strong>
+            <ul>
+                <li>バックエンドに<code>PUT /todos/:id</code>エンドポイントを追加し、TODOのテキスト内容を更新するAPIを実装。</li>
+                <li>フロントエンドでは、各TODOアイテムに「編集モード」を導入。ボタンクリックでテキストが入力欄に切り替わり、直感的な編集が可能になりました。</li>
+            </ul>
+        </li>
+        <li><strong>機能拡張② (日時表示):</strong>
+            <ul>
+                <li>Mongooseの<code>timestamps</code>機能によって自動で記録されていた作成日時(<code>createdAt</code>)を、フロントエンドで整形して表示。</li>
+                <li><code>toLocaleString()</code>メソッドを使い、ユーザーにとって分かりやすい形式で日時を提供しました。</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>最終的なコード</h2>
+
+    <h3 class="file-path">client/src/App.jsx (リファクタリング後)</h3>
+    <pre><code>import { useState, useEffect } from 'react';
+import axios from 'axios';
+import TodoForm from './TodoForm';
+import TodoList from './TodoList';
+
+const API_URL = '/todos';
+
+function App() {
+  const [todos, setTodos] = useState([]);
+
+  useEffect(() => {
+    document.title = 'My TODO App';
+    const fetchTodos = async () => {
+      try {
+        const response = await axios.get(API_URL);
+        setTodos(response.data);
+      } catch (error) {
+        console.error('TODOリストの取得中にエラーが発生しました:', error);
+      }
+    };
+    fetchTodos();
+  }, []);
+
+  const handleAddTodo = async (text) => {
+    try {
+      const response = await axios.post(API_URL, { text });
+      setTodos([...todos, response.data]);
+    } catch (error) {
+      console.error('TODOの追加中にエラーが発生しました:', error);
+    }
+  };
+
+  const handleToggleComplete = async (id) => {
+    try {
+      await axios.patch(`${API_URL}/${id}`);
+      setTodos(
+        todos.map((todo) =>
+          todo._id === id ? { ...todo, completed: !todo.completed } : todo
+        )
+      );
+    } catch (error) {
+      console.error('TODOの更新中にエラーが発生しました:', error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('本当にこのTODOを削除しますか？')) {
+      try {
+        await axios.delete(`${API_URL}/${id}`);
+        setTodos(todos.filter((todo) => todo._id !== id));
+      } catch (error) {
+        console.error('TODOの削除中にエラーが発生しました:', error);
+      }
+    }
+  };
+
+  const handleEditTodo = async (id, newText) => {
+    try {
+      const response = await axios.put(`${API_URL}/${id}`, { text: newText });
+      const updatedTodo = response.data;
+      setTodos(
+        todos.map((todo) => (todo._id === id ? updatedTodo : todo))
+      );
+    } catch (error) {
+      console.error('TODOの編集中にエラーが発生しました:', error);
+    }
+  };
+
+  return (
+    &lt;div className="container mt-5" style={{ maxWidth: '600px' }}&gt;
+      &lt;h1 className="text-center mb-4"&gt;My TODO App&lt;/h1&gt;
+      &lt;TodoForm onAdd={handleAddTodo} /&gt;
+      &lt;TodoList todos={todos} onToggle={handleToggleComplete} onDelete={handleDelete} onEdit={handleEditTodo} /&gt;
+    &lt;/div&gt;
+  );
+}
+
+export default App;
+</code></pre>
+
+    <h3 class="file-path">client/src/TodoItem.jsx</h3>
+    <pre><code>import React, { useState } from 'react';
+
+function TodoItem({ todo, onToggle, onDelete, onEdit }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(todo.text);
+
+  const handleEdit = () => {
+    if (!isEditing) {
+      setIsEditing(true);
+    } else {
+      if (editText.trim()) {
+        onEdit(todo._id, editText);
+        setIsEditing(false);
+      }
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleEdit();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setEditText(todo.text);
+    }
+  };
+
+  return (
+    &lt;li className="list-group-item d-flex align-items-center gap-3"&gt;
+      &lt;input
+        type="checkbox"
+        className="form-check-input flex-shrink-0"
+        checked={todo.completed}
+        onChange={() => onToggle(todo._id)}
+      /&gt;
+      &lt;div className="flex-grow-1"&gt;
+        {isEditing ? (
+          &lt;input
+            type="text"
+            className="form-control form-control-sm"
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={handleEdit}
+            autoFocus
+          /&gt;
+        ) : (
+          &lt;div&gt;
+            &lt;span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}&gt;
+              {todo.text}
+            &lt;/span&gt;
+            &lt;div className="text-muted small mt-1"&gt;
+              {new Date(todo.createdAt).toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+              })}
+            &lt;/div&gt;
+          &lt;/div&gt;
+        )}
+      &lt;/div&gt;
+      &lt;div className="flex-shrink-0"&gt;
+        &lt;button onClick={handleEdit} className="btn btn-warning btn-sm me-2"&gt;
+          {isEditing ? '保存' : '編集'}
+        &lt;/button&gt;
+        &lt;button onClick={() => onDelete(todo._id)} className="btn btn-danger btn-sm"&gt;
+          削除
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/li&gt;
+  );
+}
+
+export default TodoItem;
+</code></pre>
+
+</body>
+
+</html>
