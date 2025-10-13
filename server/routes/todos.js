@@ -44,6 +44,23 @@ router.route('/:id')
     } catch (err) {
       res.status(400).json('Error: ' + err);
     }
+  })
+  // 特定のIDを持つTODOのテキストを更新する (PUT /todos/:id)
+  .put(async (req, res) => {
+    try {
+      const { text } = req.body;
+      if (!text) {
+        return res.status(400).json('Error: Text is required');
+      }
+      const todo = await Todo.findById(req.params.id);
+      if (!todo) return res.status(404).json('Error: Todo not found');
+
+      todo.text = text;
+      const updatedTodo = await todo.save();
+      res.json(updatedTodo);
+    } catch (err) {
+      res.status(400).json('Error: ' + err);
+    }
   });
 
 module.exports = router;

@@ -67,11 +67,26 @@ function App() {
     }
   };
 
+  const handleEditTodo = async (id, newText) => {
+    try {
+      // サーバーに更新をリクエスト
+      const response = await axios.put(`${API_URL}/${id}`, { text: newText });
+      const updatedTodo = response.data;
+
+      // 画面の状態を更新
+      setTodos(
+        todos.map((todo) => (todo._id === id ? updatedTodo : todo))
+      );
+    } catch (error) {
+      console.error('TODOの編集中にエラーが発生しました:', error);
+    }
+  };
+
   return (
     <div className="container mt-5" style={{ maxWidth: '600px' }}>
       <h1 className="text-center mb-4">My TODO App</h1>
       <TodoForm onAdd={handleAddTodo} />
-      <TodoList todos={todos} onToggle={handleToggleComplete} onDelete={handleDelete} />
+      <TodoList todos={todos} onToggle={handleToggleComplete} onDelete={handleDelete} onEdit={handleEditTodo} />
     </div>
   );
 }
