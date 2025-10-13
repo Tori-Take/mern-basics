@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios'; // axiosをインポート
 
-// APIサーバーのURLを定数として定義
-const API_URL = 'http://localhost:5000/todos';
+const API_URL = '/todos';
 
 function App() {
   // 1. フォームの入力値を管理するためのState
