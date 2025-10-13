@@ -48,9 +48,21 @@ function TodoItem({ todo, onToggle, onDelete, onEdit }) {
             autoFocus
           />
         ) : (
-          <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-            {todo.text}
-          </span>
+          <div>
+            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+              {todo.text}
+            </span>
+            <div className="text-muted small mt-1">
+              {/* 作成日時をフォーマットして表示 */}
+              {new Date(todo.createdAt).toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+              })}
+            </div>
+          </div>
         )}
       </div>
 
