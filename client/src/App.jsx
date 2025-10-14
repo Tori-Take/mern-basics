@@ -3,6 +3,7 @@ import axios from 'axios'; // axiosをインポート
 import TodoList from './TodoList';
 import TodoCreateModal from './TodoCreateModal';
 import TodoEditModal from './TodoEditModal';
+import TodoFilterSortModal from './TodoFilterSortModal';
 
 const API_URL = '/todos';
 
@@ -11,14 +12,27 @@ function App() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState(null); // 編集対象のTODOを保持
+  const [isCompletedListOpen, setIsCompletedListOpen] = useState(false); // 完了済みリストの開閉状態
+  const [isFilterSortModalOpen, setIsFilterSortModalOpen] = useState(false); // 絞り込みモーダルの開閉状態
+  // 絞り込みとソートの状態を管理
+  const [queryOptions, setQueryOptions] = useState({
+    sort: '-createdAt',
+    priority: '',
+    tags: '',
+    creator: '',
+    requester: '',
+  });
 
   useEffect(() => {
     document.title = 'My TODO App';
 
     // サーバーからTODOリストを取得する
     const fetchTodos = async () => {
+      // クエリパラメータを生成
+      const params = new URLSearchParams(queryOptions).toString();
       try {
-        const response = await axios.get(API_URL);
+        // APIリクエスト時にクエリパラメータを付与
+        const response = await axios.get(`${API_URL}?${params}`);
         setTodos(response.data); // 取得したデータでStateを更新
       } catch (error) {
         console.error('TODOリストの取得中にエラーが発生しました:', error);
@@ -26,7 +40,7 @@ function App() {
     };
 
     fetchTodos();
-  }, []); // 依存配列が空なので、初回の一度だけ実行
+  }, [queryOptions]); // queryOptionsが変更されたら再取得
 
   const handleAddTodo = async (todoData) => {
     try {
@@ -100,15 +114,48 @@ function App() {
     setEditingTodo(null);
   };
 
+  // 絞り込み・並び替えを適用する処理
+  const handleApplyFilterSort = (options) => {
+    setQueryOptions(options);
+    setIsFilterSortModalOpen(false);
+  };
+
+  // 1. todos配列を未完了と完了済みにフィルタリング
+  const incompleteTodos = todos.filter(todo => !todo.completed);
+  const completedTodos = todos.filter(todo => todo.completed);
+
   return (
     <div className="container mt-5" style={{ maxWidth: '600px' }}>
-      <h1 className="text-center mb-4">My TODO App</h1>
-      <div className="d-grid gap-2 mb-4">
+      <h1 className="text-center">My TODO App</h1>
+      <div className="d-flex justify-content-between my-4">
+        <button
+          className="btn btn-outline-secondary"
+          onClick={() => setIsFilterSortModalOpen(true)}
+        >
+          絞り込み・並び替え
+        </button>
         <button className="btn btn-primary" type="button" onClick={() => setIsCreateModalOpen(true)}>
           ＋ 新規TODOを追加
         </button>
       </div>
-      <TodoList todos={todos} onToggle={handleToggleComplete} onDelete={handleDelete} onEdit={handleOpenEditModal} />
+
+      {/* 2. 未完了のTODOリスト */}
+      <h5 className="mt-4">未完了のTODO</h5>
+      <TodoList todos={incompleteTodos} onToggle={handleToggleComplete} onDelete={handleDelete} onEdit={handleOpenEditModal} />
+
+      {/* 3. 完了済みのTODOリスト（アコーディオン） */}
+      <div className="mt-4">
+        <button
+          className="btn btn-secondary w-100"
+          type="button"
+          onClick={() => setIsCompletedListOpen(!isCompletedListOpen)}
+        >
+          完了済みのTODO ({completedTodos.length}件) {isCompletedListOpen ? '▲ 閉じる' : '▼ 開く'}
+        </button>
+        <div className={`collapse ${isCompletedListOpen ? 'show' : ''}`}>
+          <TodoList todos={completedTodos} onToggle={handleToggleComplete} onDelete={handleDelete} onEdit={handleOpenEditModal} />
+        </div>
+      </div>
 
       <TodoCreateModal
         show={isCreateModalOpen}
@@ -121,6 +168,13 @@ function App() {
         onClose={handleCloseEditModal}
         onSave={handleSaveEdit}
         todo={editingTodo}
+      />
+
+      <TodoFilterSortModal
+        show={isFilterSortModalOpen}
+        onClose={() => setIsFilterSortModalOpen(false)}
+        onApply={handleApplyFilterSort}
+        currentOptions={queryOptions}
       />
     </div>
   );

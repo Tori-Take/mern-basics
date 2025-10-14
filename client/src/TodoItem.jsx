@@ -13,13 +13,23 @@ function TodoItem({ todo, onToggle, onDelete, onEdit }) {
 
   return (
     <li className="list-group-item d-flex align-items-center gap-3">
-      {/* チェックボックス */}
-      <input
-        type="checkbox"
-        className="form-check-input flex-shrink-0"
-        checked={todo.completed}
-        onChange={() => onToggle(todo._id)}
-      />
+      {/* 完了状態に応じてチェックボックスかボタンを表示 */}
+      {todo.completed ? (
+        <button 
+          className="btn btn-sm btn-outline-secondary flex-shrink-0" 
+          onClick={() => onToggle(todo._id)}
+          title="未完了に戻す"
+        >
+          ↩
+        </button>
+      ) : (
+        <input
+          type="checkbox"
+          className="form-check-input flex-shrink-0"
+          checked={false}
+          onChange={() => onToggle(todo._id)}
+        />
+      )}
 
       {/* テキストまたは入力欄（スペースをすべて使う） */}
       <div className="flex-grow-1">

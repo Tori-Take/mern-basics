@@ -5,7 +5,22 @@ let Todo = require('../models/todo.model');
 router.route('/')
   .get(async (req, res) => {
     try {
-      const todos = await Todo.find();
+      // 1. クエリパラメータからソートとフィルタの条件を取得
+      const { sort, ...filters } = req.query;
+
+      // 2. フィルタ条件オブジェクトを構築
+      const queryFilters = {};
+      for (const key in filters) {
+        // 空のパラメータは無視する
+        if (filters[key]) {
+          queryFilters[key] = filters[key];
+        }
+      }
+
+      // 3. Mongooseでクエリを実行
+      const todos = await Todo.find(queryFilters)
+        .sort(sort || '-createdAt'); // デフォルトは作成日の降順
+
       res.json(todos);
     } catch (err) {
       res.status(400).json('Error: ' + err);
