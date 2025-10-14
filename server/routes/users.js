@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
 
 // @route   POST /api/users/register
@@ -46,6 +47,55 @@ router.post('/register', async (req, res) => {
       },
     });
 
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+// @route   POST /api/users/login
+// @desc    ユーザーを認証し、トークンを取得する
+// @access  Public
+router.post('/login', async (req, res) => {
+  try {
+    // 1. リクエストボディから情報を取得
+    const { username, password } = req.body;
+
+    // 2. 必須項目チェック
+    if (!username || !password) {
+      return res.status(400).json({ msg: 'ユーザー名とパスワードを入力してください。' });
+    }
+
+    // 3. ユーザーをユーザー名で検索
+    const user = await User.findOne({ username });
+    if (!user) {
+      // セキュリティのため、どちらが間違っているか特定させないメッセージを返す
+      return res.status(400).json({ msg: 'ユーザー名またはパスワードが無効です。' });
+    }
+
+    // 4. パスワードを比較
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'ユーザー名またはパスワードが無効です。' });
+    }
+
+    // 5. アカウントがアクティブかチェック
+    if (user.status !== 'active') {
+      return res.status(403).json({ msg: 'このアカウントは現在利用できません。' });
+    }
+
+    // 6. JWTペイロードを作成 (トークンに含める情報)
+    const payload = {
+      user: {
+        id: user.id,
+      },
+    };
+
+    // 7. JWTに署名してトークンを生成
+    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
+      if (err) throw err;
+      res.json({ token });
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');
