@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - 認証機能実装ロードマップ</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+        }
+
+        h3 {
+            font-size: 1.3em;
+            margin-top: 30px;
+            border-bottom-style: dashed;
+            border-bottom-width: 1px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+
+        .phase {
+            font-weight: bold;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-right: 10px;
+        }
+
+        .backend {
+            background-color: #457b9d;
+        }
+
+        .frontend {
+            background-color: #e63946;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - 認証機能実装ロードマップ</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>
+            現在のTODOアプリを、複数のユーザーが安全に利用できる本格的なWebサービスへと進化させるため、<strong>ユーザー認証機能</strong>を実装します。<br>
+            このドキュメントは、その実装に向けた詳細なステップを記した計画書です。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>認証機能実装への7ステップ</h2>
+
+        <h3><span class="phase backend">バックエンド</span>ステップ1: ユーザー情報の「金庫」を作る (ユーザーモデル)</h3>
+        <ul>
+            <li><strong>ライブラリ導入:</strong> パスワードを安全に暗号化（ハッシュ化）するため、<code>bcryptjs</code>をインストールします。</li>
+            <li><strong>モデル作成:</strong>
+                <code>user.model.js</code>を新規作成し、<code>email</code>とハッシュ化された<code>password</code>を保存するMongooseスキーマを定義します。
+            </li>
+        </ul>
+
+        <h3><span class="phase backend">バックエンド</span>ステップ2: 新規ユーザー登録の「受付窓口」を作る (登録API)</h3>
+        <ul>
+            <li><strong>ルート作成:</strong> ユーザー関連のAPIをまとめるため、<code>server/routes/users.js</code>を新規作成します。</li>
+            <li><strong>API実装:</strong>
+                <code>POST /api/users/register</code>エンドポイントを実装します。メールアドレスの重複チェックを行い、パスワードをハッシュ化してデータベースに保存します。</li>
+        </ul>
+
+        <h3><span class="phase backend">バックエンド</span>ステップ3: ログインの「本人確認」と「通行証」の発行 (ログインAPI & JWT)</h3>
+        <ul>
+            <li><strong>ライブラリ導入:</strong> ログイン成功の証となる「通行証」<strong>JSON Web Token
+                    (JWT)</strong>を発行するため、<code>jsonwebtoken</code>をインストールします。</li>
+            <li><strong>API実装:</strong>
+                <code>POST /api/users/login</code>エンドポイントを実装します。メールアドレスでユーザーを検索し、入力されたパスワードとDBのハッシュ値が一致するかを<code>bcryptjs</code>で検証します。
+            </li>
+            <li><strong>通行証の発行:</strong> 本人確認が成功したら、ユーザーIDを含むJWTを生成してクライアントに返します。</li>
+        </ul>
+
+        <h3><span class="phase backend">バックエンド</span>ステップ4: TODOとユーザーの「紐付け」と「警備員」の配置</h3>
+        <ul>
+            <li><strong>モデル更新:</strong> <code>todo.model.js</code>を修正し、各TODOに所有者を示す<code>user</code>フィールドを追加します。</li>
+            <li><strong>認証ミドルウェア作成:</strong> APIリクエストに有効なJWT（通行証）が含まれているかをチェックする「警備員」となるミドルウェアを作成します。</li>
+            <li><strong>APIの保護:</strong> TODOのCRUD操作を行う全てのAPIに、作成した認証ミドルウェアを配置します。</li>
+            <li><strong>APIロジック修正:</strong> TODOの取得は「ログイン中のユーザーが所有するものだけ」に限定し、TODOの作成時には自動で所有者IDを記録するように修正します。</li>
+        </ul>
+
+        <h3><span class="phase frontend">フロントエンド</span>ステップ5: 「玄関」と「受付」を作る (ルーティングとUI)</h3>
+        <ul>
+            <li><strong>ライブラリ導入:</strong> ページ遷移を実現するため、<code>react-router-dom</code>をインストールします。</li>
+            <li><strong>ページ作成:</strong> <code>LoginPage.jsx</code>と<code>RegisterPage.jsx</code>を新規作成し、それぞれにフォームを設置します。
+            </li>
+            <li><strong>ルーティング設定:</strong> <code>/login</code>, <code>/register</code>, <code>/</code>
+                といったURLに応じて、表示するコンポーネントを切り替える設定を行います。</li>
+        </ul>
+
+        <h3><span class="phase frontend">フロントエンド</span>ステップ6: ログイン状態の「記憶」 (グローバル状態管理)</h3>
+        <ul>
+            <li><strong>Context APIの利用:</strong>
+                Reactの<code>Context API</code>を使い、ログイン状態（ユーザー情報やJWT）をアプリケーション全体で共有できる仕組みを構築します。</li>
+            <li><strong>API連携:</strong> ログインページからAPIを呼び出し、成功時に返されたJWTをContextに保存します。</li>
+            <li><strong>認証済みリクエスト設定:</strong> <code>axios</code>を使い、TODO関連のAPIを呼び出す際に、リクエストヘッダーへ常にJWTを添付するように設定します。</li>
+        </ul>
+
+        <h3><span class="phase frontend">フロントエンド</span>ステップ7: 「会員専用エリア」を作る (保護ルート)</h3>
+        <ul>
+            <li><strong>保護ルート作成:</strong> ログインしていないユーザーがTODOリストページにアクセスしようとした場合、自動的にログインページへリダイレクトさせる特別なコンポーネントを作成します。
+            </li>
+            <li><strong>UIの動的変更:</strong> ログイン状態に応じて「ログアウト」ボタンを表示するなど、UIを出し分けます。</li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <h2>まとめ</h2>
+        <p>
+            これらのステップを通じて、アプリケーションはセキュリティとプライバシーを確保した、本格的なマルチユーザー対応サービスへと進化します。<br>
+            一つ一つのステップは挑戦的ですが、フルスタックエンジニアとして必須のスキルを習得する絶好の機会です。
+        </p>
+    </div>
+
+</body>
+
+</html>
+
+```
+
+準備ができましたら、この計画書のステップ1から一緒に始めていきましょう！
+
+<!--
+[PROMPT_SUGGESTION]ステップ1の「ユーザーモデル」とステップ2の「ユーザー登録API」を実装してください。[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]ステップ5の`react-router-dom`を導入して、ホームページとログインページの雛形を作成してください。[/PROMPT_SUGGESTION]
