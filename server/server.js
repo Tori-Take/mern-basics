@@ -16,9 +16,13 @@ app.use(express.json()); // JSON形式のリクエストボディを解析でき
 // MongoDBへの接続 (今はまだ接続文字列がありません)
 const uri = process.env.ATLAS_URI;
 // TODO APIエンドポイントのルーターを読み込む
-const todosRouter = require('./routes/todos');
+const todosRouter = require('./routes/todos'); // 既存
+const usersRouter = require('./routes/users'); // 新しく追加
+
 // '/todos' というパスにルーターを適用する
 app.use('/todos', todosRouter);
+// '/api/users' というパスにユーザー関連のルーターを適用する
+app.use('/api/users', usersRouter);
 
 // --- 本番環境用の設定 ---
 if (process.env.NODE_ENV === 'production') {
