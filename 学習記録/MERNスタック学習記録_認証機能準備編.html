@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - 高度なフィルタリングと認証機能への展望</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        .file-path {
+            font-weight: bold;
+            margin-top: 1em;
+            font-family: monospace;
+            color: #d9534f;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - 高度なフィルタリングと認証機能への展望</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>
+            個人用TODOアプリとして、ほぼ完璧と言える機能群を実装することに成功しました。特に、モーダルUIを活用した高度な絞り込み・並び替え機能は、アプリケーションの使い勝手を飛躍的に向上させました。<br>
+            ここからは、アプリケーションを「個人用」から「複数ユーザー対応」へと昇華させる、次の大きなステップである<strong>認証機能</strong>の実装を見据えていきます。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>今回の学習成果</h2>
+        <ul>
+            <li>
+                <strong>高度な絞り込み＆並び替えモーダルの実装:</strong>
+                <p>
+                    <code>TodoFilterSortModal.jsx</code>を新たに作成し、複数の条件を組み合わせてTODOを検索できる、非常に強力な機能を実装しました。
+                </p>
+            </li>
+            <li>
+                <strong>フリーワード検索機能 (部分一致):</strong>
+                <p>
+                    バックエンドでMongooseの<code>$regex</code>を使い、TODOの内容を部分一致・大文字小文字無視で検索できる機能を実装。これにより、ユーザーは目的のタスクを素早く見つけられるようになりました。
+                </p>
+                <pre><code class="language-javascript">// server/routes/todos.js
+if (key === 'text') {
+  queryFilters[key] = { $regex: filters[key], $options: 'i' };
+}</code></pre>
+            </li>
+            <li>
+                <strong>UI/UXの継続的な改善:</strong>
+                <ul>
+                    <li>完了済みタスクをアコーディオン形式で格納し、画面をスッキリさせました。</li>
+                    <li>完了済みタスクに「未完了に戻す」ボタンを設置し、操作の直感性を向上させました。</li>
+                </ul>
+            </li>
+            <li>
+                <strong>開発環境の近代化 (Viteへの移行):</strong>
+                <p>
+                    フロントエンドのビルドツールをCreate React AppからViteに移行。高速な開発サーバーにより、開発体験が大幅に向上しました。
+                </p>
+            </li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <h2>次回の学習予定: 認証機能の実装</h2>
+        <p>
+            現在のアプリケーションは、誰でもすべてのデータにアクセスできてしまいます。これを解決し、真のWebアプリケーションへと進化させるため、<strong>ユーザー認証機能</strong>を実装します。
+        </p>
+
+        <h3>なぜ認証機能が必要か？ (データのプライバシーと所有権)</h3>
+        <p>
+            認証機能を導入することで、「このTODOは、ユーザーAさんのものである」という<strong>データの所有権</strong>が生まれます。これにより、ユーザーは自分自身のデータだけを安全に管理できるようになり、アプリケーションは複数ユーザーが同時に利用できる「マルチテナント」サービスへと進化します。
+        </p>
+
+        <h3>実装する技術要素</h3>
+        <div class="grid">
+            <div>
+                <h4>バックエンド (Server)</h4>
+                <ul>
+                    <li><strong>ユーザーモデルの作成:</strong>
+                        <code>username</code>と<code>password</code>を持つ<code>User</code>スキーマを定義します。</li>
+                    <li><strong>パスワードのハッシュ化:</strong> セキュリティライブラリ<code>bcrypt</code>を使い、パスワードを安全な形式で保存します。</li>
+                    <li><strong>認証APIの作成:</strong>
+                        ユーザー登録(<code>/register</code>)とログイン(<code>/login</code>)のためのAPIエンドポイントを実装します。</li>
+                    <li>
+                        <strong>トークンベース認証 (JWT):</strong> ログイン成功時にJSON Web Token (JWT) を発行し、クライアントに渡します。
+                    </li>
+                    <li>
+                        <strong>APIの保護:</strong> TODO関連のAPIに「リクエストに有効なJWTが含まれているか」を検証するミドルウェアを追加し、不正なアクセスを防ぎます。
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h4>フロントエンド (Client)</h4>
+                <ul>
+                    <li><strong>ページルーティング:</strong> <code>react-router-dom</code>を導入し、ログインページや登録ページへの画面遷移を実装します。</li>
+                    <li><strong>認証ページの作成:</strong> ログインフォームと登録フォームを持つReactコンポーネントを作成します。</li>
+                    <li>
+                        <strong>グローバルな状態管理:</strong> Reactの<code>Context API</code>を使い、ログイン状態をアプリケーション全体で共有します。
+                    </li>
+                    <li>
+                        <strong>認証済みリクエスト:</strong> <code>axios</code>でAPIを呼び出す際に、リクエストヘッダーにJWTを付与します。
+                    </li>
+                    <li>
+                        <strong>保護ルート:</strong> ログインしていないユーザーがTODOリストにアクセスしようとした場合、自動的にログインページへリダイレクトさせます。
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <pre><code class="language-javascript">// server/models/todo.model.js の将来像
+const todoSchema = new Schema({
+  // ...既存のフィールド
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User', // Userモデルと関連付ける
+    required: true,
+  }
+}, { timestamps: true });</code></pre>
+        <p>
+            このTODOスキーマの変更が、すべての始まりです。各TODOが特定のユーザーに紐づくようになります。
+        </p>
+    </div>
+
+</body>
+
+</html>

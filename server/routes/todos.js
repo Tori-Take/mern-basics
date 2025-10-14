@@ -13,7 +13,12 @@ router.route('/')
       for (const key in filters) {
         // 空のパラメータは無視する
         if (filters[key]) {
-          queryFilters[key] = filters[key];
+          if (key === 'text') {
+            // 'text' フィールドは部分一致・大文字小文字を区別しない検索にする
+            queryFilters[key] = { $regex: filters[key], $options: 'i' };
+          } else {
+            queryFilters[key] = filters[key];
+          }
         }
       }
 

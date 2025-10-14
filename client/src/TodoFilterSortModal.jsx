@@ -21,7 +21,7 @@ function TodoFilterSortModal({ show, onClose, onApply, currentOptions }) {
   };
 
   const handleReset = () => {
-    const defaultOptions = { sort: '-createdAt', priority: '', tags: '', creator: '', requester: '' };
+    const defaultOptions = { sort: '-createdAt', priority: '', tags: '', creator: '', requester: '', text: '' };
     setOptions(defaultOptions);
     onApply(defaultOptions); // リセットも即時適用する
   };
@@ -56,6 +56,18 @@ function TodoFilterSortModal({ show, onClose, onApply, currentOptions }) {
               {/* 絞り込み */}
               <h6 className="mt-4">絞り込み条件</h6>
               <div className="mb-3">
+                <label htmlFor="filter-text" className="form-label">内容 (フリーワード)</label>
+                <input
+                  type="text"
+                  id="filter-text"
+                  name="text"
+                  className="form-control"
+                  value={options.text || ''}
+                  onChange={handleChange}
+                  placeholder="テキストで絞り込み"
+                />
+              </div>
+              <div className="mb-3">
                 <label htmlFor="filter-priority" className="form-label">優先度</label>
                 <select id="filter-priority" name="priority" className="form-select" value={options.priority} onChange={handleChange}>
                   <option value="">すべて</option>
@@ -71,7 +83,7 @@ function TodoFilterSortModal({ show, onClose, onApply, currentOptions }) {
                   id="filter-tags"
                   name="tags"
                   className="form-control"
-                  value={options.tags}
+                  value={options.tags || ''}
                   onChange={handleChange}
                   placeholder="タグ名で絞り込み"
                 />

@@ -21,6 +21,7 @@ function App() {
     tags: '',
     creator: '',
     requester: '',
+    text: '',
   });
 
   useEffect(() => {
