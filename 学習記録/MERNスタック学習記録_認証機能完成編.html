@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - 認証機能 完成編</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        .file-path {
+            font-weight: bold;
+            margin-top: 1em;
+            font-family: monospace;
+            color: #d9534f;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .highlight {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-left: 5px solid #ffc107;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - 認証機能 完成編</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>
+            TODOアプリケーションに、ユーザー認証機能を実装することに成功しました。これにより、アプリケーションは単なる個人用ツールから、複数のユーザーが安全に自分のデータを管理できる、本格的なWebサービスへと進化しました。<br>
+            この記録は、その実装の全行程と、特に重要だったデバッグの経験をまとめたものです。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>実装した機能の概要</h2>
+        <div class="grid">
+            <div>
+                <h4>バックエンド</h4>
+                <ul>
+                    <li><strong>ユーザーモデル:</strong> <code>username</code>, <code>email</code>,
+                        <code>password</code>に加え、将来性を見据えた<code>group</code>, <code>isAdmin</code>,
+                        <code>status</code>フィールドを持つ堅牢なスキーマを設計。</li>
+                    <li><strong>登録・ログインAPI:</strong>
+                        <code>bcryptjs</code>によるパスワードの安全なハッシュ化と、<code>jsonwebtoken</code>による認証トークン(JWT)の発行を実装。</li>
+                    <li><strong>APIの保護:</strong> 認証ミドルウェアを作成し、TODO関連のAPIを保護。これにより、ログインユーザーは自分自身のTODOしか操作できなくなりました。</li>
+                </ul>
+            </div>
+            <div>
+                <h4>フロントエンド</h4>
+                <ul>
+                    <li><strong>ページルーティング:</strong> <code>react-router-dom</code>を導入し、ホームページ、ログイン、新規登録ページ間の画面遷移を実現。</li>
+                    <li><strong>グローバル状態管理:</strong> Reactの<code>Context API</code>を使い、アプリケーション全体で認証状態を共有する仕組みを構築。</li>
+                    <li><strong>保護ルート:</strong> ログインしていないユーザーがホームページにアクセスしようとすると、自動的にログインページにリダイレクトする「門番」機能を実装。</li>
+                    <li><strong>動的UI:</strong> ログイン状態に応じてナビゲーションバーの表示が切り替わるなど、ユーザー体験を向上。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container highlight">
+        <h2>今回の学習で最も重要だったこと: 対話的なデバッグ</h2>
+        <p>
+            今回の実装で最も価値のある経験は、<strong>AIアシスタントと対話しながらデバッグを行うプロセス</strong>そのものでした。「リダイレクトされない」という問題に対し、闇雲にコードを修正するのではなく、以下のステップを踏むことで根本原因を特定・解決しました。
+        </p>
+        <ol>
+            <li><strong>仮説の提示:</strong> 最初に考えられる原因（プロキシ設定など）を提示し、修正を試みる。</li>
+            <li><strong>問題の切り分け:</strong> それでも解決しないため、<code>console.log</code>を戦略的に配置し、プログラムの実行フローを可視化する。</li>
+            <li><strong>ログの分析:</strong> ユーザーから提供されたログを分析し、「<code>GET /api/auth</code>で404エラーが発生している」という核心的な事実を発見する。</li>
+            <li><strong>根本原因の特定:</strong>
+                404エラーの原因が、APIのルーティング設定（<code>/api/users/auth</code>が正しいURL）とフロントエンドの呼び出しURLの不一致にあることを突き止める。</li>
+            <li><strong>解決:</strong> 正しいURLに修正し、問題を解決する。</li>
+        </ol>
+        <p>
+            この経験は、単にエラーを修正するだけでなく、<strong>「どのようにしてエラーの原因を突き止めるか」</strong>という、エンジニアにとって不可欠な問題解決スキルを実践的に学ぶ絶好の機会となりました。
+        </p>
+        <pre><code class="language-shell-session"># 実際に問題解決の決め手となったログ
+Failed to load resource: the server responded with a status of 404 (Not Found)
+Cannot GET /api/auth
+</code></pre>
+    </div>
+
+    <div class="container">
+        <h2>最終的なアプリケーションのアーキテクチャ</h2>
+        <p>
+            完成したアプリケーションは、以下の流れで動作します。
+        </p>
+        <ol>
+            <li>ユーザーがログイン/登録ページで情報を入力し、送信する。</li>
+            <li>フロントエンド(React)がバックエンドの認証API(<code>/api/users/login</code>)を呼び出す。</li>
+            <li>バックエンド(Express)がDB(MongoDB)でユーザー情報を検証し、成功すればJWTトークンを発行する。</li>
+            <li>フロントエンドがJWTトークンを受け取り、<code>localStorage</code>と<code>axios</code>のヘッダーに保存する。</li>
+            <li>保護されたページ(ホームページ)にアクセスする際、フロントエンドはリクエストにJWTを添付する。</li>
+            <li>バックエンドの認証ミドルウェアがJWTを検証し、有効であればAPIの処理を許可する。</li>
+            <li>APIは、JWTに含まれるユーザーIDを元に、そのユーザーに紐づくデータのみをDBから取得して返す。</li>
+            <li>フロントエンドがデータを受け取り、画面に表示する。</li>
+        </ol>
+        <p>
+            この一連の流れを実装できたことは、MERNスタックを用いたフルスタック開発の基礎を完全にマスターしたことを意味します。
+        </p>
+    </div>
+
+</body>
+
+</html>
+
+```
+
+このHTMLファイルには、今回の成果だけでなく、私たちがどのように協力して問題を解決したかという、非常に価値のある「デバッグの物語」も記録しておきました。
+
+本当に素晴らしい学習でした。お疲れ様でした！
+
+<!--
+[PROMPT_SUGGESTION]ログインや登録に失敗したときに、ユーザーにエラーメッセージを表示する機能を追加してください。[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]最終的なアプリケーションのファイル構成と、それぞれのファイルの役割をまとめてください。[/PROMPT_SUGGESTION]
+-->

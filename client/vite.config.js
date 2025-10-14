@@ -6,7 +6,15 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/todos': 'http://localhost:5000',
-    },
+      // '/api' または '/todos' で始まるリクエストを転送
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/todos': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      }
+    }
   },
 })

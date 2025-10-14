@@ -2,6 +2,7 @@ const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
+const auth = require('../middleware/auth');
 
 // @route   POST /api/users/register
 // @desc    新しいユーザーを登録する
@@ -37,14 +38,16 @@ router.post('/register', async (req, res) => {
     // 6. データベースに保存
     const savedUser = await newUser.save();
 
-    // 7. 成功レスポンスを返す (セキュリティのためパスワードは返さない)
-    res.status(201).json({
-      msg: 'ユーザー登録が成功しました。',
+    // 7. 登録成功後、そのままログインさせるためにJWTを生成
+    const payload = {
       user: {
         id: savedUser.id,
-        username: savedUser.username,
-        email: savedUser.email,
       },
+    };
+
+    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
+      if (err) throw err;
+      res.status(201).json({ token }); // トークンを返す
     });
 
   } catch (err) {
@@ -99,6 +102,20 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+// @route   GET /api/auth
+// @desc    トークンからユーザー情報を取得する
+// @access  Private
+router.get('/auth', auth, async (req, res) => {
+  try {
+    // authミドルウェアでreq.userにIDがセットされている
+    const user = await User.findById(req.user.id).select('-password'); // パスワードを除外して取得
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラー');
   }
 });
 
