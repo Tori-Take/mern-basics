@@ -47,6 +47,12 @@ const todoSchema = new Schema({
     type: String,
     default: '未設定',
   },
+  // このTODOを所有するユーザーのID
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User', // Userモデルと関連付ける
+    required: true,
+  },
 }, {
   timestamps: true, // 作成日時(createdAt)と更新日時(updatedAt)を自動で追加
 });

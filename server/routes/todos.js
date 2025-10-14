@@ -1,9 +1,12 @@
 const router = require('express').Router();
 let Todo = require('../models/todo.model');
+const auth = require('../middleware/auth'); // 認証ミドルウェアをインポート
 
 // ルートURL ('/todos/') へのGETリクエストを処理します
-router.route('/')
-  .get(async (req, res) => {
+// 全てのルートに認証ミドルウェアを適用
+router.use(auth);
+
+router.get('/', async (req, res) => {
     try {
       // 1. クエリパラメータからソートとフィルタの条件を取得
       const { sort, ...filters } = req.query;
@@ -22,16 +25,21 @@ router.route('/')
         }
       }
 
+      // ログインしているユーザーのIDを検索条件に追加
+      queryFilters.user = req.user.id;
+
       // 3. Mongooseでクエリを実行
       const todos = await Todo.find(queryFilters)
         .sort(sort || '-createdAt'); // デフォルトは作成日の降順
 
       res.json(todos);
     } catch (err) {
-      res.status(400).json('Error: ' + err);
+      console.error(err.message);
+      res.status(500).send('サーバーエラー');
     }
-  })
-  .post(async (req, res) => {
+  });
+
+router.post('/', async (req, res) => {
     try {
       const {
         text,
@@ -43,18 +51,18 @@ router.route('/')
         requester,
       } = req.body;
 
-      const newTodo = new Todo({ text, priority, dueDate, scheduledDate, tags, creator, requester });
+      // 新しいTODOに、ログインしているユーザーのIDを紐付ける
+      const newTodo = new Todo({ text, priority, dueDate, scheduledDate, tags, creator, requester, user: req.user.id });
       const savedTodo = await newTodo.save();
       res.status(201).json(savedTodo);
     } catch (err) {
-      res.status(400).json('Error: ' + err);
+      console.error(err.message);
+      res.status(500).send('サーバーエラー');
     }
   });
 
 // 特定のIDを持つTODOに対する処理
-router.route('/:id')
-  // 特定のIDを持つTODOを更新する (PATCH /todos/:id)
-  .patch(async (req, res) => {
+router.patch('/:id', async (req, res) => {
     try {
       const todo = await Todo.findById(req.params.id);
       if (!todo) return res.status(404).json('Error: Todo not found');
@@ -63,20 +71,30 @@ router.route('/:id')
       const updatedTodo = await todo.save();
       res.json(updatedTodo);
     } catch (err) {
-      res.status(400).json('Error: ' + err);
+      console.error(err.message);
+      res.status(500).send('サーバーエラー');
     }
-  })
-  // 特定のIDを持つTODOを削除する (DELETE /todos/:id)
-  .delete(async (req, res) => {
+  });
+
+router.delete('/:id', async (req, res) => {
     try {
-      await Todo.findByIdAndDelete(req.params.id);
+      const todo = await Todo.findById(req.params.id);
+      if (!todo) return res.status(404).json({ msg: 'TODOが見つかりません。' });
+
+      // ログインユーザーがTODOの所有者か確認
+      if (todo.user.toString() !== req.user.id) {
+        return res.status(401).json({ msg: '権限がありません。' });
+      }
+
+      await todo.deleteOne();
       res.json('Todo deleted.');
     } catch (err) {
-      res.status(400).json('Error: ' + err);
+      console.error(err.message);
+      res.status(500).send('サーバーエラー');
     }
-  })
-  // 特定のIDを持つTODOのテキストを更新する (PUT /todos/:id)
-  .put(async (req, res) => {
+  });
+
+router.put('/:id', async (req, res) => {
     try {
       const todo = await Todo.findById(req.params.id);
       if (!todo) return res.status(404).json('Error: Todo not found');
@@ -93,7 +111,8 @@ router.route('/:id')
       const updatedTodo = await todo.save();
       res.json(updatedTodo);
     } catch (err) {
-      res.status(400).json('Error: ' + err);
+      console.error(err.message);
+      res.status(500).send('サーバーエラー');
     }
   });
 
