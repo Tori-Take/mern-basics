@@ -67,6 +67,7 @@ export function AuthProvider({ children }) {
       await loadUser();
     } catch (err) {
       console.error('【Auth】C. register: 登録に失敗しました。', err.response ? err.response.data : err.message);
+      throw err; // エラーを呼び出し元に再スローする
     }
   };
 
@@ -84,6 +85,7 @@ export function AuthProvider({ children }) {
       await loadUser();
     } catch (err) {
       console.error('【Auth】C. login: ログインに失敗しました。', err.response ? err.response.data : err.message);
+      throw err; // エラーを呼び出し元に再スローする
     }
   };
 

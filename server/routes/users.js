@@ -14,13 +14,19 @@ router.post('/register', async (req, res) => {
 
     // 2. 必須項目が入力されているか簡易チェック
     if (!username || !email || !password) {
-      return res.status(400).json({ msg: 'ユーザー名、メールアドレス、パスワードは必須です。' });
+      return res.status(400).json({ message: 'ユーザー名、メールアドレス、パスワードは必須です。' });
     }
 
-    // 3. ユーザー名またはメールアドレスが既に存在するかチェック
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) {
-      return res.status(400).json({ msg: 'そのユーザー名またはメールアドレスは既に使用されています。' });
+    // 3. メールアドレスが既に存在するかチェック
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ message: 'このメールアドレスは既に使用されています。' });
+    }
+
+    // 4. ユーザー名が既に存在するかチェック
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(400).json({ message: 'このユーザー名は既に使用されています。' });
     }
 
     // 4. パスワードをハッシュ化（暗号化）
@@ -66,25 +72,25 @@ router.post('/login', async (req, res) => {
 
     // 2. 必須項目チェック
     if (!username || !password) {
-      return res.status(400).json({ msg: 'ユーザー名とパスワードを入力してください。' });
+      return res.status(400).json({ message: 'ユーザー名とパスワードを入力してください。' });
     }
 
     // 3. ユーザーをユーザー名で検索
     const user = await User.findOne({ username });
     if (!user) {
       // セキュリティのため、どちらが間違っているか特定させないメッセージを返す
-      return res.status(400).json({ msg: 'ユーザー名またはパスワードが無効です。' });
+      return res.status(400).json({ message: 'ユーザー名またはパスワードが無効です。' });
     }
 
     // 4. パスワードを比較
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ msg: 'ユーザー名またはパスワードが無効です。' });
+      return res.status(400).json({ message: 'ユーザー名またはパスワードが無効です。' });
     }
 
     // 5. アカウントがアクティブかチェック
     if (user.status !== 'active') {
-      return res.status(403).json({ msg: 'このアカウントは現在利用できません。' });
+      return res.status(403).json({ message: 'このアカウントは現在利用できません。' });
     }
 
     // 6. JWTペイロードを作成 (トークンに含める情報)

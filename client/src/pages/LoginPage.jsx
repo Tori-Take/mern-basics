@@ -7,15 +7,26 @@ function LoginPage() {
     username: '',
     password: '',
   });
+  const [error, setError] = useState('');
   const { login, isAuthenticated } = useAuth();
 
   const { username, password } = formData;
 
-  const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const onChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) {
+      setError(''); // 入力中はエラーメッセージをクリア
+    }
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    await login(username, password);
+    setError(''); // 送信時に一旦エラーをクリア
+    try {
+      await login(username, password);
+    } catch (err) {
+      setError(err.response?.data?.message || 'ログイン中に不明なエラーが発生しました。');
+    }
   };
 
   // 既にログインしている場合はホームページにリダイレクト
@@ -28,6 +39,12 @@ function LoginPage() {
       <div className="col-md-6">
         <h1 className="text-center mb-4">ログイン</h1>
         <form onSubmit={onSubmit}>
+          {/* エラーメッセージ表示エリア */}
+          {error && (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          )}
           <div className="mb-3">
             <label htmlFor="username">ユーザー名</label>
             <input type="text" id="username" className="form-control" name="username" value={username} onChange={onChange} required />

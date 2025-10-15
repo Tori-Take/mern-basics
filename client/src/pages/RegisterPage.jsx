@@ -9,18 +9,31 @@ function RegisterPage() {
     password: '',
     password2: '',
   });
+  const [error, setError] = useState(''); // エラーメッセージ用のState
   const { register, isAuthenticated } = useAuth();
 
   const { username, email, password, password2 } = formData;
 
-  const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const onChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) {
+      setError(''); // 入力中はエラーメッセージをクリア
+    }
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setError(''); // 送信時に一旦エラーをクリア
+
     if (password !== password2) {
-      alert('パスワードが一致しません。');
+      setError('パスワードが一致しません。');
     } else {
-      await register(username, email, password);
+      try {
+        await register(username, email, password);
+        // 登録成功後、AuthContextがリダイレクトを処理する
+      } catch (err) {
+        setError(err.response?.data?.message || '登録中に不明なエラーが発生しました。');
+      }
     }
   };
 
@@ -34,6 +47,12 @@ function RegisterPage() {
       <div className="col-md-6">
         <h1 className="text-center mb-4">新規登録</h1>
         <form onSubmit={onSubmit}>
+          {/* エラーメッセージ表示エリア */}
+          {error && (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          )}
           <div className="mb-3">
             <label htmlFor="username">ユーザー名</label>
             <input type="text" id="username" className="form-control" name="username" value={username} onChange={onChange} required />

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - エラーハンドリング編</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        .phase {
+            font-weight: bold;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-right: 10px;
+        }
+
+        .backend {
+            background-color: #457b9d;
+        }
+
+        .frontend {
+            background-color: #e63946;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - エラーハンドリング編</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>
+            認証機能の実装に成功し、アプリケーションは本格的なWebサービスへと進化しました。しかし、現状ではログインや新規登録に失敗した際に、ユーザーに何が起きたのかが伝わりません。<br>
+            今回は、アプリケーションの使いやすさ（ユーザビリティ）を向上させるため、<strong>ユーザーに優しいエラーハンドリング機能</strong>を実装します。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>実装計画</h2>
+        <p>
+            この機能は、バックエンドとフロントエンドの連携によって実現します。
+        </p>
+
+        <h3><span class="phase backend">バックエンド</span>ステップ1: 親切なエラーレスポンスの実装</h3>
+        <ul>
+            <li><strong>目的:</strong> APIがエラーを返す際に、画一的なエラーコードだけでなく、具体的な原因を示すメッセージを添えるようにします。</li>
+            <li><strong>対象ファイル:</strong> <code>server/routes/users.js</code></li>
+            <li><strong>修正箇所:</strong>
+                <ul>
+                    <li><strong>登録API (<code>/register</code>):</strong>
+                        メールアドレスが重複していた場合に、<code>res.status(400).json({ message: 'このメールアドレスは既に使用されています。' })</code>
+                        のように、メッセージを含んだJSONを返すように修正します。</li>
+                    <li><strong>ログインAPI (<code>/login</code>):</strong> ユーザーが見つからない場合や、パスワードが不一致の場合に、それぞれ
+                        <code>res.status(400).json({ message: 'メールアドレスまたはパスワードが正しくありません。' })</code> のようなレスポンスを返すようにします。
+                    </li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3><span class="phase frontend">フロントエンド</span>ステップ2: エラーメッセージの表示</h3>
+        <ul>
+            <li><strong>目的:</strong> バックエンドから受け取ったエラーメッセージを、ユーザーが見える形で画面に表示します。</li>
+            <li><strong>対象ファイル:</strong> <code>client/src/pages/RegisterPage.jsx</code>,
+                <code>client/src/pages/LoginPage.jsx</code></li>
+            <li><strong>実装内容:</strong>
+                <ol>
+                    <li>エラーメッセージを管理するためのState (<code>const [error, setError] = useState('');</code>) を追加します。</li>
+                    <li>APIを呼び出す処理を<code>try...catch</code>ブロックで囲みます。</li>
+                    <li><code>catch</code>節で、サーバーからのエラーレスポンス (<code>err.response.data.message</code>)
+                        を取得し、<code>setError</code>を使ってStateを更新します。</li>
+                    <li>フォームの下あたりに、<code>{error && <p className="text-danger">{error}</p>}</code>
+                        のように、エラーメッセージがStateに存在する場合のみ表示するJSXを追加します。</li>
+                </ol>
+            </li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <h2>まとめ</h2>
+        <p>
+            この実装を通じて、バックエンドとフロントエンドがどのように連携して、堅牢でユーザーフレンドリーなアプリケーションを構築するのかを学びます。<br>
+            単に機能が動くだけでなく、「使う人のこと」を考えた実装ができるようになるための重要な一歩です。
+        </p>
+    </div>
+
+</body>
+
+</html>
