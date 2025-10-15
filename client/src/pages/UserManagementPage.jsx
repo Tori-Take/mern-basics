@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 function UserManagementPage() {
   const [users, setUsers] = useState([]);
@@ -36,6 +37,7 @@ function UserManagementPage() {
               <th>ステータス</th>
               <th>管理者</th>
               <th>登録日</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -46,6 +48,11 @@ function UserManagementPage() {
                 <td>{user.status}</td>
                 <td>{user.isAdmin ? 'はい' : 'いいえ'}</td>
                 <td>{new Date(user.createdAt).toLocaleDateString('ja-JP')}</td>
+                <td>
+                  <Link to={`/admin/users/${user._id}`} className="btn btn-sm btn-info">
+                    <i className="bi bi-pencil-square"></i> 編集
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -140,6 +140,27 @@ router.get('/', [auth, admin], async (req, res) => {
   }
 });
 
+// @route   GET /api/users/:id
+// @desc    特定のユーザー情報を取得する (管理者のみ)
+// @access  Private/Admin
+router.get('/:id', [auth, admin], async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
+    }
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
 // @route   PUT /api/users/:id
 // @desc    ユーザー情報を更新する (管理者のみ)
 // @access  Private/Admin
