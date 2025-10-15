@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - 管理者機能実装編</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        .phase {
+            font-weight: bold;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-right: 10px;
+        }
+
+        .backend {
+            background-color: #457b9d;
+        }
+
+        .frontend {
+            background-color: #e63946;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - 管理者機能実装編</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>
+            認証機能とエラーハンドリングを実装し、アプリケーションの基盤が整いました。次のステップとして、アプリケーションの運用に不可欠な<strong>管理者機能</strong>を実装します。<br>
+            管理者権限を持つユーザーのみがアクセスできる専用ダッシュボードを作成し、そこから<strong>ユーザー管理</strong>を行えるようにすることを目指します。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>実装計画（ロードマップ）</h2>
+
+        <h3><span class="phase backend">バックエンド</span>ステップ1: 管理者専用APIの構築</h3>
+        <ul>
+            <li><strong>目的:</strong> 管理者のみが実行できる、安全なAPIエンドポイントを用意します。</li>
+            <li><strong>タスク:</strong>
+                <ol>
+                    <li><strong>管理者認証ミドルウェアの作成:</strong> <code>server/middleware/admin.js</code>
+                        を作成。リクエストを送信したユーザーが管理者(<code>isAdmin: true</code>)であるかを確認する「警備員」を配置します。</li>
+                    <li><strong>ユーザー一覧取得APIの作成:</strong> <code>GET /api/users</code>
+                        を実装し、全ユーザーのリストを返却するようにします。このAPIは、作成した管理者認証ミドルウェアで保護します。</li>
+                    <li><strong>ユーザー情報更新APIの作成:</strong> <code>PUT /api/users/:id</code>
+                        を実装し、特定のユーザーのステータス(<code>active</code>/<code>inactive</code>)や管理者権限(<code>isAdmin</code>)を変更できるようにします。このAPIも同様に保護します。
+                    </li>
+                </ol>
+            </li>
+        </ul>
+
+        <h3><span class="phase frontend">フロントエンド</span>ステップ2: 管理者用UIの骨格作り</h3>
+        <ul>
+            <li><strong>目的:</strong> 管理者だけが見ることができる専用ページと、そこへ至る動線を用意します。</li>
+            <li><strong>タスク:</strong>
+                <ol>
+                    <li><strong>管理者ダッシュボードページの作成:</strong> <code>client/src/pages/AdminDashboardPage.jsx</code>
+                        を作成します。まずは簡単な見出しを表示するだけの雛形から始めます。</li>
+                    <li><strong>管理者用保護ルートの作成:</strong> <code>client/src/components/AdminRoute.jsx</code>
+                        を作成。ログイン済みかつ管理者であるユーザーのみが子コンポーネント（ダッシュボードなど）にアクセスできる「門番」を設置します。</li>
+                    <li><strong>ルーティング設定の更新:</strong> <code>App.jsx</code> で、<code>/admin/dashboard</code>
+                        のようなパスに、作成した管理者用保護ルートを適用します。</li>
+                </ol>
+            </li>
+        </ul>
+
+        <h3><span class="phase frontend">フロントエンド</span>ステップ3: ダッシュボード機能の実装と連携</h3>
+        <ul>
+            <li><strong>目的:</strong> バックエンドとフロントエンドを連携させ、実際に機能する管理者ダッシュボードを完成させます。</li>
+            <li><strong>タスク:</strong>
+                <ol>
+                    <li><strong>Navbarの動的変更:</strong> <code>Navbar.jsx</code>
+                        を修正し、ログインユーザーが管理者であれば「管理者ダッシュボード」へのリンクを表示するようにします。</li>
+                    <li><strong>ユーザー一覧の表示:</strong> <code>AdminDashboardPage.jsx</code>
+                        で、ステップ1で作成したAPIを呼び出し、取得したユーザーデータをテーブル形式で表示します。</li>
+                    <li><strong>ユーザー管理機能の実装:</strong>
+                        テーブル内の各ユーザーに対して、ステータスを変更するボタンや管理者権限を切り替えるスイッチを設置し、クリックするとユーザー情報更新APIが呼び出されるように実装します。</li>
+                </ol>
+            </li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

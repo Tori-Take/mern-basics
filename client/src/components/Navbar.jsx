@@ -12,9 +12,15 @@ function Navbar() {
   };
 
   const authLinks = (
-    <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
+    <ul className="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+      {/* 管理者ユーザーの場合のみダッシュボードへのリンクを表示 */}
+      {user && user.isAdmin && (
+        <li className="nav-item">
+          <Link to="/admin/dashboard" className="nav-link">管理者ダッシュボード</Link>
+        </li>
+      )}
       <li className="nav-item">
-        <span className="navbar-text me-3">
+        <span className="navbar-text mx-3">
           ようこそ, {user ? user.username : 'ゲスト'}さん
         </span>
       </li>

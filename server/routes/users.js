@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
 const auth = require('../middleware/auth');
+const admin = require('../middleware/admin');
 
 // @route   POST /api/users/register
 // @desc    新しいユーザーを登録する
@@ -122,6 +123,48 @@ router.get('/auth', auth, async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラー');
+  }
+});
+
+// @route   GET /api/users
+// @desc    全ユーザーのリストを取得する (管理者のみ)
+// @access  Private/Admin
+router.get('/', [auth, admin], async (req, res) => {
+  try {
+    // パスワードを除外し、作成日が新しい順にソートして全ユーザーを取得
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+// @route   PUT /api/users/:id
+// @desc    ユーザー情報を更新する (管理者のみ)
+// @access  Private/Admin
+router.put('/:id', [auth, admin], async (req, res) => {
+  try {
+    const { status, isAdmin } = req.body;
+
+    // 更新対象のユーザーを検索
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
+    }
+
+    // リクエストボディに値があれば更新する
+    if (status) user.status = status;
+    // isAdminはbooleanなので、undefinedでないことを確認
+    if (typeof isAdmin === 'boolean') user.isAdmin = isAdmin;
+
+    const updatedUser = await user.save();
+    res.json(updatedUser.toObject({ transform: (doc, ret) => { delete ret.password; return ret; } }));
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
   }
 });
 

@@ -61,9 +61,13 @@ export function AuthProvider({ children }) {
     try {
       const res = await axios.post('/api/users/register', body, config);
       console.log('【Auth】B. register: トークンの取得に成功しました。', res.data.token);
-      // トークンをセットし、axiosのヘッダーも更新
-      axios.defaults.headers.common['x-auth-token'] = res.data.token;
-      // ユーザー情報を即時読み込み
+      const { token } = res.data;
+      // 新しいトークンをlocalStorageとaxiosヘッダーに即時セット
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['x-auth-token'] = token;
+      // stateのtokenも更新
+      setAuthState(prev => ({ ...prev, token }));
+      // ユーザー情報を読み込み、完了するまで待つ
       await loadUser();
     } catch (err) {
       console.error('【Auth】C. register: 登録に失敗しました。', err.response ? err.response.data : err.message);
@@ -79,9 +83,13 @@ export function AuthProvider({ children }) {
     try {
       const res = await axios.post('/api/users/login', body, config);
       console.log('【Auth】B. login: トークンの取得に成功しました。', res.data.token);
-      // トークンをセットし、axiosのヘッダーも更新
-      axios.defaults.headers.common['x-auth-token'] = res.data.token;
-      // ユーザー情報を即時読み込み
+      const { token } = res.data;
+      // 新しいトークンをlocalStorageとaxiosヘッダーに即時セット
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['x-auth-token'] = token;
+      // stateのtokenも更新
+      setAuthState(prev => ({ ...prev, token }));
+      // ユーザー情報を読み込み、完了するまで待つ
       await loadUser();
     } catch (err) {
       console.error('【Auth】C. login: ログインに失敗しました。', err.response ? err.response.data : err.message);
