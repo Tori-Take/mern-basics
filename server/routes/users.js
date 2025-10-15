@@ -11,7 +11,7 @@ const admin = require('../middleware/admin');
 router.post('/register', async (req, res) => {
   try {
     // 1. リクエストボディからユーザー情報を取得
-    const { username, email, password, group } = req.body;
+    const { username, email, password } = req.body;
 
     // 2. 必須項目が入力されているか簡易チェック
     if (!username || !email || !password) {
@@ -39,7 +39,7 @@ router.post('/register', async (req, res) => {
       username,
       email,
       password: hashedPassword, // ハッシュ化したパスワードを保存
-      group: group || 'default', // groupが指定されていなければモデルのデフォルト値を使う
+      // rolesはモデルのデフォルト値['user']が自動的に設定される
     });
 
     // 6. データベースに保存
@@ -174,7 +174,7 @@ router.get('/:id', [auth, admin], async (req, res) => {
 // @access  Private/Admin
 router.put('/:id', [auth, admin], async (req, res) => {
   try {
-    const { username, email, status, isAdmin } = req.body;
+    const { username, email, status, isAdmin, roles } = req.body;
 
     // 更新対象のユーザーを検索
     const user = await User.findById(req.params.id);
@@ -205,6 +205,7 @@ router.put('/:id', [auth, admin], async (req, res) => {
     if (status) user.status = status;
     // isAdminはbooleanなので、undefinedでないことを確認
     if (typeof isAdmin === 'boolean') user.isAdmin = isAdmin;
+    if (roles) user.roles = roles; // rolesを更新
 
     const updatedUser = await user.save();
     res.json(updatedUser);
@@ -220,7 +221,7 @@ router.put('/:id', [auth, admin], async (req, res) => {
 // @access  Private/Admin
 router.post('/', [auth, admin], async (req, res) => {
   try {
-    const { username, email, password, status, isAdmin } = req.body;
+    const { username, email, password, status, isAdmin, roles } = req.body;
 
     // 必須項目チェック
     if (!username || !email || !password) {
@@ -243,6 +244,7 @@ router.post('/', [auth, admin], async (req, res) => {
       password: hashedPassword,
       status: status || 'active',
       isAdmin: isAdmin || false,
+      roles: roles || ['user'], // rolesが指定されていなければデフォルトを設定
     });
 
     const savedUser = await newUser.save();

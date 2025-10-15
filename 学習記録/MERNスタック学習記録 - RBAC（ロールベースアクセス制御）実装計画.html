@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - RBAC実装計画</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        .phase {
+            font-weight: bold;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-right: 10px;
+        }
+
+        .backend {
+            background-color: #457b9d;
+        }
+
+        .frontend {
+            background-color: #e63946;
+        }
+
+        .highlight {
+            background-color: #f1faee;
+            border-left: 4px solid #457b9d;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - RBAC実装計画</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>
+            現在の「一般ユーザー」と「管理者」という二元的な権限管理から、より柔軟で強力な<strong>ロールベースのアクセス制御（Role-Based Access Control /
+                RBAC）</strong>へとシステムを進化させます。<br>
+            これにより、「部署」や「役職」といった様々な属性に応じて、ユーザーが利用できる機能を動的に制御できるようになります。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>RBACの概念</h2>
+        <div class="highlight">
+            <h4>💡 RBACとは？</h4>
+            <p>
+                ユーザーに直接権限（パーミッション）を与えるのではなく、「ロール（役割）」を与え、そのロールに対して権限を紐付ける考え方です。
+                例えば、「営業部」というロールを作成し、そのロールに「顧客管理アプリへのアクセス権」を付与します。
+                新しい営業担当者が入社したら、そのユーザーに「営業部」ロールを与えるだけで、必要な権限が一度に付与されます。
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>実装計画</h2>
+
+        <h3><span class="phase backend">ステップ1</span>バックエンド: データモデルの進化</h3>
+        <ul>
+            <li><strong>モデル更新:</strong>
+                <code>user.model.js</code>の<code>group: String</code>フィールドを、複数の役割を保持できる<code>roles: [String]</code>という文字列の配列に変更します。
+            </li>
+            <li><strong>デフォルト値:</strong> 新規ユーザーには、デフォルトで<code>['user']</code>という基本的なロールが付与されるように設定します。</li>
+        </ul>
+
+        <h3><span class="phase backend">ステップ2</span>バックエンド: 柔軟な「認可」ミドルウェアの作成</h3>
+        <ul>
+            <li><strong>ミドルウェア新規作成:</strong> <code>server/middleware/authorize.js</code>を作成します。</li>
+            <li><strong>機能:</strong> このミドルウェアは、許可するロールの配列を引数に取り、リクエストしてきたユーザーがそのいずれかのロールを持っているかを検証します。
+                <br>例: <code>authorize(['editor', 'admin'])</code>と指定されたAPIは、「editor」または「admin」ロールを持つユーザーしかアクセスできなくなります。
+            </li>
+        </ul>
+
+        <h3><span class="phase frontend">ステップ3</span>フロントエンド: 管理画面の機能拡張</h3>
+        <ul>
+            <li><strong>UI更新:</strong>
+                ユーザー編集ページ(<code>UserEditPage.jsx</code>)と作成ページ(<code>UserCreatePage.jsx</code>)を修正します。</li>
+            <li><strong>実装:</strong> ユーザーに複数のロールを割り当てられるように、UIをチェックボックスや複数選択可能なセレクトボックスなどに変更します。</li>
+        </ul>
+
+        <h3><span class="phase frontend">ステップ4</span>フロントエンド: ダッシュボードの動的表示</h3>
+        <ul>
+            <li><strong>ダッシュボード改修:</strong> <code>UserDashboardPage.jsx</code>を修正します。</li>
+            <li><strong>実装:</strong>
+                <code>AuthContext</code>からログインユーザーの<code>roles</code>配列を取得し、その内容に応じて表示するアプリケーションのカードを動的に切り替えます。
+                <br>例: <code>user.roles.includes('todo_app_user')</code>が<code>true</code>の場合のみ、TODOアプリのカードを表示する。
+            </li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

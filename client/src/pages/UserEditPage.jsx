@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { AVAILABLE_ROLES } from '../constants/roles';
 
 function UserEditPage() {
   // 1. URLからユーザーIDを取得
@@ -13,6 +14,7 @@ function UserEditPage() {
     email: '',
     status: 'active',
     isAdmin: false,
+    roles: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,8 +25,8 @@ function UserEditPage() {
     const fetchUser = async () => {
       try {
         const res = await axios.get(`/api/users/${id}`);
-        const { username, email, status, isAdmin } = res.data;
-        setFormData({ username, email, status, isAdmin });
+        const { username, email, status, isAdmin, roles } = res.data;
+        setFormData({ username, email, status, isAdmin, roles: roles || [] });
       } catch (err) {
         setError(err.response?.data?.message || 'ユーザー情報の取得に失敗しました。');
       } finally {
@@ -37,10 +39,20 @@ function UserEditPage() {
   // 4. フォームの入力値をハンドリング
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    if (name === 'roles') {
+      // rolesチェックボックスの処理
+      const currentRoles = formData.roles;
+      if (checked) {
+        // チェックされたらロールを追加
+        setFormData(prev => ({ ...prev, roles: [...currentRoles, value] }));
+      } else {
+        // チェックが外されたらロールを削除
+        setFormData(prev => ({ ...prev, roles: currentRoles.filter(role => role !== value) }));
+      }
+    } else {
+      // その他のフォーム要素の処理
+      setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    }
   };
 
   // 5. フォーム送信（保存）時の処理
@@ -136,6 +148,26 @@ function UserEditPage() {
                     onChange={onChange}
                   />
                   <label className="form-check-label" htmlFor="isAdmin">管理者権限</label>
+                </div>
+
+                <div className="mb-4">
+                  <label className="form-label">役割 (Roles)</label>
+                  <div>
+                    {AVAILABLE_ROLES.map(role => (
+                      <div className="form-check form-check-inline" key={role}>
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id={`role-${role}`}
+                          name="roles"
+                          value={role}
+                          checked={formData.roles.includes(role)}
+                          onChange={onChange}
+                        />
+                        <label className="form-check-label" htmlFor={`role-${role}`}>{role}</label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="d-flex justify-content-between">

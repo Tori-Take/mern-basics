@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { AVAILABLE_ROLES } from '../constants/roles';
 
 function UserCreatePage() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ function UserCreatePage() {
     password: '',
     status: 'active',
     isAdmin: false,
+    roles: ['user'], // デフォルトで 'user' ロールをセット
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -18,10 +20,20 @@ function UserCreatePage() {
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    if (name === 'roles') {
+      // rolesチェックボックスの処理
+      const currentRoles = formData.roles;
+      if (checked) {
+        // チェックされたらロールを追加
+        setFormData(prev => ({ ...prev, roles: [...currentRoles, value] }));
+      } else {
+        // チェックが外されたらロールを削除
+        setFormData(prev => ({ ...prev, roles: currentRoles.filter(role => role !== value) }));
+      }
+    } else {
+      // その他のフォーム要素の処理
+      setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    }
   };
 
   const onSubmit = async (e) => {
@@ -109,6 +121,26 @@ function UserCreatePage() {
                     onChange={onChange}
                   />
                   <label className="form-check-label" htmlFor="isAdmin">管理者権限</label>
+                </div>
+
+                <div className="mb-4">
+                  <label className="form-label">役割 (Roles)</label>
+                  <div>
+                    {AVAILABLE_ROLES.map(role => (
+                      <div className="form-check form-check-inline" key={role}>
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id={`role-create-${role}`}
+                          name="roles"
+                          value={role}
+                          checked={formData.roles.includes(role)}
+                          onChange={onChange}
+                        />
+                        <label className="form-check-label" htmlFor={`role-create-${role}`}>{role}</label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="d-flex justify-content-between">

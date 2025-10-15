@@ -23,10 +23,10 @@ const userSchema = new Schema({
     required: [true, 'パスワードは必須です。'],
     minlength: [6, 'パスワードは6文字以上で入力してください。'], // パスワードは最低6文字以上
   },
-  group: {
-    type: String,
-    trim: true,
-    default: 'default', // デフォルトのグループを設定
+  // 複数の役割（ロール）を保持するための配列
+  roles: {
+    type: [String],
+    default: ['user'], // デフォルトで'user'ロールを付与
   },
   // 管理者権限
   isAdmin: {

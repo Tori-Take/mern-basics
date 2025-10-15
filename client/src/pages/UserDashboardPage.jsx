@@ -1,7 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function UserDashboardPage() {
+  const { user } = useAuth();
+
   return (
     <div>
       <h1 className="text-center my-4">ダッシュボード</h1>
@@ -9,16 +12,18 @@ function UserDashboardPage() {
 
       <div className="row justify-content-center g-4">
         {/* TODOアプリカード */}
-        <div className="col-md-6 col-lg-4">
-          <div className="card h-100 shadow-sm">
-            <div className="card-body text-center d-flex flex-column">
-              <i className="bi bi-check2-square fs-1 text-success mb-3"></i>
-              <h5 className="card-title">TODOアプリ</h5>
-              <p className="card-text">日々のタスクを管理し、生産性を向上させましょう。</p>
-              <Link to="/todos" className="btn btn-success mt-auto">開く</Link>
+        {user && (user.isAdmin || user.roles.includes('todo_manager')) && (
+          <div className="col-md-6 col-lg-4">
+            <div className="card h-100 shadow-sm">
+              <div className="card-body text-center d-flex flex-column">
+                <i className="bi bi-check2-square fs-1 text-success mb-3"></i>
+                <h5 className="card-title">TODOアプリ</h5>
+                <p className="card-text">日々のタスクを管理し、生産性を向上させましょう。</p>
+                <Link to="/todos" className="btn btn-success mt-auto">開く</Link>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* 将来のアプリ用カード (準備中) */}
         <div className="col-md-6 col-lg-4">

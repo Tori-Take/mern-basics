@@ -43,6 +43,7 @@ function UserManagementPage() {
               <th>メールアドレス</th>
               <th>ステータス</th>
               <th>管理者</th>
+              <th>役割</th>
               <th>登録日</th>
               <th>操作</th>
             </tr>
@@ -54,6 +55,11 @@ function UserManagementPage() {
                 <td>{user.email}</td>
                 <td>{user.status}</td>
                 <td>{user.isAdmin ? 'はい' : 'いいえ'}</td>
+                <td>
+                  {user.roles.map(role => (
+                    <span key={role} className="badge bg-secondary me-1">{role}</span>
+                  ))}
+                </td>
                 <td>{new Date(user.createdAt).toLocaleDateString('ja-JP')}</td>
                 <td>
                   <Link to={`/admin/users/${user._id}`} className="btn btn-sm btn-info">
