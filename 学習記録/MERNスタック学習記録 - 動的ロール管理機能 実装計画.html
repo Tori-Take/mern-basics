@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - 動的ロール管理機能 実装計画</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        .phase {
+            font-weight: bold;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-right: 10px;
+        }
+
+        .backend {
+            background-color: #457b9d;
+        }
+
+        .frontend {
+            background-color: #e63946;
+        }
+
+        .highlight {
+            background-color: #f1faee;
+            border-left: 4px solid #457b9d;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - 動的ロール管理機能 実装計画</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>
+            RBAC（ロールベースアクセス制御）の基盤が完成した今、次なるステップとして、<strong>ロール（役割）そのものを管理者が動的に作成・編集できる機能</strong>を実装します。<br>
+            これにより、ハードコードされたロール定義から脱却し、アプリケーションをあらゆる組織のニーズに対応可能な、真に柔軟なプラットフォームへと進化させます。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>実装計画：動的ロール管理機能（CRUD）</h2>
+
+        <h3><span class="phase backend">ステップ1</span>バックエンド: ロール管理APIの構築</h3>
+        <ul>
+            <li><strong>モデル作成:</strong>
+                <code>server/models/role.model.js</code>を新規作成し、ロール名を保存するシンプルなスキーマ<code>{ name: String }</code>を定義します。
+            </li>
+            <li><strong>APIルート作成:</strong>
+                <code>server/routes/roles.js</code>を新規作成し、ロールに対するCRUD（作成・読み取り・更新・削除）操作を行うAPIを実装します。
+                <ul>
+                    <li><code>GET /api/roles</code>: 全てのロールを取得</li>
+                    <li><code>POST /api/roles</code>: 新しいロールを作成</li>
+                    <li><code>PUT /api/roles/:id</code>: ロール名を更新</li>
+                    <li><code>DELETE /api/roles/:id</code>: ロールを削除</li>
+                </ul>
+            </li>
+            <li><strong>サーバー登録:</strong>
+                <code>server.js</code>で、新しい<code>roles</code>ルートを<code>/api/roles</code>として登録します。</li>
+        </ul>
+
+        <h3><span class="phase frontend">ステップ2</span>フロントエンド: ロール管理UIの作成</h3>
+        <ul>
+            <li><strong>ページ作成:</strong>
+                <code>client/src/pages/RoleManagementPage.jsx</code>を新規作成します。このページでロールの一覧表示、新規追加、編集、削除のUIを提供します。</li>
+            <li><strong>ナビゲーション追加:</strong>
+                <code>AdminDashboardPage.jsx</code>に「役割管理」カードを追加し、<code>/admin/roles</code>へリンクさせます。</li>
+            <li><strong>ルーティング更新:</strong> <code>App.jsx</code>に<code>/admin/roles</code>という新しい管理者用ルートを追加します。</li>
+        </ul>
+
+        <h3><span class="phase frontend">ステップ3</span>フロントエンド: 既存機能との統合</h3>
+        <div class="highlight">
+            <h4>💡 システムの完全な動的化</h4>
+            <p>
+                このステップが、システムを自己完結させるための鍵となります。
+            </p>
+        </div>
+        <ul>
+            <li><strong>UI改修:</strong>
+                ユーザー編集ページ(<code>UserEditPage.jsx</code>)と作成ページ(<code>UserCreatePage.jsx</code>)を修正します。</li>
+            <li><strong>実装:</strong>
+                ハードコードされた<code>constants/roles.js</code>からロールを読み込む代わりに、新しく作成した<code>GET /api/roles</code>
+                APIを呼び出し、<strong>データベースから動的にロールのリストを取得</strong>してチェックボックスを生成するように変更します。</li>
+            <li><strong>クリーンアップ:</strong> <code>client/src/constants/roles.js</code>は不要になるため、削除します。</li>
+        </ul>
+    </div>
+
+</body>
+
+</html>
