@@ -4,7 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute.jsx';
-import HomePage from './pages/HomePage';
+import UserDashboardPage from './pages/UserDashboardPage'; // HomePageから変更
+import TodoPage from './pages/TodoPage'; // 新しくインポート
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
@@ -26,8 +27,9 @@ function App() {
 
             {/* === Private Routes (for all logged-in users) === */}
             <Route path="/" element={<PrivateRoute />}>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<UserDashboardPage />} />
               <Route path="/force-reset-password" element={<ForceResetPasswordPage />} />
+              <Route path="/todos" element={<TodoPage />} />
             </Route>
 
             {/* === Admin Routes (for admin users only) === */}

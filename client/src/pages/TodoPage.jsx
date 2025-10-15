@@ -7,7 +7,7 @@ import TodoFilterSortModal from '../TodoFilterSortModal';
 
 const API_URL = '/todos';
 
-function HomePage() { // コンポーネント名を App から HomePage に変更
+function TodoPage() {
   const [todos, setTodos] = useState([]); // 初期値は空の配列にする
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -180,4 +180,4 @@ function HomePage() { // コンポーネント名を App から HomePage に変�
   );
 }
 
-export default HomePage;
+export default TodoPage;
