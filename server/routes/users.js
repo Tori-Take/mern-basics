@@ -166,13 +166,31 @@ router.get('/:id', [auth, admin], async (req, res) => {
 // @access  Private/Admin
 router.put('/:id', [auth, admin], async (req, res) => {
   try {
-    const { status, isAdmin } = req.body;
+    const { username, email, status, isAdmin } = req.body;
 
     // 更新対象のユーザーを検索
     const user = await User.findById(req.params.id);
-
     if (!user) {
       return res.status(404).json({ message: 'ユーザーが見つかりません。' });
+    }
+
+    // --- 重複チェック ---
+    // 1. メールアドレスが変更され、かつ他のユーザーに既に使用されていないかチェック
+    if (email && email !== user.email) {
+      const existingEmail = await User.findOne({ email: email, _id: { $ne: user._id } });
+      if (existingEmail) {
+        return res.status(400).json({ message: 'このメールアドレスは既に使用されています。' });
+      }
+      user.email = email;
+    }
+
+    // 2. ユーザー名が変更され、かつ他のユーザーに既に使用されていないかチェック
+    if (username && username !== user.username) {
+      const existingUsername = await User.findOne({ username: username, _id: { $ne: user._id } });
+      if (existingUsername) {
+        return res.status(400).json({ message: 'このユーザー名は既に使用されています。' });
+      }
+      user.username = username;
     }
 
     // リクエストボディに値があれば更新する
@@ -181,8 +199,47 @@ router.put('/:id', [auth, admin], async (req, res) => {
     if (typeof isAdmin === 'boolean') user.isAdmin = isAdmin;
 
     const updatedUser = await user.save();
-    res.json(updatedUser.toObject({ transform: (doc, ret) => { delete ret.password; return ret; } }));
+    res.json(updatedUser);
 
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+// @route   POST /api/users
+// @desc    管理者が新しいユーザーを作成する
+// @access  Private/Admin
+router.post('/', [auth, admin], async (req, res) => {
+  try {
+    const { username, email, password, status, isAdmin } = req.body;
+
+    // 必須項目チェック
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'ユーザー名、メールアドレス、パスワードは必須です。' });
+    }
+
+    // 重複チェック
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) {
+      return res.status(400).json({ message: 'そのユーザー名またはメールアドレスは既に使用されています。' });
+    }
+
+    // パスワードをハッシュ化
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      status: status || 'active',
+      isAdmin: isAdmin || false,
+    });
+
+    const savedUser = await newUser.save();
+
+    res.status(201).json(savedUser); // トークンは返さず、作成されたユーザー情報を返す
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');

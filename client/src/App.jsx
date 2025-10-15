@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
+import UserCreatePage from './pages/UserCreatePage';
 import UserEditPage from './pages/UserEditPage';
 
 function App() {
@@ -44,6 +45,12 @@ function App() {
               path="/admin/users/:id"
               element={
                 <AdminRoute><UserEditPage /></AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/users/new"
+              element={
+                <AdminRoute><UserCreatePage /></AdminRoute>
               }
             />
           </Routes>

@@ -9,11 +9,11 @@ function UserEditPage() {
 
   // 2. フォームデータ、ローディング、メッセージ用のState
   const [formData, setFormData] = useState({
+    username: '',
+    email: '',
     status: 'active',
     isAdmin: false,
   });
-  const [username, setUsername] = useState(''); // 変更しないデータは別Stateに
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -24,9 +24,7 @@ function UserEditPage() {
       try {
         const res = await axios.get(`/api/users/${id}`);
         const { username, email, status, isAdmin } = res.data;
-        setUsername(username);
-        setEmail(email);
-        setFormData({ status, isAdmin });
+        setFormData({ username, email, status, isAdmin });
       } catch (err) {
         setError(err.response?.data?.message || 'ユーザー情報の取得に失敗しました。');
       } finally {
@@ -73,12 +71,26 @@ function UserEditPage() {
 
           <div className="card">
             <div className="card-header">
-              ユーザー: <strong>{username}</strong>
+              ユーザー: <strong>{formData.username}</strong>
             </div>
             <div className="card-body">
-              <p className="card-text">メールアドレス: {email}</p>
-              <hr />
               <form onSubmit={onSubmit}>
+                <div className="mb-3">
+                  <label htmlFor="username" className="form-label">ユーザー名</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={onChange}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="email" className="form-label">メールアドレス</label>
+                  <input type="email" className="form-control" id="email" name="email" value={formData.email} onChange={onChange} required />
+                </div>
                 <div className="mb-3">
                   <label htmlFor="status" className="form-label">アカウント状態</label>
                   <select

@@ -27,7 +27,14 @@ function UserManagementPage() {
 
   return (
     <div>
-      <h1 className="text-center my-4">ユーザー管理</h1>
+      <div className="d-flex justify-content-between align-items-center my-4">
+        <h1 className="m-0">ユーザー管理</h1>
+        <Link to="/admin/users/new" className="btn btn-success">
+          <i className="bi bi-plus-circle-fill me-2"></i>
+          新規ユーザー追加
+        </Link>
+      </div>
+
       <div className="table-responsive">
         <table className="table table-striped table-hover">
           <thead className="table-dark">
