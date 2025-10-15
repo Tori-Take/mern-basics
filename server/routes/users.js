@@ -104,7 +104,15 @@ router.post('/login', async (req, res) => {
     // 7. JWTに署名してトークンを生成
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
       if (err) throw err;
-      res.json({ token });
+
+      // パスワード強制リセットフラグをチェック
+      if (user.forcePasswordReset) {
+        return res.json({
+          token,
+          forceReset: true, // フロントエンドへの目印
+        });
+      }
+      res.json({ token }); // 通常のレスポンス
     });
   } catch (err) {
     console.error(err.message);
@@ -240,6 +248,62 @@ router.post('/', [auth, admin], async (req, res) => {
     const savedUser = await newUser.save();
 
     res.status(201).json(savedUser); // トークンは返さず、作成されたユーザー情報を返す
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+// @route   POST /api/users/:id/force-reset
+// @desc    管理者がユーザーのパスワードリセットを強制する
+// @access  Private/Admin
+router.post('/:id/force-reset', [auth, admin], async (req, res) => {
+  const { temporaryPassword } = req.body;
+
+  if (!temporaryPassword || temporaryPassword.length < 6) {
+    return res.status(400).json({ message: '6文字以上の一時パスワードを指定してください。' });
+  }
+
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
+    }
+
+    // 一時パスワードをハッシュ化して設定
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(temporaryPassword, salt);
+    user.forcePasswordReset = true;
+    await user.save();
+
+    res.json({ message: `${user.username} のパスワードが一時パスワードに更新され、リセット待機状態に設定されました。` });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+// @route   POST /api/users/force-reset-password
+// @desc    ユーザーが強制的にパスワードを再設定する
+// @access  Private (Logged-in user)
+router.post('/force-reset-password', auth, async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'パスワードは6文字以上で入力してください。' });
+    }
+
+    // authミドルウェアからユーザーIDを取得
+    const user = await User.findById(req.user.id);
+
+    // パスワードをハッシュ化して更新
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.forcePasswordReset = false; // フラグを元に戻す
+    await user.save();
+
+    res.json({ message: 'パスワードが正常に更新されました。新しいパスワードで再度ログインしてください。' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');

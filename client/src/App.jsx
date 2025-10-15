@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
+import ForceResetPasswordPage from './pages/ForceResetPasswordPage';
 import UserCreatePage from './pages/UserCreatePage';
 import UserEditPage from './pages/UserEditPage';
 
@@ -26,6 +27,7 @@ function App() {
             {/* === Private Routes (for all logged-in users) === */}
             <Route path="/" element={<PrivateRoute />}>
               <Route path="/" element={<HomePage />} />
+              <Route path="/force-reset-password" element={<ForceResetPasswordPage />} />
             </Route>
 
             {/* === Admin Routes (for admin users only) === */}

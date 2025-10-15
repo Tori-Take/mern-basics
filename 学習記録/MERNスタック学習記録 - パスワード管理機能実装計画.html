@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - パスワード管理機能実装計画</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        .phase {
+            font-weight: bold;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-right: 10px;
+        }
+
+        .backend {
+            background-color: #457b9d;
+        }
+
+        .frontend {
+            background-color: #e63946;
+        }
+
+        .highlight {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - パスワード管理機能実装計画</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>
+            アプリケーションの運用において、ユーザーがパスワードを忘れてしまう事態は避けられません。この問題に対応するため、堅牢なパスワードリセット機能を実装します。<br>
+            議論の結果、<strong>「管理者主導のリセット」</strong>と<strong>「ユーザー自身によるリセット」</strong>の2つのアプローチを計画し、まずは前者から優先的に実装することに決定しました。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>実装方針の決定</h2>
+        <div class="highlight">
+            <h4>💡 重要な決定</h4>
+            <p>
+                当初、「メールアドレスを持たないユーザー」への対応も検討しましたが、安全なパスワードリセット機能の実現には、本人確認手段としてのユニークなメールアドレスが不可欠です。<br>
+                議論の結果、アプリケーションのセキュリティと健全な運用を最優先し、<strong>メールアドレスは必須項目として維持する</strong>方針を固めました。
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>実装計画: 管理者主導のパスワードリセット (優先実装)</h2>
+        <p>
+            ユーザーからの申し出に基づき、管理者がパスワードの再設定を強制するフローを実装します。
+        </p>
+
+        <h3><span class="phase backend">ステップ1</span>バックエンド: リセット要求の仕組み作り</h3>
+        <ul>
+            <li><strong>モデル更新:</strong>
+                <code>user.model.js</code>に、パスワードの再設定が必要かを示すフラグ<code>forcePasswordReset: { type: Boolean, default: false }</code>を追加します。
+            </li>
+            <li><strong>API作成:</strong> 管理者専用のAPI <code>POST /api/users/:id/force-reset</code>
+                を作成します。このAPIは、指定されたユーザーの<code>forcePasswordReset</code>フラグを<code>true</code>に設定します。</li>
+        </ul>
+
+        <h3><span class="phase frontend">ステップ2</span>フロントエンド: 管理者用UIの作成</h3>
+        <ul>
+            <li><strong>ボタン追加:</strong>
+                ユーザー編集ページ(<code>UserEditPage.jsx</code>)に、「パスワードを強制リセット」ボタンを追加し、クリックするとステップ1で作成したAPIが呼び出されるようにします。</li>
+        </ul>
+
+        <h3><span class="phase backend frontend">ステップ3</span>フロントエンド & バックエンド: 強制リセットフローの実装</h3>
+        <ul>
+            <li><strong>ログインAPIの改修 (バックエンド):</strong>
+                ログイン成功時、<code>forcePasswordReset</code>が<code>true</code>のユーザーには、通常のレスポンスに加えて<code>{ forceReset: true }</code>という目印を付けて返します。
+            </li>
+            <li><strong>ログイン処理の改修 (フロントエンド):</strong>
+                <code>AuthContext</code>で、<code>forceReset: true</code>を受け取った場合、ホームページではなく新しいパスワード設定ページ(<code>/force-reset-password</code>)にリダイレクトさせます。
+            </li>
+            <li><strong>専用ページの作成 (フロントエンド):</strong> 新しいパスワードを入力・確認するための<code>ForceResetPasswordPage.jsx</code>を作成します。
+            </li>
+            <li><strong>パスワード更新APIの作成 (バックエンド):</strong>
+                <code>POST /api/users/force-reset-password</code>を作成。新しいパスワードをハッシュ化して保存し、<code>forcePasswordReset</code>フラグを<code>false</code>に戻します。
+            </li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <h2>将来的な拡張: ユーザー自身によるパスワードリセット</h2>
+        <p>
+            管理者主導のリセット機能が完成した後、次のステップとして、ユーザーが24時間いつでも自分でパスワードをリセットできる、一般的な自動リセット機能の実装を目指します。
+        </p>
+        <ul>
+            <li>メール送信ライブラリ(<code>nodemailer</code>)の導入。</li>
+            <li>リセットトークンを生成し、メールでリセット用URLを送信するAPIの作成。</li>
+            <li>トークンを検証し、パスワードを更新するAPIの作成。</li>
+            <li>関連するフロントエンドページの作成。</li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

@@ -8,7 +8,7 @@ function LoginPage() {
     password: '',
   });
   const [error, setError] = useState('');
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, forceReset } = useAuth();
 
   const { username, password } = formData;
 
@@ -31,6 +31,11 @@ function LoginPage() {
 
   // 既にログインしている場合はホームページにリダイレクト
   if (isAuthenticated) {
+    // ただし、パスワードの強制リセットが必要な場合は専用ページへ
+    if (forceReset) {
+      return <Navigate to="/force-reset-password" />;
+    }
+    // 通常はホームページへ
     return <Navigate to="/" />;
   }
 

@@ -83,12 +83,12 @@ export function AuthProvider({ children }) {
     try {
       const res = await axios.post('/api/users/login', body, config);
       console.log('【Auth】B. login: トークンの取得に成功しました。', res.data.token);
-      const { token } = res.data;
+      const { token, forceReset } = res.data; // forceResetフラグも受け取る
       // 新しいトークンをlocalStorageとaxiosヘッダーに即時セット
       localStorage.setItem('token', token);
       axios.defaults.headers.common['x-auth-token'] = token;
       // stateのtokenも更新
-      setAuthState(prev => ({ ...prev, token }));
+      setAuthState(prev => ({ ...prev, token, forceReset: forceReset || false }));
       // ユーザー情報を読み込み、完了するまで待つ
       await loadUser();
     } catch (err) {
@@ -108,6 +108,7 @@ export function AuthProvider({ children }) {
   const value = {
     ...authState,
     register,
+    // forceResetフラグを外部から参照できるようにする
     login,
     logout,
   };

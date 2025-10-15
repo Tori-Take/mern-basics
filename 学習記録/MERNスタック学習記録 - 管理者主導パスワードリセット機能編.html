@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - 管理者主導パスワードリセット機能編</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        .phase {
+            font-weight: bold;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-right: 10px;
+        }
+
+        .backend {
+            background-color: #457b9d;
+        }
+
+        .frontend {
+            background-color: #e63946;
+        }
+
+        .highlight {
+            background-color: #f1faee;
+            border-left: 4px solid #457b9d;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - 管理者主導パスワードリセット機能編</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>
+            ユーザーがパスワードを忘れてしまった際のサポート体制を強化するため、<strong>管理者主導のパスワードリセット機能</strong>を実装しました。<br>
+            この機能により、管理者はユーザーからの申し出に応じて、安全かつ確実にアカウントの復旧を支援できます。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>設計の進化：重大な論理的欠陥の発見と修正</h2>
+        <div class="highlight">
+            <h4>💡 設計上のブレークスルー</h4>
+            <p>
+                当初の計画では、「管理者がリセットフラグを立てる → ユーザーが古いパスワードでログイン →
+                再設定ページへ」というフローを想定していました。しかし、Tori-Takeさんの鋭い指摘により、<strong>「パスワードを忘れたユーザーは、そもそもログインできない」</strong>という根本的な矛盾が明らかになりました。
+            </p>
+            <p>
+                この発見に基づき、設計を全面的に見直し、より実践的な<strong>「管理者による一時パスワード発行方式」</strong>へとピボットしました。これは、本プロジェクトにおける重要な学びの一つです。
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>実装されたフロー</h2>
+        <ol>
+            <li>管理者がユーザー編集ページで「パスワードを強制リセット」ボタンを押します。</li>
+            <li>プロンプトが表示され、管理者が<strong>一時パスワード</strong>を入力します。</li>
+            <li>バックエンドAPIが、ユーザーのパスワードを一時パスワードに更新し、同時に<code>forcePasswordReset</code>フラグを<code>true</code>に設定します。</li>
+            <li>ユーザーは、管理者から伝えられた<strong>一時パスワードでログイン</strong>します。</li>
+            <li>ログインは成功しますが、システムは<code>forcePasswordReset</code>フラグを検知し、ユーザーをホームページではなく「新しいパスワードを設定」ページへ強制的にリダイレクトします。
+            </li>
+            <li>ユーザーは自身の新しいパスワードを設定し、リセットフローが完了。次回からは新しいパスワードでログインします。</li>
+        </ol>
+    </div>
+
+    <div class="container">
+        <h2>実装の詳細</h2>
+
+        <h3><span class="phase backend">バックエンド</span></h3>
+        <ul>
+            <li><strong>モデル更新:</strong> <code>user.model.js</code>に<code>forcePasswordReset: Boolean</code>フィールドを追加。
+            </li>
+            <li><strong>API修正 (<code>/force-reset</code>):</strong> <code>POST /api/users/:id/force-reset</code>
+                APIを、リクエストボディから<code>temporaryPassword</code>を受け取り、それをハッシュ化してパスワードを更新するよう修正。</li>
+            <li><strong>API修正 (<code>/login</code>):</strong>
+                ログイン成功時、<code>forcePasswordReset</code>が<code>true</code>なら、レスポンスに<code>{ forceReset: true }</code>を含めるよう修正。
+            </li>
+            <li><strong>API新規作成 (<code>/force-reset-password</code>):</strong>
+                <code>POST /api/users/force-reset-password</code>
+                APIを新規作成。ログイン中のユーザーが送信した新しいパスワードでDBを更新し、<code>forcePasswordReset</code>フラグを<code>false</code>に戻す。</li>
+        </ul>
+
+        <h3><span class="phase frontend">フロントエンド</span></h3>
+        <ul>
+            <li><strong>UI修正 (<code>UserEditPage.jsx</code>):</strong>
+                「強制リセット」ボタンの処理を、<code>window.prompt</code>で一時パスワードを受け取り、APIに送信するよう変更。</li>
+            <li><strong>Context修正 (<code>AuthContext.jsx</code>):</strong>
+                ログインレスポンスから<code>forceReset</code>フラグを受け取り、グローバルな認証状態として保持するよう修正。</li>
+            <li><strong>リダイレクト処理 (<code>LoginPage.jsx</code>):</strong>
+                ログイン成功後、Contextの<code>forceReset</code>フラグをチェックし、<code>true</code>なら<code>/force-reset-password</code>へリダイレクトするロジックを追加。
+            </li>
+            <li><strong>ページ新規作成 (<code>ForceResetPasswordPage.jsx</code>):</strong> 新しいパスワードを設定するための専用フォームページを作成。</li>
+            <li><strong>ルーティング更新 (<code>App.jsx</code>):</strong>
+                <code>/force-reset-password</code>へのルートを<code>PrivateRoute</code>で保護して追加。</li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

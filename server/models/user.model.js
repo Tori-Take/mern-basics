@@ -46,6 +46,11 @@ const userSchema = new Schema({
   resetPasswordExpires: {
     type: Date,
   },
+  // 管理者によるパスワード強制リセット用フラグ
+  forcePasswordReset: {
+    type: Boolean,
+    default: false,
+  },
 }, {
   timestamps: true, // createdAtとupdatedAtを自動で追加
 });

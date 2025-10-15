@@ -58,6 +58,26 @@ function UserEditPage() {
     }
   };
 
+  // 6. パスワード強制リセット処理
+  const handleForceReset = async () => {
+    // メッセージをクリア
+    setError('');
+    setSuccess('');
+
+    // 一時パスワードの入力を求める
+    const temporaryPassword = window.prompt(`${formData.username} のための一時パスワードを入力してください。\n(6文字以上)`);
+
+    if (temporaryPassword) {
+      try {
+        // バックエンドに一時パスワードを送信
+        const res = await axios.post(`/api/users/${id}/force-reset`, { temporaryPassword });
+        setSuccess(res.data.message); // バックエンドからの成功メッセージを表示
+      } catch (err) {
+        setError(err.response?.data?.message || 'パスワードリセットの要求に失敗しました。');
+      }
+    }
+  };
+
   if (loading) return <div>読み込み中...</div>;
 
   return (
@@ -123,6 +143,16 @@ function UserEditPage() {
                   <button type="submit" className="btn btn-primary">保存する</button>
                 </div>
               </form>
+            </div>
+            {/* --- 危険な操作ゾーン --- */}
+            <div className="card-footer bg-transparent">
+                <div className="d-flex justify-content-end">
+                    <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={handleForceReset}
+                    >パスワードを強制リセット</button>
+                </div>
             </div>
           </div>
         </div>
