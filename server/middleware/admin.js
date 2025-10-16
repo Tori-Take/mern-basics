@@ -7,8 +7,8 @@ const admin = async (req, res, next) => {
     // 既存の 'auth' ミドルウェアによって req.user.id がセットされていることが前提
     const user = await User.findById(req.user.id);
 
-    // ユーザーが存在し、かつ isAdmin フラグが true かどうかをチェック
-    if (user && user.isAdmin) {
+    // ユーザーが存在し、かつ roles 配列に 'admin' が含まれているかをチェック
+    if (user && user.roles.includes('admin')) {
       // 管理者であれば、リクエストされたAPIの処理へ進む
       next();
     } else {

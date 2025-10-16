@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import 'bootstrap/dist/css/bootstrap.min.css'; // BootstrapのCSSをインポート
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';
@@ -12,6 +13,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
 import ForceResetPasswordPage from './pages/ForceResetPasswordPage';
 import UserCreatePage from './pages/UserCreatePage';
+import RoleManagementPage from './pages/RoleManagementPage'; 
 import UserEditPage from './pages/UserEditPage';
 
 function App() {
@@ -57,6 +59,14 @@ function App() {
                 <AdminRoute><UserCreatePage /></AdminRoute>
               }
             />
+            <Route
+              path="/admin/roles"
+              element={
+                <AdminRoute><RoleManagementPage /></AdminRoute>
+
+              } 
+            />
+
           </Routes>
         </div>
       </Router>

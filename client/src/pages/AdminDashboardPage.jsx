@@ -21,6 +21,20 @@ function AdminDashboardPage() {
           </div>
         </div>
 
+        {/* 役割管理カード (ここから追加) */}
+        <div className="col-md-6 col-lg-4">
+          <div className="card h-100 shadow-sm">
+            <div className="card-body text-center d-flex flex-column">
+              <i className="bi bi-tags-fill fs-1 text-info mb-3"></i>
+              <h5 className="card-title">役割管理</h5>
+              <p className="card-text">ユーザーに割り当てる役割（ロール）を動的に作成・編集・削除します。</p>
+              <Link to="/admin/roles" className="btn btn-info mt-auto">
+                Manage
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {/* アプリデータ管理カード (準備中) */}
         <div className="col-md-6 col-lg-4">
           <div className="card h-100 shadow-sm">

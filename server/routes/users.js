@@ -11,10 +11,10 @@ const admin = require('../middleware/admin');
 router.post('/register', async (req, res) => {
   try {
     // 1. リクエストボディからユーザー情報を取得
-    const { username, email, password } = req.body;
+    const { name, email, password } = req.body; // "username" を "name" に変更
 
     // 2. 必須項目が入力されているか簡易チェック
-    if (!username || !email || !password) {
+    if (!name || !email || !password) {
       return res.status(400).json({ message: 'ユーザー名、メールアドレス、パスワードは必須です。' });
     }
 
@@ -25,7 +25,7 @@ router.post('/register', async (req, res) => {
     }
 
     // 4. ユーザー名が既に存在するかチェック
-    const existingUsername = await User.findOne({ username });
+    const existingUsername = await User.findOne({ username: name }); // クエリを "name" に合わせる
     if (existingUsername) {
       return res.status(400).json({ message: 'このユーザー名は既に使用されています。' });
     }
@@ -36,7 +36,7 @@ router.post('/register', async (req, res) => {
 
     // 5. 新しいユーザーオブジェクトを作成
     const newUser = new User({
-      username,
+      username: name, // "name" をモデルの "username" フィールドにマッピング
       email,
       password: hashedPassword, // ハッシュ化したパスワードを保存
       // rolesはモデルのデフォルト値['user']が自動的に設定される
@@ -69,15 +69,15 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     // 1. リクエストボディから情報を取得
-    const { username, password } = req.body;
+    const { name, password } = req.body; // "username" を "name" に変更
 
     // 2. 必須項目チェック
-    if (!username || !password) {
+    if (!name || !password) {
       return res.status(400).json({ message: 'ユーザー名とパスワードを入力してください。' });
     }
 
     // 3. ユーザーをユーザー名で検索
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username: name }); // クエリを "name" に合わせる
     if (!user) {
       // セキュリティのため、どちらが間違っているか特定させないメッセージを返す
       return res.status(400).json({ message: 'ユーザー名またはパスワードが無効です。' });
@@ -127,7 +127,18 @@ router.get('/auth', auth, async (req, res) => {
   try {
     // authミドルウェアでreq.userにIDがセットされている
     const user = await User.findById(req.user.id).select('-password'); // パスワードを除外して取得
-    res.json(user);
+    if (!user) {
+      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
+    }
+
+    // フロントエンドの期待に合わせてレスポンスを整形
+    const userObject = user.toObject();
+    userObject.name = userObject.username;
+    userObject.isActive = user.status === 'active';
+    delete userObject.username;
+    // isAdminはスキーマから削除するので、こちらも不要
+
+    res.json(userObject);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラー');
@@ -158,8 +169,13 @@ router.get('/:id', [auth, admin], async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'ユーザーが見つかりません。' });
     }
+    // フロントエンドの期待に合わせて、username を name として返す
+    const userObject = user.toObject();
+    userObject.name = userObject.username;
+    userObject.isActive = user.status === 'active'; // 不足していた isActive を追加
+    delete userObject.username;
 
-    res.json(user);
+    res.json(userObject); // 修正点1: 変換後のオブジェクトを返す
   } catch (err) {
     console.error(err.message);
     if (err.kind === 'ObjectId') {
@@ -174,7 +190,7 @@ router.get('/:id', [auth, admin], async (req, res) => {
 // @access  Private/Admin
 router.put('/:id', [auth, admin], async (req, res) => {
   try {
-    const { username, email, status, isAdmin, roles } = req.body;
+    const { name, email, roles, isActive } = req.body; // 修正点2: フロントエンドのデータ形式に合わせる
 
     // 更新対象のユーザーを検索
     const user = await User.findById(req.params.id);
@@ -193,21 +209,28 @@ router.put('/:id', [auth, admin], async (req, res) => {
     }
 
     // 2. ユーザー名が変更され、かつ他のユーザーに既に使用されていないかチェック
-    if (username && username !== user.username) {
-      const existingUsername = await User.findOne({ username: username, _id: { $ne: user._id } });
+    if (name && name !== user.username) {
+      const existingUsername = await User.findOne({ username: name, _id: { $ne: user._id } });
       if (existingUsername) {
         return res.status(400).json({ message: 'このユーザー名は既に使用されています。' });
       }
-      user.username = username;
+      user.username = name;
     }
 
-    // リクエストボディに値があれば更新する
-    if (status) user.status = status;
-    // isAdminはbooleanなので、undefinedでないことを確認
-    if (typeof isAdmin === 'boolean') user.isAdmin = isAdmin;
+    // --- デバッグログ ---
+    console.log('[PUT /api/users/:id] 受信したデータ:', { name, email, roles, isActive });
+    console.log('[PUT /api/users/:id] 更新前のユーザー状態:', { username: user.username, roles: user.roles, status: user.status });
+
+    // statusをisActiveに基づいて更新 (より安全な方法に修正)
+    if (typeof isActive === 'boolean') {
+      user.status = isActive ? 'active' : 'inactive';
+    }
+
     if (roles) user.roles = roles; // rolesを更新
 
     const updatedUser = await user.save();
+    console.log('[PUT /api/users/:id] 更新後のユーザー状態:', { username: updatedUser.username, roles: updatedUser.roles, status: updatedUser.status });
+
     res.json(updatedUser);
 
   } catch (err) {
@@ -221,15 +244,16 @@ router.put('/:id', [auth, admin], async (req, res) => {
 // @access  Private/Admin
 router.post('/', [auth, admin], async (req, res) => {
   try {
-    const { username, email, password, status, isAdmin, roles } = req.body;
+    // 新しいデータ形式に合わせる
+    const { name, email, password, roles, isActive } = req.body;
 
     // 必須項目チェック
-    if (!username || !email || !password) {
+    if (!name || !email || !password) {
       return res.status(400).json({ message: 'ユーザー名、メールアドレス、パスワードは必須です。' });
     }
 
     // 重複チェック
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const existingUser = await User.findOne({ $or: [{ email }, { username: name }] });
     if (existingUser) {
       return res.status(400).json({ message: 'そのユーザー名またはメールアドレスは既に使用されています。' });
     }
@@ -238,18 +262,26 @@ router.post('/', [auth, admin], async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // 'user' ロールが必ず含まれるようにする
+    const finalRoles = roles ? [...new Set(['user', ...roles])] : ['user'];
+
     const newUser = new User({
-      username,
+      username: name,
       email,
       password: hashedPassword,
-      status: status || 'active',
-      isAdmin: isAdmin || false,
-      roles: roles || ['user'], // rolesが指定されていなければデフォルトを設定
+      roles: finalRoles,
+      status: (typeof isActive === 'boolean' && !isActive) ? 'inactive' : 'active',
     });
 
     const savedUser = await newUser.save();
+    
+    // フロントエンドの期待に合わせてレスポンスを整形
+    const userObject = savedUser.toObject();
+    userObject.name = userObject.username;
+    delete userObject.username;
+    delete userObject.password;
 
-    res.status(201).json(savedUser); // トークンは返さず、作成されたユーザー情報を返す
+    res.status(201).json(userObject);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');

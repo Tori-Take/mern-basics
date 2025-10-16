@@ -5,38 +5,48 @@ import { useAuth } from '../context/AuthContext';
 function UserDashboardPage() {
   const { user } = useAuth();
 
+  // --- デバッグ用ログ ---
+  // このページが描画されるたびに、現在のユーザー情報をコンソールに出力します。
+  console.log('【UserDashboardPage】描画:', { user });
+
   return (
     <div>
-      <h1 className="text-center my-4">ダッシュボード</h1>
-      <p className="text-center text-muted mb-5">利用したいアプリケーションを選択してください。</p>
+      <div className="text-center mb-5">
+        <h1>ようこそ、{user ? user.name : 'ゲスト'}さん</h1>
+        <p className="lead text-muted">利用したいアプリケーションを選択してください。</p>
+      </div>
 
       <div className="row justify-content-center g-4">
-        {/* TODOアプリカード */}
-        {user && (user.isAdmin || user.roles.includes('todo_manager')) && (
-          <div className="col-md-6 col-lg-4">
-            <div className="card h-100 shadow-sm">
-              <div className="card-body text-center d-flex flex-column">
-                <i className="bi bi-check2-square fs-1 text-success mb-3"></i>
-                <h5 className="card-title">TODOアプリ</h5>
-                <p className="card-text">日々のタスクを管理し、生産性を向上させましょう。</p>
-                <Link to="/todos" className="btn btn-success mt-auto">開く</Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 将来のアプリ用カード (準備中) */}
+        {/* --- TODOアプリへのカード --- */}
         <div className="col-md-6 col-lg-4">
           <div className="card h-100 shadow-sm">
-            <div className="card-body text-center text-muted d-flex flex-column">
-              <i className="bi bi-calendar-event-fill fs-1 mb-3"></i>
-              <h5 className="card-title">カレンダー</h5>
-              <p className="card-text">予定を管理し、スケジュールを共有します。</p>
-              <button className="btn btn-secondary mt-auto" disabled>準備中</button>
+            <div className="card-body text-center d-flex flex-column">
+              <i className="bi bi-check2-square fs-1 text-success mb-3"></i>
+              <h5 className="card-title">TODOアプリ</h5>
+              <p className="card-text">日々のタスクを管理します。</p>
+              <Link to="/todos" className="btn btn-success mt-auto">
+                開く
+              </Link>
             </div>
           </div>
         </div>
 
+        {/* --- 管理者専用：管理者ダッシュボードへのカード --- */}
+        {/* 修正点: user.isAdmin を user.roles.includes('admin') に変更 */}
+        {user && user.roles && user.roles.includes('admin') && (
+          <div className="col-md-6 col-lg-4">
+            <div className="card h-100 shadow-sm border-danger">
+              <div className="card-body text-center d-flex flex-column">
+                <i className="bi bi-shield-lock-fill fs-1 text-danger mb-3"></i>
+                <h5 className="card-title">管理者ダッシュボード</h5>
+                <p className="card-text">ユーザーと役割の管理を行います。</p>
+                <Link to="/admin/dashboard" className="btn btn-danger mt-auto">
+                  管理する
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

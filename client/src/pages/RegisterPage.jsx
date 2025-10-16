@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
-    username: '',
+    name: '', // "username" を "name" に変更
     email: '',
     password: '',
     password2: '',
@@ -12,7 +12,7 @@ function RegisterPage() {
   const [error, setError] = useState(''); // エラーメッセージ用のState
   const { register, isAuthenticated } = useAuth();
 
-  const { username, email, password, password2 } = formData;
+  const { name, email, password, password2 } = formData; // "username" を "name" に変更
 
   const onChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -29,7 +29,7 @@ function RegisterPage() {
       setError('パスワードが一致しません。');
     } else {
       try {
-        await register(username, email, password);
+        await register(name, email, password);
         // 登録成功後、AuthContextがリダイレクトを処理する
       } catch (err) {
         setError(err.response?.data?.message || '登録中に不明なエラーが発生しました。');
@@ -54,8 +54,8 @@ function RegisterPage() {
             </div>
           )}
           <div className="mb-3">
-            <label htmlFor="username">ユーザー名</label>
-            <input type="text" id="username" className="form-control" name="username" value={username} onChange={onChange} required />
+            <label htmlFor="name">ユーザー名</label>
+            <input type="text" id="name" className="form-control" name="name" value={name} onChange={onChange} required />
           </div>
           <div className="mb-3">
             <label htmlFor="email">メールアドレス</label>

@@ -6,6 +6,10 @@ function Navbar() {
   const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
 
+  // --- デバッグ用ログ ---
+  // Navbarコンポーネントが再描画されるたびに、現在の認証状態とユーザー情報をコンソールに出力します。
+  console.log('【Navbar】描画:', { isAuthenticated, user });
+
   const onLogout = () => {
     logout();
     navigate('/login');
@@ -13,15 +17,16 @@ function Navbar() {
 
   const authLinks = (
     <ul className="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
-      {/* 管理者ユーザーの場合のみダッシュボードへのリンクを表示 */}
-      {user && user.isAdmin && (
+      {/* 修正点1: user.isAdmin を user.roles.includes('admin') に変更 */}
+      {user && user.roles && user.roles.includes('admin') && (
         <li className="nav-item">
           <Link to="/admin/dashboard" className="nav-link">管理者ダッシュボード</Link>
         </li>
       )}
       <li className="nav-item">
         <span className="navbar-text mx-3">
-          ようこそ, {user ? user.username : 'ゲスト'}さん
+          {/* 修正点2: user.username を user.name に変更 */}
+          ようこそ, {user ? user.name : 'ゲスト'}さん
         </span>
       </li>
       <li className="nav-item">

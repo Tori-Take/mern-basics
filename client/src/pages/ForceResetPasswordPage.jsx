@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,12 +10,15 @@ function ForceResetPasswordPage() {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const { newPassword, confirmPassword } = formData;
 
-  const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const onChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -25,65 +29,49 @@ function ForceResetPasswordPage() {
       return setError('パスワードが一致しません。');
     }
 
+    setIsSubmitting(true);
     try {
       const res = await axios.post('/api/users/force-reset-password', { newPassword });
-      setSuccess(res.data.message);
+      setSuccess(res.data.message + ' 3秒後にログインページに移動します。');
 
-      // 3秒後に自動的にログアウトし、ログインページへ誘導
+      // 成功後、自動的にログアウトしてログインページへ誘導
       setTimeout(() => {
         logout();
+        navigate('/login');
       }, 3000);
 
     } catch (err) {
       setError(err.response?.data?.message || 'パスワードの更新に失敗しました。');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="row justify-content-center">
       <div className="col-md-6">
-        <h1 className="text-center mb-4">新しいパスワードを設定</h1>
+        <h1 className="text-center mb-4">新しいパスワードの設定</h1>
         <p className="text-center text-muted">セキュリティのため、新しいパスワードを設定してください。</p>
+        <form onSubmit={onSubmit}>
+          {error && <div className="alert alert-danger">{error}</div>}
+          {success && <div className="alert alert-success">{success}</div>}
 
-        {error && <div className="alert alert-danger">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
-
-        {!success && ( // 成功メッセージが表示されたらフォームを非表示にする
-          <form onSubmit={onSubmit}>
-            <div className="mb-3">
-              <label htmlFor="newPassword">新しいパスワード</label>
-              <div className="input-group">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="newPassword"
-                  name="newPassword"
-                  className="form-control"
-                  value={newPassword}
-                  onChange={onChange}
-                  required
-                  minLength="6"
-                />
-                <button className="btn btn-outline-secondary" type="button" onClick={() => setShowPassword(!showPassword)}>
-                  <i className={showPassword ? "bi bi-eye-slash-fill" : "bi bi-eye-fill"}></i>
-                </button>
-              </div>
-            </div>
-            <div className="mb-3">
-              <label htmlFor="confirmPassword">新しいパスワード (確認用)</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                className="form-control"
-                value={confirmPassword}
-                onChange={onChange}
-                required
-                minLength="6"
-              />
-            </div>
-            <button type="submit" className="btn btn-primary w-100">パスワードを更新</button>
-          </form>
-        )}
+          <div className="mb-3">
+            <label htmlFor="newPassword">新しいパスワード</label>
+            <input type="password" id="newPassword" className="form-control" name="newPassword" value={newPassword} onChange={onChange} required minLength="6" />
+          </div>
+          <div className="mb-3">
+            <label htmlFor="confirmPassword">新しいパスワード (確認用)</label>
+            <input type="password" id="confirmPassword" className="form-control" name="confirmPassword" value={confirmPassword} onChange={onChange} required minLength="6" />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary w-100"
+            disabled={isSubmitting || success}
+          >
+            {isSubmitting ? '更新中...' : 'パスワードを更新'}
+          </button>
+        </form>
       </div>
     </div>
   );

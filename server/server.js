@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const Role = require('./models/role.model'); // Roleモデルをインポート
 const path = require('path');
 
 // 環境変数を .env ファイルから読み込む
@@ -23,6 +24,7 @@ const usersRouter = require('./routes/users'); // 新しく追加
 app.use('/todos', todosRouter);
 // '/api/users' というパスにユーザー関連のルーターを適用する
 app.use('/api/users', usersRouter);
+app.use('/api/roles', require('./routes/roles'));
 
 // --- 本番環境用の設定 ---
 if (process.env.NODE_ENV === 'production') {
@@ -35,11 +37,33 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// --- 基本的なロールが存在することを確認・作成する関数 ---
+const initializeRoles = async () => {
+  try {
+    const count = await Role.estimatedDocumentCount();
+    if (count === 0) {
+      console.log("基本的なロール（user, admin）を初期化します...");
+      await Role.create([
+        { name: 'user', description: '一般ユーザー。基本的なアクセス権を持つ。' },
+        { name: 'admin', description: '管理者。全てのアクセス権を持つ。' }
+      ]);
+      console.log("ロールの初期化が完了しました。");
+    }
+  } catch (error) {
+    console.error("ロールの初期化中にエラーが発生しました:", error);
+    // エラーが発生してもサーバー起動は続行するが、管理者に警告する
+  }
+};
+
 // データベースに接続してからサーバーを起動する
 const startServer = async () => {
   try {
     await mongoose.connect(uri);
     console.log("MongoDB データベースへの接続が正常に確立されました");
+
+    // サーバー起動前にロールを初期化
+    await initializeRoles();
+
     app.listen(port, () => {
       console.log(`サーバーがポート ${port} で起動しました。`);
     });

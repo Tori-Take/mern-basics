@@ -28,11 +28,6 @@ const userSchema = new Schema({
     type: [String],
     default: ['user'], // デフォルトで'user'ロールを付与
   },
-  // 管理者権限
-  isAdmin: {
-    type: Boolean,
-    default: false, // デフォルトは管理者ではない(false)
-  },
   // アカウントの状態
   status: {
     type: String,

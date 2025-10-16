@@ -16,6 +16,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: null,
     isLoading: true,
     user: null,
+    forceReset: false, // パスワード強制リセット用のフラグを追加
   });
 
   // アプリケーションの初回起動時にユーザー情報を読み込む
@@ -54,9 +55,9 @@ export function AuthProvider({ children }) {
   };
 
   // 登録処理
-  const register = async (username, email, password) => {
+  const register = async (name, email, password) => {
     const config = { headers: { 'Content-Type': 'application/json' } };
-    const body = JSON.stringify({ username, email, password });
+    const body = JSON.stringify({ name, email, password });
     console.log('【Auth】A. register: 登録APIを呼び出します。');
     try {
       const res = await axios.post('/api/users/register', body, config);
@@ -76,9 +77,9 @@ export function AuthProvider({ children }) {
   };
 
   // ログイン処理
-  const login = async (username, password) => {
+  const login = async (name, password) => {
     const config = { headers: { 'Content-Type': 'application/json' } };
-    const body = JSON.stringify({ username, password });
+    const body = JSON.stringify({ name, password });
     console.log('【Auth】A. login: ログインAPIを呼び出します。');
     try {
       const res = await axios.post('/api/users/login', body, config);
@@ -88,7 +89,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', token);
       axios.defaults.headers.common['x-auth-token'] = token;
       // stateのtokenも更新
-      setAuthState(prev => ({ ...prev, token, forceReset: forceReset || false }));
+      setAuthState(prev => ({ ...prev, token, forceReset: !!forceReset }));
       // ユーザー情報を読み込み、完了するまで待つ
       await loadUser();
     } catch (err) {
@@ -101,8 +102,8 @@ export function AuthProvider({ children }) {
   const logout = () => {
     console.log('【Auth】logout: ログアウト処理を実行します。');
     delete axios.defaults.headers.common['x-auth-token'];
-    localStorage.removeItem('token');
-    setAuthState({ token: null, isAuthenticated: false, isLoading: false, user: null });
+    localStorage.removeItem('token'); // トークンを削除
+    setAuthState({ token: null, isAuthenticated: false, isLoading: false, user: null, forceReset: false }); // Stateを完全にリセット
   };
 
   const value = {

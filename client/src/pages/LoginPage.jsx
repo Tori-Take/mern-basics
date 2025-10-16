@@ -4,13 +4,13 @@ import { useAuth } from '../context/AuthContext';
 
 function LoginPage() {
   const [formData, setFormData] = useState({
-    username: '',
+    name: '', // "username" を "name" に変更
     password: '',
   });
   const [error, setError] = useState('');
   const { login, isAuthenticated, forceReset } = useAuth();
 
-  const { username, password } = formData;
+  const { name, password } = formData; // "username" を "name" に変更
 
   const onChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -23,7 +23,7 @@ function LoginPage() {
     e.preventDefault();
     setError(''); // 送信時に一旦エラーをクリア
     try {
-      await login(username, password);
+      await login(name, password); // "username" を "name" に変更
     } catch (err) {
       setError(err.response?.data?.message || 'ログイン中に不明なエラーが発生しました。');
     }
@@ -51,8 +51,8 @@ function LoginPage() {
             </div>
           )}
           <div className="mb-3">
-            <label htmlFor="username">ユーザー名</label>
-            <input type="text" id="username" className="form-control" name="username" value={username} onChange={onChange} required />
+            <label htmlFor="name">ユーザー名</label>
+            <input type="text" id="name" className="form-control" name="name" value={name} onChange={onChange} required />
           </div>
           <div className="mb-3">
             <label htmlFor="password">パスワード</label>

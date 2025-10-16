@@ -1,195 +1,190 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { AVAILABLE_ROLES } from '../constants/roles';
+import { Form, Button, Alert, Spinner, Card } from 'react-bootstrap';
 
 function UserEditPage() {
-  // 1. URLからユーザーIDを取得
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // 2. フォームデータ、ローディング、メッセージ用のState
-  const [formData, setFormData] = useState({
-    username: '',
+  const [userData, setUserData] = useState({
+    name: '',
     email: '',
-    status: 'active',
-    isAdmin: false,
     roles: [],
+    isActive: true,
   });
+  const [allRoles, setAllRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [success, setSuccess] = useState(''); // 成功メッセージ用のStateを追加
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 3. 初回レンダリング時にユーザー情報を取得
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get(`/api/users/${id}`);
-        const { username, email, status, isAdmin, roles } = res.data;
-        setFormData({ username, email, status, isAdmin, roles: roles || [] });
+        setLoading(true);
+        // ユーザー情報と全ロール情報を並行して取得
+        const [userRes, rolesRes] = await Promise.all([
+          axios.get(`/api/users/${id}`),
+          axios.get('/api/roles'),
+        ]);
+
+        setUserData({
+          name: userRes.data.name,
+          email: userRes.data.email,
+          roles: userRes.data.roles || [],
+          isActive: userRes.data.isActive,
+        });
+        setAllRoles(rolesRes.data);
+
       } catch (err) {
-        setError(err.response?.data?.message || 'ユーザー情報の取得に失敗しました。');
+        setError(err.response?.data?.message || 'データの取得に失敗しました。');
       } finally {
         setLoading(false);
       }
     };
-    fetchUser();
-  }, [id]); // idが変わった場合（通常はないが）に再取得
 
-  // 4. フォームの入力値をハンドリング
-  const onChange = (e) => {
+    fetchData();
+  }, [id]);
+
+  const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (name === 'roles') {
-      // rolesチェックボックスの処理
-      const currentRoles = formData.roles;
-      if (checked) {
-        // チェックされたらロールを追加
-        setFormData(prev => ({ ...prev, roles: [...currentRoles, value] }));
-      } else {
-        // チェックが外されたらロールを削除
-        setFormData(prev => ({ ...prev, roles: currentRoles.filter(role => role !== value) }));
-      }
-    } else {
-      // その他のフォーム要素の処理
-      setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-    }
+    setUserData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
   };
 
-  // 5. フォーム送信（保存）時の処理
-  const onSubmit = async (e) => {
+  // ロールのチェックボックスが変更されたときの処理
+  const handleRoleChange = (e) => {
+    const { value, checked } = e.target;
+    setUserData(prev => {
+      const newRoles = checked
+        ? [...prev.roles, value] // チェックされたらロールを追加
+        : prev.roles.filter(role => role !== value); // チェックが外れたらロールを削除
+      return { ...prev, roles: newRoles };
+    });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     setError('');
-    setSuccess('');
+
     try {
-      await axios.put(`/api/users/${id}`, formData);
-      setSuccess('ユーザー情報が正常に更新されました。');
-      // 2秒後に一覧ページに戻る
-      setTimeout(() => navigate('/admin/users'), 2000);
+      await axios.put(`/api/users/${id}`, userData);
+      navigate('/admin/users'); // 成功したらユーザー一覧ページに戻る
     } catch (err) {
-      setError(err.response?.data?.message || '更新に失敗しました。');
+      setError(err.response?.data?.message || 'ユーザー情報の更新に失敗しました。');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // 6. パスワード強制リセット処理
+  // パスワード強制リセット処理
   const handleForceReset = async () => {
     // メッセージをクリア
     setError('');
     setSuccess('');
 
     // 一時パスワードの入力を求める
-    const temporaryPassword = window.prompt(`${formData.username} のための一時パスワードを入力してください。\n(6文字以上)`);
+    const temporaryPassword = window.prompt(
+      `${userData.name} のための一時パスワードを入力してください。\n(6文字以上)`
+    );
 
-    if (temporaryPassword) {
+    if (temporaryPassword && temporaryPassword.length >= 6) {
       try {
-        // バックエンドに一時パスワードを送信
         const res = await axios.post(`/api/users/${id}/force-reset`, { temporaryPassword });
         setSuccess(res.data.message); // バックエンドからの成功メッセージを表示
       } catch (err) {
         setError(err.response?.data?.message || 'パスワードリセットの要求に失敗しました。');
       }
+    } else if (temporaryPassword) { // 入力はしたが6文字未満の場合
+      setError('パスワードは6文字以上で入力してください。');
     }
   };
 
-  if (loading) return <div>読み込み中...</div>;
+  if (loading) {
+    return <div className="text-center"><Spinner animation="border" /> 読み込み中...</div>;
+  }
 
   return (
-    <div>
-      <h1 className="text-center my-4">ユーザー情報編集</h1>
+    <Card className="shadow-sm">
+      <Card.Header as="h2" className="text-center">ユーザー情報編集</Card.Header>
+      <Card.Body>
+        {success && <Alert variant="success">{success}</Alert>}
+        {error && <Alert variant="danger">{error}</Alert>}
+        <Form onSubmit={handleSubmit}>
+          <Form.Group className="mb-3" controlId="userName">
+            <Form.Label>名前</Form.Label>
+            <Form.Control
+              type="text"
+              name="name"
+              value={userData.name}
+              onChange={handleInputChange}
+              required
+            />
+          </Form.Group>
 
-      <div className="row justify-content-center">
-        <div className="col-md-8 col-lg-6">
-          {error && <div className="alert alert-danger">{error}</div>}
-          {success && <div className="alert alert-success">{success}</div>}
+          <Form.Group className="mb-3" controlId="userEmail">
+            <Form.Label>メールアドレス</Form.Label>
+            <Form.Control
+              type="email"
+              name="email"
+              value={userData.email}
+              onChange={handleInputChange}
+              required
+            />
+          </Form.Group>
 
-          <div className="card">
-            <div className="card-header">
-              ユーザー: <strong>{formData.username}</strong>
+          {/* --- ロール選択 --- */}
+          <Form.Group className="mb-3">
+            <Form.Label>役割 (ロール)</Form.Label>
+            <div>
+              {allRoles.map(role => (
+                <Form.Check
+                  key={role._id}
+                  type="checkbox"
+                  id={`role-${role.name}`}
+                  label={role.name}
+                  value={role.name}
+                  checked={userData.roles.includes(role.name)}
+                  onChange={handleRoleChange}
+                  disabled={role.name === 'user'} // 'user'ロールは必須なので変更不可にする
+                />
+              ))}
             </div>
-            <div className="card-body">
-              <form onSubmit={onSubmit}>
-                <div className="mb-3">
-                  <label htmlFor="username" className="form-label">ユーザー名</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="username"
-                    name="username"
-                    value={formData.username}
-                    onChange={onChange}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="email" className="form-label">メールアドレス</label>
-                  <input type="email" className="form-control" id="email" name="email" value={formData.email} onChange={onChange} required />
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="status" className="form-label">アカウント状態</label>
-                  <select
-                    id="status"
-                    name="status"
-                    className="form-select"
-                    value={formData.status}
-                    onChange={onChange}
-                  >
-                    <option value="active">有効 (active)</option>
-                    <option value="inactive">無効 (inactive)</option>
-                    <option value="suspended">一時停止 (suspended)</option>
-                  </select>
-                </div>
+          </Form.Group>
 
-                <div className="mb-4 form-check form-switch">
-                  <input
-                    type="checkbox"
-                    className="form-check-input"
-                    id="isAdmin"
-                    name="isAdmin"
-                    checked={formData.isAdmin}
-                    onChange={onChange}
-                  />
-                  <label className="form-check-label" htmlFor="isAdmin">管理者権限</label>
-                </div>
+          <Form.Group className="mb-4">
+            <Form.Check
+              type="switch"
+              id="isActive"
+              name="isActive"
+              label="アカウントを有効にする"
+              checked={userData.isActive}
+              onChange={handleInputChange}
+            />
+          </Form.Group>
 
-                <div className="mb-4">
-                  <label className="form-label">役割 (Roles)</label>
-                  <div>
-                    {AVAILABLE_ROLES.map(role => (
-                      <div className="form-check form-check-inline" key={role}>
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id={`role-${role}`}
-                          name="roles"
-                          value={role}
-                          checked={formData.roles.includes(role)}
-                          onChange={onChange}
-                        />
-                        <label className="form-check-label" htmlFor={`role-${role}`}>{role}</label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="d-flex justify-content-between">
-                  <Link to="/admin/users" className="btn btn-secondary">一覧に戻る</Link>
-                  <button type="submit" className="btn btn-primary">保存する</button>
-                </div>
-              </form>
-            </div>
-            {/* --- 危険な操作ゾーン --- */}
-            <div className="card-footer bg-transparent">
-                <div className="d-flex justify-content-end">
-                    <button
-                        type="button"
-                        className="btn btn-danger"
-                        onClick={handleForceReset}
-                    >パスワードを強制リセット</button>
-                </div>
-            </div>
+          <div className="d-grid">
+            <Button variant="primary" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? <><Spinner as="span" animation="border" size="sm" /> 更新中...</> : '更新'}
+            </Button>
           </div>
+        </Form>
+      </Card.Body>
+      {/* --- 危険な操作ゾーン --- */}
+      <Card.Footer className="bg-transparent border-top-0 pt-0">
+        <div className="d-flex justify-content-end">
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={handleForceReset}
+          >パスワードを強制リセット</Button>
         </div>
-      </div>
-    </div>
+      </Card.Footer>
+    </Card>
   );
 }
 
