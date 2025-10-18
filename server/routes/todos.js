@@ -1,119 +1,95 @@
 const router = require('express').Router();
-let Todo = require('../models/todo.model');
+const Todo = require('../models/todo.model');
 const auth = require('../middleware/auth'); // 認証ミドルウェアをインポート
 
-// ルートURL ('/todos/') へのGETリクエストを処理します
-// 全てのルートに認証ミドルウェアを適用
+// --- すべてのTODO APIを認証ミドルウェアで保護 ---
 router.use(auth);
 
+/**
+ * @route   GET /api/todos
+ * @desc    ログインユーザーのテナントに所属するTODOを全て取得
+ * @access  Private
+ */
 router.get('/', async (req, res) => {
-    try {
-      // 1. クエリパラメータからソートとフィルタの条件を取得
-      const { sort, ...filters } = req.query;
+  try {
+    // req.user は認証ミドルウェアによって設定される
+    const todos = await Todo.find({ tenantId: req.user.tenantId })
+      .sort({ createdAt: -1 }); // 作成日が新しい順にソート
+    res.json(todos);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
 
-      // 2. フィルタ条件オブジェクトを構築
-      const queryFilters = {};
-      for (const key in filters) {
-        // 空のパラメータは無視する
-        if (filters[key]) {
-          if (key === 'text') {
-            // 'text' フィールドは部分一致・大文字小文字を区別しない検索にする
-            queryFilters[key] = { $regex: filters[key], $options: 'i' };
-          } else {
-            queryFilters[key] = filters[key];
-          }
-        }
-      }
-
-      // ログインしているユーザーのIDを検索条件に追加
-      queryFilters.user = req.user.id;
-
-      // 3. Mongooseでクエリを実行
-      const todos = await Todo.find(queryFilters)
-        .sort(sort || '-createdAt'); // デフォルトは作成日の降順
-
-      res.json(todos);
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send('サーバーエラー');
-    }
-  });
-
+/**
+ * @route   POST /api/todos
+ * @desc    新しいTODOを作成する
+ * @access  Private
+ */
 router.post('/', async (req, res) => {
-    try {
-      const {
-        text,
-        priority,
-        dueDate,
-        scheduledDate,
-        tags,
-        creator,
-        requester,
-      } = req.body;
+  const { text, priority, dueDate, scheduledDate, tags } = req.body;
 
-      // 新しいTODOに、ログインしているユーザーのIDを紐付ける
-      const newTodo = new Todo({ text, priority, dueDate, scheduledDate, tags, creator, requester, user: req.user.id });
-      const savedTodo = await newTodo.save();
-      res.status(201).json(savedTodo);
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send('サーバーエラー');
-    }
-  });
+  try {
+    const newTodo = new Todo({
+      ...req.body,
+      tenantId: req.user.tenantId, // ★ 自動で自テナントのIDを付与
+      user: req.user.id,           // ★ 作成者としてログインユーザーのIDを記録
+    });
 
-// 特定のIDを持つTODOに対する処理
-router.patch('/:id', async (req, res) => {
-    try {
-      const todo = await Todo.findById(req.params.id);
-      if (!todo) return res.status(404).json('Error: Todo not found');
-      
-      todo.completed = !todo.completed;
-      const updatedTodo = await todo.save();
-      res.json(updatedTodo);
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send('サーバーエラー');
-    }
-  });
+    const todo = await newTodo.save();
+    res.status(201).json(todo);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
 
-router.delete('/:id', async (req, res) => {
-    try {
-      const todo = await Todo.findById(req.params.id);
-      if (!todo) return res.status(404).json({ msg: 'TODOが見つかりません。' });
-
-      // ログインユーザーがTODOの所有者か確認
-      if (todo.user.toString() !== req.user.id) {
-        return res.status(401).json({ msg: '権限がありません。' });
-      }
-
-      await todo.deleteOne();
-      res.json('Todo deleted.');
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send('サーバーエラー');
-    }
-  });
-
+/**
+ * @route   PUT /api/todos/:id
+ * @desc    特定のTODOを更新する
+ * @access  Private
+ */
 router.put('/:id', async (req, res) => {
-    try {
-      const todo = await Todo.findById(req.params.id);
-      if (!todo) return res.status(404).json('Error: Todo not found');
+  try {
+    // ★ IDとテナントIDの両方で検索し、他テナントのデータを操作できないようにする
+    let todo = await Todo.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
 
-      // リクエストボディから受け取ったデータでTODOドキュメントを更新
-      todo.text = req.body.text || todo.text;
-      todo.priority = req.body.priority || todo.priority;
-      todo.dueDate = req.body.dueDate || todo.dueDate;
-      todo.scheduledDate = req.body.scheduledDate || todo.scheduledDate;
-      todo.tags = req.body.tags || todo.tags;
-      todo.creator = req.body.creator || todo.creator;
-      todo.requester = req.body.requester || todo.requester;
-
-      const updatedTodo = await todo.save();
-      res.json(updatedTodo);
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send('サーバーエラー');
+    if (!todo) {
+      return res.status(404).json({ message: 'TODOが見つかりません。' });
     }
-  });
+
+    // リクエストボディの内容でTODOを更新
+    todo = await Todo.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+
+    res.json(todo);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+/**
+ * @route   DELETE /api/todos/:id
+ * @desc    特定のTODOを削除する
+ * @access  Private
+ */
+router.delete('/:id', async (req, res) => {
+  try {
+    // ★ IDとテナントIDの両方で検索し、他テナントのデータを操作できないようにする
+    const todo = await Todo.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
+
+    if (!todo) {
+      return res.status(404).json({ message: 'TODOが見つかりません。' });
+    }
+
+    await Todo.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'TODOが削除されました。' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
 
 module.exports = router;

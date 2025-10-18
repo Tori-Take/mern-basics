@@ -5,7 +5,7 @@ import TodoCreateModal from '../TodoCreateModal';
 import TodoEditModal from '../TodoEditModal';
 import TodoFilterSortModal from '../TodoFilterSortModal';
 
-const API_URL = '/todos';
+const API_URL = '/api/todos';
 
 function TodoPage() {
   const [todos, setTodos] = useState([]); // 初期値は空の配列にする

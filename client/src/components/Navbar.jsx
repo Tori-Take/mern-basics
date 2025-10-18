@@ -6,10 +6,6 @@ function Navbar() {
   const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
 
-  // --- デバッグ用ログ ---
-  // Navbarコンポーネントが再描画されるたびに、現在の認証状態とユーザー情報をコンソールに出力します。
-  console.log('【Navbar】描画:', { isAuthenticated, user });
-
   const onLogout = () => {
     logout();
     navigate('/login');
@@ -25,8 +21,8 @@ function Navbar() {
       )}
       <li className="nav-item">
         <span className="navbar-text mx-3">
-          {/* 修正点2: user.username を user.name に変更 */}
-          ようこそ, {user ? user.name : 'ゲスト'}さん
+          {/* user.name を user.username に修正 */}
+          ようこそ, {user ? user.username : 'ゲスト'}さん
         </span>
       </li>
       <li className="nav-item">

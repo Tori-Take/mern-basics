@@ -67,8 +67,14 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', res.data.token);
       setAuthToken(res.data.token);
 
-      // ログイン成功後、ユーザー情報を再読み込みしてstateを更新
-      await loadUser();
+      // ログイン成功後、レスポンスに含まれるユーザー情報で直接stateを更新
+      setAuthState(prev => ({
+        ...prev,
+        isAuthenticated: true,
+        loading: false,
+        user: res.data.user,
+        forceReset: res.data.forceReset || false,
+      }));
 
     } catch (err) {
       // エラーが発生した場合は、呼び出し元にエラーを再スローしてLoginPageで処理させる
@@ -92,7 +98,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!authState.loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }
