@@ -1,6 +1,29 @@
 const router = require('express').Router();
 const Todo = require('../models/todo.model');
+const Tenant = require('../models/tenant.model'); // ★ Tenantモデルをインポート
+const mongoose = require('mongoose'); // ★ Mongooseをインポート
 const auth = require('../middleware/auth'); // 認証ミドルウェアをインポート
+
+/**
+ * ログイン中の管理者がアクセス可能な全てのテナントIDのリストを取得するヘルパー関数
+ * @param {string} userTenantId - ログイン中管理者のテナントID
+ * @returns {Promise<Array<mongoose.Types.ObjectId>>} - アクセス可能なテナントIDの配列
+ */
+const getAccessibleTenantIds = async (userTenantId) => {
+  const aggregationResult = await Tenant.aggregate([
+    { $match: { _id: new mongoose.Types.ObjectId(userTenantId) } },
+    {
+      $graphLookup: {
+        from: 'tenants',
+        startWith: '$_id',
+        connectFromField: '_id',
+        connectToField: 'parent',
+        as: 'descendants'
+      }
+    }
+  ]);
+  return aggregationResult[0] ? [aggregationResult[0]._id, ...aggregationResult[0].descendants.map(d => d._id)] : [];
+};
 
 // --- すべてのTODO APIを認証ミドルウェアで保護 ---
 router.use(auth);
@@ -12,9 +35,34 @@ router.use(auth);
  */
 router.get('/', async (req, res) => {
   try {
-    // req.user は認証ミドルウェアによって設定される
-    const todos = await Todo.find({ tenantId: req.user.tenantId })
-      .sort({ createdAt: -1 }); // 作成日が新しい順にソート
+    let todos;
+
+    // ユーザーが管理者ロールを持っているかチェック
+    if (req.user.roles.includes('admin')) {
+      // 管理者の場合、配下の全テナントIDを取得
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+      // アクセス可能なテナントに所属するTODOを全て取得
+      todos = await Todo.find({ tenantId: { $in: accessibleTenantIds } })
+        .populate('tenantId', 'name')
+        .populate('user', 'username')
+        .populate('requester', 'username')
+        .populate('completedBy', 'username') // ★ 完了者名を取得
+        .sort({ createdAt: -1 });
+    } else {
+      // 一般ユーザーの場合、自分が作成者か依頼先に含まれるTODOのみ取得
+      todos = await Todo.find({
+        $or: [
+          { user: req.user.id }, // 自分が作成者
+          { requester: req.user.id } // 自分が依頼先リストに含まれる
+        ]
+      })
+        .populate('tenantId', 'name')
+        .populate('user', 'username')
+        .populate('requester', 'username')
+        .populate('completedBy', 'username') // ★ 完了者名を取得
+        .sort({ createdAt: -1 });
+    }
+
     res.json(todos);
   } catch (err) {
     console.error(err.message);
@@ -28,7 +76,7 @@ router.get('/', async (req, res) => {
  * @access  Private
  */
 router.post('/', async (req, res) => {
-  const { text, priority, dueDate, scheduledDate, tags } = req.body;
+  const { text, priority, dueDate, scheduledDate, tags, requester, creator } = req.body;
 
   try {
     const newTodo = new Todo({
@@ -36,12 +84,75 @@ router.post('/', async (req, res) => {
       tenantId: req.user.tenantId, // ★ 自動で自テナントのIDを付与
       user: req.user.id,           // ★ 作成者としてログインユーザーのIDを記録
     });
+    // requesterが空文字列の場合はnullを設定し、それ以外は設定
+    if (!requester) newTodo.requester = null;
 
-    const todo = await newTodo.save();
+    let todo = await newTodo.save();
+    // ★ フロントエンドに返す直前に、関連データをpopulateする
+    todo = await todo.populate([
+      { path: 'user', select: 'username' },
+      { path: 'tenantId', select: 'name' },
+      { path: 'requester', select: 'username' }
+    ]);
     res.status(201).json(todo);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+/**
+ * @route   PATCH /api/todos/:id
+ * @desc    特定のTODOの完了状態を切り替える
+ * @access  Private
+ */
+router.patch('/:id', async (req, res) => {
+  try {
+    const todo = await Todo.findById(req.params.id);
+    if (!todo) {
+      return res.status(404).json({ message: 'TODOが見つかりません。' });
+    }
+
+    // --- 権限チェック ---
+    // 完了状態の切り替えは、編集権限と同じロジックを適用します
+    const isCreator = todo.user.toString() === req.user.id;
+    const isRequester = todo.requester.some(id => id.equals(req.user.id)); // ★ 自分が依頼先に含まれているか
+    let isAdminAllowed = false;
+    if (req.user.roles.includes('admin')) {
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+      isAdminAllowed = accessibleTenantIds.some(id => id.equals(todo.tenantId));
+    }
+
+    if (!isCreator && !isAdminAllowed && !isRequester) { // ★ isRequesterもチェック
+      return res.status(403).json({ message: 'このTODOを操作する権限がありません。' });
+    }
+
+    todo.completed = !todo.completed;
+
+    // 完了状態に応じて、完了者と完了日時を記録・リセットする
+    if (todo.completed) {
+      // タスクが完了になった場合
+      todo.completedBy = req.user.id; // 操作したユーザーのIDを記録
+      todo.completedAt = new Date();   // 現在の日時を記録
+    } else {
+      // タスクが未完了に戻された場合
+      todo.completedBy = null; // 記録をリセット
+      todo.completedAt = null; // 記録をリセット
+    }
+
+    await todo.save();
+
+    // ★ 更新後のTODOを、関連情報を含めて再取得して返す
+    const updatedTodo = await Todo.findById(todo._id)
+      .populate('tenantId', 'name')
+      .populate('user', 'username')
+      .populate('requester', 'username')
+      .populate('completedBy', 'username');
+
+    res.json(updatedTodo);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラー');
   }
 });
 
@@ -52,20 +163,39 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
-    // ★ IDとテナントIDの両方で検索し、他テナントのデータを操作できないようにする
-    let todo = await Todo.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
-
+    const todo = await Todo.findById(req.params.id);
     if (!todo) {
       return res.status(404).json({ message: 'TODOが見つかりません。' });
     }
 
-    // リクエストボディの内容でTODOを更新
-    todo = await Todo.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+    // --- 権限チェック ---
+    const isCreator = todo.user.toString() === req.user.id;
+    let isAdminAllowed = false;
+    if (req.user.roles.includes('admin')) {
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+      isAdminAllowed = accessibleTenantIds.some(id => id.equals(todo.tenantId));
+    }
 
-    res.json(todo);
+    if (!isCreator && !isAdminAllowed) {
+      return res.status(403).json({ message: 'このTODOを編集する権限がありません。' });
+    }
+
+    const updateData = { ...req.body };
+    // requesterが空文字列で送られてきた場合、nullに変換してDBに保存する
+    if (updateData.requester === '') {
+      updateData.requester = null;
+    }
+
+    // リクエストボディの内容でTODOを更新
+    const updatedTodo = await Todo.findByIdAndUpdate(req.params.id, { $set: updateData }, { new: true })
+      .populate('tenantId', 'name')
+      .populate('user', 'username')
+      .populate('requester', 'username');
+
+    res.json(updatedTodo);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
+    res.status(500).send('サーバーエラー');
   }
 });
 
@@ -76,11 +206,21 @@ router.put('/:id', async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
   try {
-    // ★ IDとテナントIDの両方で検索し、他テナントのデータを操作できないようにする
-    const todo = await Todo.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
-
+    const todo = await Todo.findById(req.params.id);
     if (!todo) {
       return res.status(404).json({ message: 'TODOが見つかりません。' });
+    }
+
+    // --- 権限チェック ---
+    const isCreator = todo.user.toString() === req.user.id;
+    let isAdminAllowed = false;
+    if (req.user.roles.includes('admin')) {
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+      isAdminAllowed = accessibleTenantIds.some(id => id.equals(todo.tenantId));
+    }
+
+    if (!isCreator && !isAdminAllowed) {
+      return res.status(403).json({ message: 'このTODOを削除する権限がありません。' });
     }
 
     await Todo.findByIdAndDelete(req.params.id);
@@ -88,7 +228,7 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'TODOが削除されました。' });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
+    res.status(500).send('サーバーエラー');
   }
 });
 

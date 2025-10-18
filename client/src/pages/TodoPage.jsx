@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios'; // axiosをインポート
-import TodoList from '../TodoList';
+import { useAuth } from '../context/AuthContext'; // ★ useAuthフックをインポート
 import TodoCreateModal from '../TodoCreateModal';
 import TodoEditModal from '../TodoEditModal';
 import TodoFilterSortModal from '../TodoFilterSortModal';
+import { ListGroup, Badge, Button, Card, Accordion, Form, Alert } from 'react-bootstrap'; // ★ Alertを追加
 
 const API_URL = '/api/todos';
 
 function TodoPage() {
+  const { user } = useAuth(); // ★ ログイン中のユーザー情報を取得
   const [todos, setTodos] = useState([]); // 初期値は空の配列にする
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -23,6 +25,7 @@ function TodoPage() {
     requester: '',
     text: '',
   });
+  const [error, setError] = useState(''); // ★ エラーメッセージを管理するStateを追加
 
   useEffect(() => {
     document.title = 'My TODO App';
@@ -36,6 +39,7 @@ function TodoPage() {
         const response = await axios.get(`${API_URL}?${params}`);
         setTodos(response.data); // 取得したデータでStateを更新
       } catch (error) {
+        setError('TODOリストの取得に失敗しました。');
         console.error('TODOリストの取得中にエラーが発生しました:', error);
       }
     };
@@ -51,6 +55,7 @@ function TodoPage() {
       setTodos([...todos, newTodo]);
       setIsCreateModalOpen(false); // 成功したらモーダルを閉じる
     } catch (error) {
+      setError('TODOの追加に失敗しました。');
       console.error('TODOの追加中にエラーが発生しました:', error);
     }
   };
@@ -58,16 +63,13 @@ function TodoPage() {
   const handleToggleComplete = async (id) => {
     try {
       // サーバーに更新をリクエスト
-      await axios.patch(`${API_URL}/${id}`);
+      const response = await axios.patch(`${API_URL}/${id}`);
+      const updatedTodo = response.data;
 
       // 画面の状態を更新
-      setTodos(
-        todos.map((todo) =>
-          // IDが一致するTODOを見つけたら、completedプロパティを反転させる
-          todo._id === id ? { ...todo, completed: !todo.completed } : todo
-        )
-      );
+      setTodos(todos.map((todo) => (todo._id === id ? updatedTodo : todo)));
     } catch (error) {
+      setError('TODOの完了状態の更新に失敗しました。');
       console.error('TODOの更新中にエラーが発生しました:', error);
     }
   };
@@ -81,8 +83,11 @@ function TodoPage() {
 
         // 画面の状態を更新
         setTodos(todos.filter((todo) => todo._id !== id));
+        handleCloseEditModal(); // ★ 削除が成功したらモーダルを閉じる
       } catch (error) {
+        setError(error.response?.data?.message || 'TODOの削除に失敗しました。');
         console.error('TODOの削除中にエラーが発生しました:', error);
+        handleCloseEditModal(); // ★ エラーでもモーダルは閉じる
       }
     }
   };
@@ -106,7 +111,8 @@ function TodoPage() {
       );
       setIsEditModalOpen(false); // 成功したらモーダルを閉じる
     } catch (error) {
-      console.error('TODOの編集中にエラーが発生しました:', error);
+      setError(error.response?.data?.message || 'TODOの編集に失敗しました。');
+      console.error('TODOの編集中にエラーが発生しました:', error); // ログは残す
     }
   };
 
@@ -127,35 +133,113 @@ function TodoPage() {
 
   return (
     <>
-      <div className="d-flex justify-content-between my-4">
-        <button
-          className="btn btn-outline-secondary"
+      <div className="d-flex justify-content-between align-items-center my-4">
+        <h2 className="mb-0">TODOリスト</h2>
+        <div>
+        <Button
+          variant="outline-secondary"
+          className="me-2"
           onClick={() => setIsFilterSortModalOpen(true)}
         >
           絞り込み・並び替え
-        </button>
-        <button className="btn btn-primary" type="button" onClick={() => setIsCreateModalOpen(true)}>
+        </Button>
+        <Button variant="primary" type="button" onClick={() => setIsCreateModalOpen(true)}>
           ＋ 新規TODOを追加
-        </button>
-      </div>
-
-      {/* 2. 未完了のTODOリスト */}
-      <h5 className="mt-4">未完了のTODO</h5>
-      <TodoList todos={incompleteTodos} onToggle={handleToggleComplete} onDelete={handleDelete} onEdit={handleOpenEditModal} />
-
-      {/* 3. 完了済みのTODOリスト（アコーディオン） */}
-      <div className="mt-4">
-        <button
-          className="btn btn-secondary w-100"
-          type="button"
-          onClick={() => setIsCompletedListOpen(!isCompletedListOpen)}
-        >
-          完了済みのTODO ({completedTodos.length}件) {isCompletedListOpen ? '▲ 閉じる' : '▼ 開く'}
-        </button>
-        <div className={`collapse ${isCompletedListOpen ? 'show' : ''}`}>
-          <TodoList todos={completedTodos} onToggle={handleToggleComplete} onDelete={handleDelete} onEdit={handleOpenEditModal} />
+        </Button>
         </div>
       </div>
+
+      {/* ★ エラーメッセージ表示用のAlertコンポーネント */}
+      {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
+
+      {/* 未完了のTODOリスト */}
+      <Card className="mb-4">
+        <Card.Header as="h5">未完了 ({incompleteTodos.length})</Card.Header>
+        <ListGroup variant="flush">
+          {incompleteTodos.length > 0 ? incompleteTodos.map(todo => {
+            // ★ このTODOに対する編集権限を判断
+            const canEdit = user && (user._id === todo.user?._id || user.roles.includes('admin'));
+
+            return (
+              <ListGroup.Item key={todo._id} className="d-flex justify-content-between align-items-center">
+                <div>
+                  <Form.Check
+                    type="checkbox"
+                    checked={todo.completed}
+                    onChange={() => handleToggleComplete(todo._id)}
+                    className="d-inline-block me-3"
+                  />
+                  <span className={todo.completed ? 'text-muted text-decoration-line-through' : ''}>
+                    {todo.text}
+                  </span>
+                  <div className="text-muted small mt-1">
+                    <Badge bg="secondary" pill className="me-2 align-middle">{todo.tenantId?.name || '不明な部署'}</Badge>
+                    <span className="me-3"><i className="bi bi-person"></i> 作成者: {todo.user?.username || '不明'}</span>
+                    {todo.requester && todo.requester.length > 0 && (
+                      <span className="me-3"><i className="bi bi-person-check"></i> 依頼先: {todo.requester.map(r => r.username).join(', ')}</span>
+                    )}
+                    {todo.dueDate && (
+                      <span className="me-3"><i className="bi bi-calendar-check"></i> 期日: {new Date(todo.dueDate).toLocaleDateString()}</span>
+                    )}
+                    {todo.scheduledDate && (
+                      <span className="me-3"><i className="bi bi-calendar-event"></i> 予定日: {new Date(todo.scheduledDate).toLocaleDateString()}</span>
+                    )}
+                    <span className="me-3"><i className="bi bi-clock"></i> 作成日: {new Date(todo.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div>
+                  <Button variant="outline-secondary" size="sm" className="me-2" onClick={() => handleOpenEditModal(todo)}>
+                    {canEdit ? '編集' : '詳細'}
+                  </Button>
+                </div>
+              </ListGroup.Item>
+            );
+          }) : <ListGroup.Item className="text-muted">未完了のTODOはありません。</ListGroup.Item>}
+        </ListGroup>
+      </Card>
+
+      {/* 完了済みのTODOリスト */}
+      <Accordion>
+        <Accordion.Item eventKey="0">
+          <Accordion.Header>完了済み ({completedTodos.length})</Accordion.Header>
+          <Accordion.Body className="p-0">
+            <ListGroup variant="flush">
+              {completedTodos.length > 0 ? completedTodos.map(todo => (
+                <ListGroup.Item key={todo._id} className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <Form.Check
+                      type="checkbox"
+                      checked={todo.completed}
+                      onChange={() => handleToggleComplete(todo._id)}
+                      className="d-inline-block me-3"
+                    />
+                    <span className="text-muted text-decoration-line-through">
+                      {todo.text}
+                    </span>
+                    <div className="text-muted small mt-1">
+                      <Badge bg="secondary" pill className="me-2 align-middle">{todo.tenantId?.name || '不明な部署'}</Badge>
+                      <span className="me-3"><i className="bi bi-person"></i> 作成者: {todo.user?.username || '不明'}</span>
+                      {todo.requester && todo.requester.length > 0 && (
+                        <span className="me-3"><i className="bi bi-person-check"></i> 依頼先: {todo.requester.map(r => r.username).join(', ')}</span>
+                      )}
+                      {todo.dueDate && (
+                        <span className="me-3"><i className="bi bi-calendar-check"></i> 期日: {new Date(todo.dueDate).toLocaleDateString()}</span>
+                      )}
+                      {todo.scheduledDate && (
+                        <span className="me-3"><i className="bi bi-calendar-event"></i> 予定日: {new Date(todo.scheduledDate).toLocaleDateString()}</span>
+                      )}
+                      <span className="me-3"><i className="bi bi-clock"></i> 作成: {new Date(todo.createdAt).toLocaleDateString()}</span>
+                      {todo.completedBy && (
+                        <span className="me-3 text-success"><i className="bi bi-check-circle-fill"></i> 完了: {todo.completedBy.username} ({new Date(todo.completedAt).toLocaleDateString()})</span>
+                      )}
+                    </div>
+                  </div>
+                </ListGroup.Item>
+              )) : <ListGroup.Item className="text-muted">完了済みのTODOはありません。</ListGroup.Item>}
+            </ListGroup>
+          </Accordion.Body>
+        </Accordion.Item>
+      </Accordion>
 
       <TodoCreateModal
         show={isCreateModalOpen}
@@ -168,6 +252,7 @@ function TodoPage() {
         onClose={handleCloseEditModal}
         onSave={handleSaveEdit}
         todo={editingTodo}
+        onDelete={handleDelete}
       />
 
       <TodoFilterSortModal

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Badge } from 'react-bootstrap';
 
 const INITIAL_STATE = {
   text: '',
@@ -6,23 +8,61 @@ const INITIAL_STATE = {
   dueDate: '',
   scheduledDate: '',
   tags: '',
-  creator: '',
-  requester: '',
+  requester: [], // ★ 配列に変更
 };
 
 function TodoCreateModal({ show, onClose, onAdd }) {
   const [formData, setFormData] = useState(INITIAL_STATE);
+  const [assignableUsers, setAssignableUsers] = useState([]);
+  const [groupedUsers, setGroupedUsers] = useState({});
+  const [selectedTenant, setSelectedTenant] = useState('');
 
   // モーダルが表示されるたびにフォームを初期化
   useEffect(() => {
     if (show) {
       setFormData(INITIAL_STATE);
+      setSelectedTenant('');
+
+      // 依頼可能なユーザーリストを取得
+      const fetchAssignableUsers = async () => {
+        try {
+          const res = await axios.get('/api/users/assignable');
+          setAssignableUsers(res.data);
+          // ユーザーを部署ごとにグループ化
+          const grouped = res.data.reduce((acc, user) => {
+            const tenantId = user.tenantId._id;
+            if (!acc[tenantId]) {
+              acc[tenantId] = { name: user.tenantId.name, users: [] };
+            }
+            acc[tenantId].users.push(user);
+            return acc;
+          }, {});
+          setGroupedUsers(grouped);
+        } catch (error) {
+          console.error('依頼可能なユーザーの取得に失敗しました。', error);
+          setAssignableUsers([]); // エラー時は空にする
+        }
+      };
+
+      fetchAssignableUsers();
     }
   }, [show]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // ★ 依頼先ユーザーをクリックしたときの処理
+  const handleRequesterClick = (userId) => {
+    setFormData(prev => {
+      const currentRequesters = prev.requester || [];
+      // 既に選択されていれば除外し、されていなければ追加する
+      const newRequesters = currentRequesters.includes(userId)
+        ? currentRequesters.filter(id => id !== userId)
+        : [...currentRequesters, userId];
+      return { ...prev, requester: newRequesters };
+    });
   };
 
   const handleSubmit = (e) => {
@@ -90,14 +130,40 @@ function TodoCreateModal({ show, onClose, onAdd }) {
                   <input type="date" id="scheduledDate" name="scheduledDate" className="form-control" value={formData.scheduledDate} onChange={handleChange} />
                 </div>
               </div>
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="creator" className="form-label">作成者</label>
-                  <input type="text" id="creator" name="creator" className="form-control" value={formData.creator} onChange={handleChange} />
+              {/* --- 依頼先選択UI --- */}
+              <div className="mb-3">
+                <label className="form-label">依頼先 (複数選択可)</label>
+                <div className="row g-2 mb-2">
+                  <div className="col-12">
+                    <select className="form-select" value={selectedTenant} onChange={(e) => setSelectedTenant(e.target.value)}>
+                      <option value="">1. まず部署を選択してください</option>
+                      {Object.entries(groupedUsers).map(([tenantId, group]) => (
+                        <option key={tenantId} value={tenantId}>{group.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="requester" className="form-label">依頼先</label>
-                  <input type="text" id="requester" name="requester" className="form-control" value={formData.requester} onChange={handleChange} />
+                <div className="d-flex flex-wrap align-items-center gap-1 p-1 rounded" style={{ minHeight: '40px', border: '1px solid #dee2e6' }}>
+                  {selectedTenant && groupedUsers[selectedTenant] ? (
+                    groupedUsers[selectedTenant].users.map((user) => (
+                      <button
+                        type="button"
+                        key={user._id}
+                        className={`btn btn-sm py-0 ${formData.requester.includes(user._id) ? 'btn-primary' : 'btn-outline-secondary'}`}
+                        onClick={() => handleRequesterClick(user._id)}
+                      >
+                        {user.username}
+                      </button>
+                    ))
+                  ) : (
+                    <span className="text-muted small align-self-center">2. ユーザーを選択してください</span>
+                  )}
+                </div>
+                <div className="mt-2">
+                  {formData.requester.map(userId => {
+                    const user = assignableUsers.find(u => u._id === userId);
+                    return user ? <Badge key={userId} pill bg="primary" className="me-1 fw-normal">{user.username}</Badge> : null;
+                  })}
                 </div>
               </div>
             </div>

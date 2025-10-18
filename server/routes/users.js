@@ -144,10 +144,51 @@ router.get('/auth', auth, async (req, res) => {
     // 'admin'ロールを持ち、かつ所属テナントに親(parent)がいない場合にtrue
     userObject.isTopLevelAdmin = user.roles.includes('admin') && user.tenantId?.parent === null;
 
+    // ★ フロントエンドの互換性のために name プロパティを追加
+    userObject.name = userObject.username;
+
     res.json(userObject);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラー');
+  }
+});
+
+/**
+ * @route   GET /api/users/assignable
+ * @desc    タスクを割り当て可能なユーザー（自部署とその配下）のリストを取得する
+ * @access  Private
+ */
+router.get('/assignable', auth, async (req, res) => {
+  try {
+    // 1. ログイン中のユーザーがアクセス可能な全テナントIDのリストを取得する
+    const aggregationResult = await Tenant.aggregate([
+        { $match: { _id: req.user.tenantId } },
+        {
+          $graphLookup: {
+            from: 'tenants',
+            startWith: '$_id',
+            connectFromField: '_id',
+            connectToField: 'parent',
+            as: 'descendants'
+          }
+        }
+    ]);
+    const accessibleTenantIds = aggregationResult[0] ? [aggregationResult[0]._id, ...aggregationResult[0].descendants.map(d => d._id)] : [];
+
+    if (accessibleTenantIds.length === 0) {
+      return res.json([]);
+    }
+
+    // 2. アクセス可能なテナントに所属する全てのユーザーを取得する
+    const users = await User.find({ tenantId: { $in: accessibleTenantIds } })
+      .select('username tenantId') // ★ tenantIdも取得
+      .populate('tenantId', 'name') // ★ tenantIdをpopulateして部署名を取得
+      .sort({ username: 1 }); // 名前順でソート
+    res.json(users);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
   }
 });
 

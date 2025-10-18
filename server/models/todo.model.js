@@ -15,6 +15,17 @@ const todoSchema = new Schema({
     type: Boolean,
     default: false, // デフォルトは未完了(false)
   },
+  // このTODOを完了したユーザーのID
+  completedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  // このTODOが完了した日時
+  completedAt: {
+    type: Date,
+    default: null,
+  },
   // --- 追加フィールド ---
   // 優先度
   priority: {
@@ -43,16 +54,11 @@ const todoSchema = new Schema({
     ref: 'Tenant',
     required: true,
   },
-  // 作成者（将来的にはUserモデルのIDと連携）
-  creator: {
-    type: String,
-    default: '未設定',
-  },
-  // 依頼者（将来的にはUserモデルのIDと連携）
+  // 依頼先ユーザーのID
   requester: {
-    type: String,
-    default: '未設定',
-  },
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // ★ IDの配列に変更
+    default: [],
+  },  
   // このTODOを所有するユーザーのID
   user: {
     type: mongoose.Schema.Types.ObjectId,
