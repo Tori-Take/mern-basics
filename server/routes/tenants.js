@@ -4,7 +4,7 @@ const User = require('../models/user.model'); // ★ Userモデルをインポ�
 const mongoose = require('mongoose'); // ★ Mongooseをインポート
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
-const { getAccessibleTenantIds } = require('../services/permissionService');
+const { getAccessibleTenantIds } = require('../core/services/permissionService');
 
 /**
  * @route   GET /api/tenants

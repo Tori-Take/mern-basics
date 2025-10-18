@@ -3,7 +3,7 @@ const Todo = require('../models/todo.model');
 const Tenant = require('../models/tenant.model'); // ★ Tenantモデルをインポート
 const mongoose = require('mongoose'); // ★ Mongooseをインポート
 const auth = require('../middleware/auth'); // 認証ミドルウェアをインポート
-const { getAccessibleTenantIds } = require('../services/permissionService');
+const { getAccessibleTenantIds } = require('../core/services/permissionService');
 
 // --- すべてのTODO APIを認証ミドルウェアで保護 ---
 router.use(auth);

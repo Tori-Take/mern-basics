@@ -7,22 +7,24 @@ function UserManagementPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get('/api/users');
-        setUsers(res.data);
-      } catch (err) {
-        setError(err.response?.data?.message || 'ユーザー情報の取得に失敗しました。');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsers();
+    loadUsers();
   }, []);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await axios.get('/api/users');
+      setUsers(res.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'ユーザー情報の取得に失敗しました。');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -33,23 +35,23 @@ function UserManagementPage() {
   }
 
   return (
-    <Card className="shadow-sm">
-      <Card.Header as="h2" className="d-flex justify-content-between align-items-center">
-        <span>ユーザー管理</span>
-        <Button as={Link} to="/admin/users/new" variant="primary">
-          ＋ 新規ユーザー追加
-        </Button>
-      </Card.Header>
-      <Card.Body>
-        {error && <Alert variant="danger">{error}</Alert>}
+      <Card className="shadow-sm">
+        <Card.Header as="h2" className="d-flex justify-content-between align-items-center">
+          <span>ユーザー管理</span>
+          <Link to="/admin/users/new" className="btn btn-primary">
+            ＋ 新規ユーザーを追加
+          </Link>
+        </Card.Header>
+        <Card.Body>
+          {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
+          {success && <Alert variant="success" onClose={() => setSuccess('')} dismissible>{success}</Alert>}
         <Table striped bordered hover responsive>
           <thead>
             <tr>
               <th>ユーザー名</th>
               <th>メールアドレス</th>
-              <th>役割 (ロール)</th>
+              <th>役割</th>
               <th>ステータス</th>
-              <th>登録日</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -64,28 +66,17 @@ function UserManagementPage() {
                     {user.status}
                   </span>
                 </td>
-                <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                 <td>
-                  <Button
-                    as={Link}
-                    to={`/admin/users/${user._id}`}
-                    variant="outline-secondary"
-                    size="sm"
-                  >
+                  <Link to={`/admin/users/${user._id}`} className="btn btn-outline-primary btn-sm me-2">
                     編集
-                  </Button>
+                  </Link>                  
                 </td>
               </tr>
             ))}
           </tbody>
         </Table>
-        {users.length === 0 && !error && (
-          <div className="text-center text-muted mt-3">
-            この組織にはまだ他のユーザーがいません。
-          </div>
-        )}
       </Card.Body>
-    </Card>
+    </Card>    
   );
 }
 

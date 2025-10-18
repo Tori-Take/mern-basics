@@ -6,7 +6,7 @@ const Tenant = require('../models/tenant.model'); // Tenantモデルをインポ
 const Role = require('../models/role.model'); // Roleモデルをインポート
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
-const { getAccessibleTenantIds } = require('../services/permissionService');
+const { getAccessibleTenantIds } = require('../core/services/permissionService');
 
 /**
  * @route   POST /api/users/register
@@ -389,6 +389,41 @@ router.post('/', [auth, admin], async (req, res) => {
     delete userObject.password;
     
     res.status(201).json(userObject);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+/**
+ * @route   DELETE /api/users/:id
+ * @desc    ユーザーを削除する (管理者のみ)
+ * @access  Private/Admin
+ */
+router.delete('/:id', [auth, admin], async (req, res) => {
+  try {
+    const userIdToDelete = req.params.id;
+
+    // --- 権限チェック ---
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
+    const userToDelete = await User.findOne({
+      _id: userIdToDelete,
+      tenantId: { $in: accessibleTenantIds }
+    });
+
+    if (!userToDelete) {
+      return res.status(404).json({ message: 'ユーザーが見つからないか、削除する権限がありません。' });
+    }
+
+    // 安全装置: 自分自身は削除できないようにする
+    if (userToDelete.id === req.user.id) {
+      return res.status(400).json({ message: '自分自身のアカウントは削除できません。' });
+    }
+
+    await User.findByIdAndDelete(userIdToDelete);
+
+    res.json({ message: 'ユーザーが正常に削除されました。' });
+
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');

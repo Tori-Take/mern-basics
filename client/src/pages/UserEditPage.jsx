@@ -21,6 +21,7 @@ function UserEditPage() {
   const [success, setSuccess] = useState(''); // 成功メッセージ用のStateを追加
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false); // モーダル表示用のState
+  const [showDeleteModal, setShowDeleteModal] = useState(false); // ★ 削除モーダル用のState
   const [temporaryPassword, setTemporaryPassword] = useState(''); // 一時パスワード入力用のState
 
 
@@ -87,6 +88,20 @@ function UserEditPage() {
       setError(err.response?.data?.message || 'ユーザー情報の更新に失敗しました。');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // ★ 削除処理
+  const handleDelete = async () => {
+    setShowDeleteModal(false); // モーダルを閉じる
+    setError('');
+    setSuccess('');
+    try {
+      await axios.delete(`/api/users/${id}`);
+      // 成功したら一覧ページにメッセージ付きでリダイレクト
+      navigate('/admin/users', { state: { message: `ユーザー「${userData.username}」を削除しました。` } });
+    } catch (err) {
+      setError(err.response?.data?.message || 'ユーザーの削除に失敗しました。');
     }
   };
 
@@ -196,7 +211,10 @@ function UserEditPage() {
           </Form.Group>
 
           <div className="d-flex justify-content-between">
-            <Link to="/admin/users" className="btn btn-secondary">一覧に戻る</Link>
+            <div>
+              <Link to="/admin/users" className="btn btn-secondary me-2">一覧に戻る</Link>
+              <Button variant="outline-danger" onClick={() => setShowDeleteModal(true)}>削除</Button>
+            </div>
             <Button variant="primary" type="submit" disabled={isSubmitting}>
               {isSubmitting ? <><Spinner as="span" animation="border" size="sm" /> 更新中...</> : '更新'}
             </Button>
@@ -239,6 +257,26 @@ function UserEditPage() {
           </Button>
           <Button variant="danger" onClick={handleConfirmReset}>
             リセット実行
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* ★ 削除確認モーダル */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>ユーザーの削除</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          本当に <strong>{userData.username}</strong> を削除しますか？
+          <br />
+          <strong className="text-danger">この操作は元に戻せません。</strong>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            キャンセル
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            削除実行
           </Button>
         </Modal.Footer>
       </Modal>

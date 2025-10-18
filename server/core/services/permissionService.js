@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Tenant = require('../models/tenant.model');
+const Tenant = require('../../models/tenant.model');
 
 /**
  * ログイン中の管理者がアクセス可能な全てのテナントIDのリストを取得する
