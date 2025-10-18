@@ -37,6 +37,12 @@ const todoSchema = new Schema({
     type: [String],
     default: [],
   },
+  // このTODOが所属するテナントのID
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    required: true,
+  },
   // 作成者（将来的にはUserモデルのIDと連携）
   creator: {
     type: String,

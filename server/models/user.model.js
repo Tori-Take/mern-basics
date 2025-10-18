@@ -3,10 +3,16 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
+  // このユーザーが所属するテナントのID
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    required: true,
+  },
   username: {
     type: String,
     required: [true, 'ユーザー名は必須です。'],
-    unique: true,
+    // unique: true, // この行を削除またはコメントアウト
     trim: true,
     minlength: [2, 'ユーザー名は2文字以上で入力してください。']
   },
@@ -49,6 +55,9 @@ const userSchema = new Schema({
 }, {
   timestamps: true, // createdAtとupdatedAtを自動で追加
 });
+
+// 複合ユニークインデックスを設定: tenantId と username の組み合わせがユニークであることを保証する
+userSchema.index({ tenantId: 1, username: 1 }, { unique: true });
 
 const User = mongoose.model('User', userSchema);
 

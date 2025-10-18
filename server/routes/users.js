@@ -1,62 +1,63 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken'); // ★ この行を追加
 const User = require('../models/user.model');
+const Tenant = require('../models/tenant.model'); // Tenantモデルをインポート
+const Role = require('../models/role.model'); // Roleモデルをインポート
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 
-// @route   POST /api/users/register
-// @desc    新しいユーザーを登録する
-// @access  Public
+/**
+ * @route   POST /api/users/register
+ * @desc    新しいテナントと、そのテナントの最初の管理者ユーザーを登録する
+ * @access  Public
+ */
 router.post('/register', async (req, res) => {
   try {
-    // 1. リクエストボディからユーザー情報を取得
-    const { name, email, password } = req.body; // "username" を "name" に変更
+    const { username, email, password, tenantName } = req.body;
 
-    // 2. 必須項目が入力されているか簡易チェック
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'ユーザー名、メールアドレス、パスワードは必須です。' });
+    // --- 入力値のバリデーション ---
+    if (!username || !email || !password || !tenantName) {
+      return res.status(400).json({ message: 'すべての必須項目（組織名, ユーザー名, メールアドレス, パスワード）を入力してください。' });
     }
 
-    // 3. メールアドレスが既に存在するかチェック
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) {
+    // --- テナント名とメールアドレスの重複チェック ---
+    const existingTenant = await Tenant.findOne({ name: tenantName });
+    if (existingTenant) {
+      return res.status(400).json({ message: 'その組織名は既に使用されています。' });
+    }
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return res.status(400).json({ message: 'このメールアドレスは既に使用されています。' });
     }
 
-    // 4. ユーザー名が既に存在するかチェック
-    const existingUsername = await User.findOne({ username: name }); // クエリを "name" に合わせる
-    if (existingUsername) {
-      return res.status(400).json({ message: 'このユーザー名は既に使用されています。' });
-    }
+    // --- 1. 新しいテナントを作成 ---
+    const newTenant = new Tenant({ name: tenantName });
+    await newTenant.save();
 
-    // 4. パスワードをハッシュ化（暗号化）
+    // --- 2. 新しいテナント用の基本ロールを作成 ---
+    // このテナントに所属する 'user' と 'admin' ロールを作成します。
+    await Role.insertMany([
+      { name: 'user', description: '一般ユーザー', tenantId: newTenant._id },
+      { name: 'admin', description: '管理者', tenantId: newTenant._id }
+    ]);
+
+    // --- 3. パスワードのハッシュ化 ---
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 5. 新しいユーザーオブジェクトを作成
+    // --- 4. 新しいユーザー（最初の管理者）を作成 ---
     const newUser = new User({
-      username: name, // "name" をモデルの "username" フィールドにマッピング
+      tenantId: newTenant._id, // 作成したテナントのIDを紐付け
+      username,
       email,
-      password: hashedPassword, // ハッシュ化したパスワードを保存
-      // rolesはモデルのデフォルト値['user']が自動的に設定される
+      password: hashedPassword,
+      roles: ['user', 'admin'], // 最初のユーザーは管理者権限を持つ
     });
 
-    // 6. データベースに保存
-    const savedUser = await newUser.save();
+    await newUser.save();
 
-    // 7. 登録成功後、そのままログインさせるためにJWTを生成
-    const payload = {
-      user: {
-        id: savedUser.id,
-      },
-    };
-
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
-      if (err) throw err;
-      res.status(201).json({ token }); // トークンを返す
-    });
-
+    res.status(201).json({ message: 'ユーザー登録が成功しました。' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');
@@ -68,16 +69,15 @@ router.post('/register', async (req, res) => {
 // @access  Public
 router.post('/login', async (req, res) => {
   try {
-    // 1. リクエストボディから情報を取得
-    const { name, password } = req.body; // "username" を "name" に変更
+    const { email, password } = req.body; // emailでログインするように変更
 
     // 2. 必須項目チェック
-    if (!name || !password) {
-      return res.status(400).json({ message: 'ユーザー名とパスワードを入力してください。' });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'メールアドレスとパスワードを入力してください。' });
     }
 
-    // 3. ユーザーをユーザー名で検索
-    const user = await User.findOne({ username: name }); // クエリを "name" に合わせる
+    // 3. ユーザーをメールアドレスで検索
+    const user = await User.findOne({ email });
     if (!user) {
       // セキュリティのため、どちらが間違っているか特定させないメッセージを返す
       return res.status(400).json({ message: 'ユーザー名またはパスワードが無効です。' });
@@ -98,6 +98,7 @@ router.post('/login', async (req, res) => {
     const payload = {
       user: {
         id: user.id,
+        // tenantIdはミドルウェアでDBから取得するため、トークンには含めない
       },
     };
 
@@ -112,7 +113,9 @@ router.post('/login', async (req, res) => {
           forceReset: true, // フロントエンドへの目印
         });
       }
-      res.json({ token }); // 通常のレスポンス
+      // ログイン成功時に、JWTトークンとユーザー情報を返す
+      const { password, ...userWithoutPassword } = user.toObject();
+      res.json({ token, user: userWithoutPassword });
     });
   } catch (err) {
     console.error(err.message);
@@ -131,14 +134,7 @@ router.get('/auth', auth, async (req, res) => {
       return res.status(404).json({ message: 'ユーザーが見つかりません。' });
     }
 
-    // フロントエンドの期待に合わせてレスポンスを整形
-    const userObject = user.toObject();
-    userObject.name = userObject.username;
-    userObject.isActive = user.status === 'active';
-    delete userObject.username;
-    // isAdminはスキーマから削除するので、こちらも不要
-
-    res.json(userObject);
+    res.json(user);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラー');
@@ -150,8 +146,11 @@ router.get('/auth', auth, async (req, res) => {
 // @access  Private/Admin
 router.get('/', [auth, admin], async (req, res) => {
   try {
+    // ログイン中の管理者と同じテナントに所属するユーザーのみを取得
     // パスワードを除外し、作成日が新しい順にソートして全ユーザーを取得
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    const users = await User.find({ tenantId: req.user.tenantId })
+      .select('-password')
+      .sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
     console.error(err.message);
@@ -164,18 +163,15 @@ router.get('/', [auth, admin], async (req, res) => {
 // @access  Private/Admin
 router.get('/:id', [auth, admin], async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    // IDとテナントIDの両方で検索し、他テナントの情報を取得できないようにする
+    const user = await User.findOne({ _id: req.params.id, tenantId: req.user.tenantId })
+      .select('-password');
 
     if (!user) {
       return res.status(404).json({ message: 'ユーザーが見つかりません。' });
     }
-    // フロントエンドの期待に合わせて、username を name として返す
-    const userObject = user.toObject();
-    userObject.name = userObject.username;
-    userObject.isActive = user.status === 'active'; // 不足していた isActive を追加
-    delete userObject.username;
 
-    res.json(userObject); // 修正点1: 変換後のオブジェクトを返す
+    res.json(user);
   } catch (err) {
     console.error(err.message);
     if (err.kind === 'ObjectId') {
@@ -190,10 +186,10 @@ router.get('/:id', [auth, admin], async (req, res) => {
 // @access  Private/Admin
 router.put('/:id', [auth, admin], async (req, res) => {
   try {
-    const { name, email, roles, isActive } = req.body; // 修正点2: フロントエンドのデータ形式に合わせる
+    const { username, email, roles, status } = req.body;
 
     // 更新対象のユーザーを検索
-    const user = await User.findById(req.params.id);
+    const user = await User.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
     if (!user) {
       return res.status(404).json({ message: 'ユーザーが見つかりません。' });
     }
@@ -201,35 +197,29 @@ router.put('/:id', [auth, admin], async (req, res) => {
     // --- 重複チェック ---
     // 1. メールアドレスが変更され、かつ他のユーザーに既に使用されていないかチェック
     if (email && email !== user.email) {
-      const existingEmail = await User.findOne({ email: email, _id: { $ne: user._id } });
+      const existingEmail = await User.findOne({ email: email });
       if (existingEmail) {
         return res.status(400).json({ message: 'このメールアドレスは既に使用されています。' });
       }
       user.email = email;
     }
 
-    // 2. ユーザー名が変更され、かつ他のユーザーに既に使用されていないかチェック
-    if (name && name !== user.username) {
-      const existingUsername = await User.findOne({ username: name, _id: { $ne: user._id } });
+    // 2. ユーザー名が変更され、かつ同じテナント内の他のユーザーに既に使用されていないかチェック
+    if (username && username !== user.username) {
+      const existingUsername = await User.findOne({ username: username, tenantId: req.user.tenantId, _id: { $ne: user._id } });
       if (existingUsername) {
         return res.status(400).json({ message: 'このユーザー名は既に使用されています。' });
       }
-      user.username = name;
+      user.username = username;
     }
 
-    // --- デバッグログ ---
-    console.log('[PUT /api/users/:id] 受信したデータ:', { name, email, roles, isActive });
-    console.log('[PUT /api/users/:id] 更新前のユーザー状態:', { username: user.username, roles: user.roles, status: user.status });
+    // statusを更新
+    if (status) user.status = status;
 
-    // statusをisActiveに基づいて更新 (より安全な方法に修正)
-    if (typeof isActive === 'boolean') {
-      user.status = isActive ? 'active' : 'inactive';
-    }
-
+    // rolesを更新
     if (roles) user.roles = roles; // rolesを更新
 
     const updatedUser = await user.save();
-    console.log('[PUT /api/users/:id] 更新後のユーザー状態:', { username: updatedUser.username, roles: updatedUser.roles, status: updatedUser.status });
 
     res.json(updatedUser);
 
@@ -244,35 +234,32 @@ router.put('/:id', [auth, admin], async (req, res) => {
 // @access  Private/Admin
 router.post('/', [auth, admin], async (req, res) => {
   try {
-    // 新しいデータ形式に合わせる
-    const { name, email, password, roles, isActive } = req.body;
+    const { username, email, password, roles, status } = req.body;
 
     // 必須項目チェック
-    if (!name || !email || !password) {
+    if (!username || !email || !password) {
       return res.status(400).json({ message: 'ユーザー名、メールアドレス、パスワードは必須です。' });
     }
 
     // 重複チェック
-    const existingUser = await User.findOne({ $or: [{ email }, { username: name }] });
+    const existingUser = await User.findOne({ $or: [{ email }, { username, tenantId: req.user.tenantId }] });
     if (existingUser) {
       return res.status(400).json({ message: 'そのユーザー名またはメールアドレスは既に使用されています。' });
     }
 
-    // パスワードをハッシュ化
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 'user' ロールが必ず含まれるようにする
     const finalRoles = roles ? [...new Set(['user', ...roles])] : ['user'];
 
     const newUser = new User({
-      username: name,
+      tenantId: req.user.tenantId, // 管理者と同じテナントに作成
+      username,
       email,
       password: hashedPassword,
       roles: finalRoles,
-      status: (typeof isActive === 'boolean' && !isActive) ? 'inactive' : 'active',
+      status: status || 'active',
     });
-
     const savedUser = await newUser.save();
     
     // フロントエンドの期待に合わせてレスポンスを整形
@@ -280,7 +267,7 @@ router.post('/', [auth, admin], async (req, res) => {
     userObject.name = userObject.username;
     delete userObject.username;
     delete userObject.password;
-
+    
     res.status(201).json(userObject);
   } catch (err) {
     console.error(err.message);
@@ -299,7 +286,7 @@ router.post('/:id/force-reset', [auth, admin], async (req, res) => {
   }
 
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
     if (!user) {
       return res.status(404).json({ message: 'ユーザーが見つかりません。' });
     }

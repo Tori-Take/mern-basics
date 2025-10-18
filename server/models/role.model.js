@@ -2,10 +2,16 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const roleSchema = new Schema({
+  // このロールが所属するテナントのID
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    required: true,
+  },
   name: {
     type: String,
     required: [true, 'ロール名は必須です。'],
-    unique: true, // データ品質: 重複したロール名を許可しない
+    // unique: true, // ← この行を削除またはコメントアウトします
     trim: true,
   },
   description: { // 将来的な拡張性のため、説明フィールドも追加
@@ -14,6 +20,9 @@ const roleSchema = new Schema({
     default: '',
   }
 }, { timestamps: true });
+
+// 複合ユニークインデックスを設定: tenantId と name の組み合わせがユニークであることを保証する
+roleSchema.index({ tenantId: 1, name: 1 }, { unique: true });
 
 const Role = mongoose.model('Role', roleSchema);
 

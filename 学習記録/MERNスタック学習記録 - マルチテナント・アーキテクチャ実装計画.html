@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - マルチテナント・アーキテクチャ実装計画</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #343a40;
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f8f9fa;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #005f73;
+            border-bottom: 2px solid #0a9396;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 4px;
+            font-size: 2.5em;
+        }
+
+        h2 {
+            background-color: #e9ecef;
+            padding: 12px 15px;
+            border-left: 6px solid #0a9396;
+            font-size: 1.8em;
+        }
+
+        h3 {
+            border-bottom-style: dashed;
+            border-bottom-width: 1px;
+            font-size: 1.4em;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #212529;
+            color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .phase {
+            font-weight: bold;
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 15px;
+            margin-right: 10px;
+            display: inline-block;
+        }
+
+        .phase-1 {
+            background-color: #0077b6;
+        }
+
+        .phase-2 {
+            background-color: #fb8500;
+        }
+
+        .phase-3 {
+            background-color: #8ac926;
+        }
+
+        .tag {
+            font-size: 0.8em;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: #fff;
+            margin-right: 5px;
+        }
+
+        .backend {
+            background-color: #457b9d;
+        }
+
+        .frontend {
+            background-color: #e63946;
+        }
+
+        .critical {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        ul {
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>マルチテナント・アーキテクチャ実装計画</h1>
+    <p class="text-center" style="font-size: 1.2em;">TODOアプリをスケーラブルなSaaSへと進化させるためのロードマップ</p>
+
+    <div class="card">
+        <h2>はじめに：ゴール設定</h2>
+        <p>
+            現在のTODOアプリを、複数の組織（テナント）が安全に共存できる<strong>マルチテナント・アプリケーション</strong>へと進化させます。最終的には、組織の親子関係を反映した<strong>階層型マルチテナント</strong>を実現し、「上位組織が下位組織のデータを閲覧できる」といった高度なアクセス制御を実装することを目指します。
+        </p>
+    </div>
+
+    <!-- ==================== フェーズ1 ==================== -->
+    <div class="card">
+        <h2><span class="phase phase-1">フェーズ1</span>基本的なマルチテナント基盤の構築</h2>
+        <p>まず、各テナントが完全に独立して動作する、最も基本的なマルチテナントの仕組みを実装します。これが全ての土台となります。</p>
+
+        <h3>ステップ1: <span class="tag backend">Backend</span> `Tenant`モデルの作成</h3>
+        <p>アプリケーションを利用する組織（会社、部署、家族など）の単位となる「テナント」の設計図を作成します。</p>
+        <ul>
+            <li><code>server/models/tenant.model.js</code>を新規作成します。</li>
+            <li>テナント名（<code>name: String</code>）を持つシンプルなスキーマを定義します。</li>
+        </ul>
+
+        <h3>ステップ2: <span class="tag backend">Backend</span> 既存モデルへの`tenantId`追加</h3>
+        <p>全てのデータが「どのテナントに所属するか」を明確にするため、各モデルに所有者情報を刻印します。</p>
+        <ul>
+            <li><code>user.model.js</code>, <code>todo.model.js</code>, <code>role.model.js</code>を修正します。</li>
+            <li>各スキーマに<code>tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true }</code>を追加します。</li>
+        </ul>
+
+        <h3>ステップ3: <span class="tag backend frontend">Backend/Frontend</span> ユーザー登録フローの刷新</h3>
+        <p>ユーザーが登録する際に、自身が所属するテナントも同時に作成・決定するフローを構築します。</p>
+        <ul>
+            <li><strong>バックエンド:</strong>
+                新規登録APIを改修し、ユーザー情報と共に「組織名（テナント名）」を受け取れるようにします。内部で新しいテナントを作成し、そのIDを新しいユーザーに紐付けます。</li>
+            <li><strong>フロントエンド:</strong> 登録ページ(<code>RegisterPage.jsx</code>)に「組織名」の入力フィールドを追加します。</li>
+        </ul>
+
+        <div class="critical">
+            <h4>💡 最重要：テナント分離ロジックの実装</h4>
+            <p>ここがマルチテナントの心臓部です。APIリクエストのたびに、<strong>「ログインユーザーのテナントに属するデータしか操作させない」</strong>という絶対的なルールを強制します。</p>
+        </div>
+
+        <h3>ステップ4: <span class="tag backend">Backend</span> APIの全面改修</h3>
+        <p>全てのデータベース操作に、テナントによる絞り込みを適用します。</p>
+        <ul>
+            <li><strong>データ取得 (GET):</strong> <code>Todo.find()</code> を
+                <code>Todo.find({ tenantId: req.user.tenantId })</code> のように変更し、自テナントのデータのみを返します。</li>
+            <li><strong>データ作成 (POST):</strong>
+                新しいデータを作成する際、<code>new Todo({ ...data, tenantId: req.user.tenantId })</code> のように、自動で自テナントIDを付与します。</li>
+            <li><strong>データ更新/削除 (PUT/DELETE):</strong>
+                操作対象のデータを検索する際、<code>Todo.findOne({ _id: req.params.id, tenantId: req.user.tenantId })</code>
+                のように、IDとテナントIDの両方で絞り込み、他テナントのデータを誤って操作することを防ぎます。</li>
+        </ul>
+    </div>
+
+    <!-- ==================== フェーズ2 ==================== -->
+    <div class="card">
+        <h2><span class="phase phase-2">フェーズ2</span>階層型マルチテナントへの進化</h2>
+        <p>基本的なテナント分離が完成したら、テナント間に親子関係を持たせ、より複雑な組織構造に対応できるようにします。</p>
+
+        <h3>ステップ5: <span class="tag backend">Backend</span> `Tenant`モデルの階層化</h3>
+        <p>テナントが「親」を持てるように、モデル自身を参照するフィールドを追加します。</p>
+        <ul>
+            <li><code>tenant.model.js</code>を修正します。</li>
+            <li><code>parent: { type: Schema.Types.ObjectId, ref: 'Tenant', default: null }</code>フィールドを追加します。</li>
+        </ul>
+
+        <h3>ステップ6: <span class="tag backend">Backend</span> アクセス制御ロジックの高度化</h3>
+        <p>「自分自身」と「全ての子孫」のテナントにアクセスできるように、権限チェックロジックを拡張します。</p>
+        <ul>
+            <li>バックエンドに、指定されたテナントID配下にある全ての子孫テナントIDを再帰的に検索し、リストを返すヘルパー関数 (例: <code>getAccessibleTenantIds</code>)
+                を作成します。</li>
+            <li>データ取得API (GET) を改修し、<code>find({ tenantId: { $in: accessibleTenantIds } })</code>
+                のように、Mongooseの<code>$in</code>演算子を使って、アクセス可能な全てのテナントのデータを一度に取得できるようにします。</li>
+        </ul>
+    </div>
+
+    <!-- ==================== フェーズ3 ==================== -->
+    <div class="card">
+        <h2><span class="phase phase-3">フェーズ3</span>管理機能とUI/UXの洗練</h2>
+        <p>システムが完成したら、管理者がテナントやユーザーを管理しやすくするためのUIを構築します。</p>
+
+        <h3>ステップ7: <span class="tag frontend">Frontend</span> テナント管理UIの作成</h3>
+        <p>管理者がテナントの階層構造を視覚的に把握し、編集できるようにします。</p>
+        <ul>
+            <li>管理者ダッシュボードに「テナント管理ページ」を新設します。</li>
+            <li>テナントのツリー構造を表示し、ドラッグ＆ドロップで親子関係を変更できるようなUIを検討します（ライブラリ利用も視野に）。</li>
+            <li>新しい子テナント（部署など）を作成する機能を追加します。</li>
+        </ul>
+
+        <h3>ステップ8: <span class="tag backend frontend">Backend/Frontend</span> ユーザー招待機能の実装</h3>
+        <p>既存のテナントに新しいユーザーを招待する、より実践的なフローを構築します。</p>
+        <ul>
+            <li>管理者がメールアドレスを入力して、自分のテナントにユーザーを招待できるUIを作成します。</li>
+            <li>バックエンドで招待トークンを生成し、招待メールを送信する仕組みを実装します（<code>nodemailer</code>など）。</li>
+            <li>招待されたユーザーは、メール内のリンクからパスワードを設定して登録を完了します。</li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

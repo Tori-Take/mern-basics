@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const Role = require('./models/role.model'); // Roleモデルをインポート
+const Role = require('./models/role.model');
+const Tenant = require('./models/tenant.model'); // ★ Tenantモデルをインポート
 const path = require('path');
 
 // 環境変数を .env ファイルから読み込む
@@ -16,12 +17,13 @@ app.use(express.json()); // JSON形式のリクエストボディを解析でき
 
 // MongoDBへの接続 (今はまだ接続文字列がありません)
 const uri = process.env.ATLAS_URI;
-// TODO APIエンドポイントのルーターを読み込む
-const todosRouter = require('./routes/todos'); // 既存
-const usersRouter = require('./routes/users'); // 新しく追加
 
-// '/todos' というパスにルーターを適用する
-app.use('/todos', todosRouter);
+// APIルートの設定
+const todosRouter = require('./routes/todos');
+const usersRouter = require('./routes/users');
+// const authRouter = require('./routes/auth'); // auth.jsがまだ存在しないため一時的にコメントアウト
+
+app.use('/api/todos', todosRouter);
 // '/api/users' というパスにユーザー関連のルーターを適用する
 app.use('/api/users', usersRouter);
 app.use('/api/roles', require('./routes/roles'));
@@ -37,24 +39,6 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// --- 基本的なロールが存在することを確認・作成する関数 ---
-const initializeRoles = async () => {
-  try {
-    const count = await Role.estimatedDocumentCount();
-    if (count === 0) {
-      console.log("基本的なロール（user, admin）を初期化します...");
-      await Role.create([
-        { name: 'user', description: '一般ユーザー。基本的なアクセス権を持つ。' },
-        { name: 'admin', description: '管理者。全てのアクセス権を持つ。' }
-      ]);
-      console.log("ロールの初期化が完了しました。");
-    }
-  } catch (error) {
-    console.error("ロールの初期化中にエラーが発生しました:", error);
-    // エラーが発生してもサーバー起動は続行するが、管理者に警告する
-  }
-};
-
 // データベースに接続してからサーバーを起動する
 const startServer = async () => {
   try {
@@ -62,7 +46,26 @@ const startServer = async () => {
     console.log("MongoDB データベースへの接続が正常に確立されました");
 
     // サーバー起動前にロールを初期化
-    await initializeRoles();
+    // await initializeRoles(); // テナントごとにロールを作成するため、このグローバルな初期化は不要になりました。
+
+    // --- ここから動作確認用のコード ---
+    console.log('\n[動作確認] テナントモデルの動作を確認します...');
+    try {
+      const testTenantName = 'Default Tenant';
+      const existingTenant = await Tenant.findOne({ name: testTenantName });
+
+      if (!existingTenant) {
+        console.log(`'${testTenantName}' が見つかりません。新規作成します...`);
+        await Tenant.create({ name: testTenantName });
+        console.log(`✅ [成功] '${testTenantName}' の作成が完了しました。`);
+      } else {
+        console.log(`✅ [成功] '${testTenantName}' は既に存在します。モデルは正常に動作しています。`);
+      }
+    } catch (error) {
+      console.error('❌ [失敗] テナントの確認・作成中にエラーが発生しました:', error.message);
+    }
+    console.log('--- 動作確認完了 ---\n');
+    // --- ここまで ---
 
     app.listen(port, () => {
       console.log(`サーバーがポート ${port} で起動しました。`);
