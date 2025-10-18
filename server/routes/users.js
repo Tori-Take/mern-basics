@@ -103,7 +103,7 @@ router.post('/login', async (req, res) => {
     };
 
     // 7. JWTに署名してトークンを生成
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
+    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, async (err, token) => {
       if (err) throw err;
 
       // パスワード強制リセットフラグをチェック
@@ -114,8 +114,12 @@ router.post('/login', async (req, res) => {
         });
       }
       // ログイン成功時に、JWTトークンとユーザー情報を返す
-      const { password, ...userWithoutPassword } = user.toObject();
-      res.json({ token, user: userWithoutPassword });
+      // ★ populateでテナント情報を付与してからレスポンスを返す
+      const userToReturn = await User.findById(user.id)
+        .select('-password')
+        .populate('tenantId', 'name parent');
+
+      res.json({ token, user: userToReturn });
     });
   } catch (err) {
     console.error(err.message);
