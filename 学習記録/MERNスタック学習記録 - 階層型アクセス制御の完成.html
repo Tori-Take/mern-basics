@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - 階層型アクセス制御の完成</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #343a40;
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f8f9fa;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #005f73;
+            border-bottom: 2px solid #0a9396;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 4px;
+            font-size: 2.5em;
+        }
+
+        h2 {
+            background-color: #e9ecef;
+            padding: 12px 15px;
+            border-left: 6px solid #0a9396;
+            font-size: 1.8em;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #212529;
+            color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .milestone {
+            background-color: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .debug-story {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .tech-highlight {
+            background-color: #e0fbfc;
+            border-left: 5px solid #2ec4b6;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        ul {
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - 階層型アクセス制御の完成</h1>
+
+    <div class="card milestone">
+        <h2>最大の達成：階層型アクセス制御の実現</h2>
+        <p>
+            ついに、このアプリケーションの核心とも言える<strong>「階層型アクセス制御」</strong>を実装することに成功しました。これは、単に組織構造を管理できるだけでなく、その階層に基づいて「親は子のデータにアクセスできる」という、実際のビジネスルールをシステムに反映させたことを意味します。
+        </p>
+        <p>
+            これにより、私たちのアプリケーションは、大企業の複雑な権限要件にも応えられる、真にエンタープライズレベルのスケーラビリティとセキュリティを手に入れました。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>実装ハイライト</h2>
+        <div class="tech-highlight">
+            <h3>1. 階層型アクセス制御ロジックの確立</h3>
+            <p>
+                ユーザー管理関連のAPI（<code>GET /api/users</code>, <code>GET /api/users/:id</code>,
+                <code>PUT /api/users/:id</code>）を全面的に改修しました。
+            </p>
+            <ul>
+                <li><strong>アクセス可能範囲の特定:</strong> <code>$graphLookup</code> を活用し、ログイン中の管理者のテナントとその配下にある全ての子孫テナントのIDリスト
+                    (<code>accessibleTenantIds</code>) を動的に生成するロジックを構築しました。</li>
+                <li><strong><code>$in</code> 演算子による権限チェック:</strong> <code>User.find()</code> や
+                    <code>User.findOne()</code> の検索条件を、<code>{ tenantId: { $in: accessibleTenantIds } }</code>
+                    とすることで、「管理者の管轄下にある組織のユーザー」のみを操作対象とする、柔軟かつ堅牢なアクセス制御を実現しました。</li>
+            </ul>
+            <pre><code>// server/routes/users.js のアクセス制御ロジック
+const accessibleTenantIds = ...; // $graphLookupで全管轄IDを取得
+const users = await User.find({ tenantId: { $in: accessibleTenantIds } });</code></pre>
+        </div>
+
+        <h3>2. ユーザーの所属部署変更機能</h3>
+        <p>
+            組織の階層構造に「人」を割り当てるための、極めて重要な機能を実装しました。
+        </p>
+        <ul>
+            <li><strong>フロントエンド:</strong>
+                <code>UserEditPage.jsx</code>に、組織全体の階層をリスト表示する「所属部署」ドロップダウンを設置。管理者が直感的にユーザーの異動を行えるUIを構築しました。</li>
+            <li><strong>バックエンド:</strong> <code>PUT /api/users/:id</code>
+                APIを改修し、フロントエンドから送られてきた新しい<code>tenantId</code>でユーザーの所属を安全に更新できるようにしました。</li>
+        </ul>
+    </div>
+
+    <div class="card debug-story">
+        <h2>デバッグの物語：階層の壁を越えて</h2>
+        <p>
+            階層型アクセス制御の実装は、これまでの開発で最も複雑なデバッグの連続でした。しかし、その一つ一つが大きな学びとなりました。
+        </p>
+        <ol>
+            <li><strong>「表示されない」バグとの戦い:</strong>
+                新しい部署を作成しても一覧に表示されない問題に対し、<code>$graphLookup</code>のクエリを何度も見直し、最終的に組織全体のツリーを正しく取得するロジックを完成させました。</li>
+            <li><strong>「ユーザーが見つかりません」の罠:</strong>
+                ユーザー一覧は表示されるのに編集ページに入れない問題に直面。これは、一覧取得APIと個別取得APIでアクセス制御のロジックが異なっていたことが原因でした。このデバッグを通じて、<strong>アプリケーション全体の権限チェックロジックを統一する</strong>ことの重要性を学びました。
+            </li>
+        </ol>
+        <p>
+            これらの経験は、複雑なシステムにおける一貫性の担保と、地道なログ分析の価値を教えてくれる、貴重なレッスンでした。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>現在地と次のステップ</h2>
+        <p>
+            現在、アプリケーションは<strong>「ユーザー管理」において、完全な階層型アクセス制御を実現</strong>しました。管理者は、自分の管轄下にある全ての部署のユーザーを、一覧で確認し、編集することができます。
+        </p>
+        <p>
+            次のステップでは、この強力なアクセス制御モデルを、アプリケーションの本来の機能である<strong>「TODO管理」</strong>にも適用していきます。「本社の部長が、営業部のTODOリストを閲覧・管理できる」といった機能を実装し、この階層型マルチテナント・アーキテクチャを完全に完成させましょう。
+        </p>
+    </div>
+
+</body>
+
+</html>

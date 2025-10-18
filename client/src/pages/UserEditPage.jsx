@@ -12,8 +12,10 @@ function UserEditPage() {
     email: '',
     roles: [],
     status: 'active',
+    tenantId: '', // ★ 所属テナントIDを保持するstateを追加
   });
   const [allRoles, setAllRoles] = useState([]);
+  const [allTenants, setAllTenants] = useState([]); // ★ 組織階層を保持するstateを追加
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(''); // 成功メッセージ用のStateを追加
@@ -26,10 +28,11 @@ function UserEditPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // ユーザー情報と全ロール情報を並行して取得
-        const [userRes, rolesRes] = await Promise.all([
+        // ユーザー情報、全ロール、全テナントを並行して取得
+        const [userRes, rolesRes, tenantsRes] = await Promise.all([
           axios.get(`/api/users/${id}`),
           axios.get('/api/roles'),
+          axios.get('/api/tenants'), // ★ 組織階層を取得するAPIを呼び出し
         ]);
 
         setUserData({
@@ -37,8 +40,10 @@ function UserEditPage() {
           email: userRes.data.email,
           roles: userRes.data.roles || [],
           status: userRes.data.status,
+          tenantId: userRes.data.tenantId, // ★ ユーザーの現在の所属テナントIDをセット
         });
         setAllRoles(rolesRes.data);
+        setAllTenants(tenantsRes.data); // ★ 取得した組織階層をstateにセット
 
       } catch (err) {
         setError(err.response?.data?.message || 'データの取得に失敗しました。');
@@ -141,6 +146,22 @@ function UserEditPage() {
               onChange={handleInputChange}
               required
             />
+          </Form.Group>
+
+          {/* ★★★ ここから所属部署のドロップダウンを追加 ★★★ */}
+          <Form.Group className="mb-3" controlId="tenantId">
+            <Form.Label>所属部署</Form.Label>
+            <Form.Select
+              name="tenantId"
+              value={userData.tenantId}
+              onChange={handleInputChange}
+            >
+              {allTenants.map(tenant => (
+                <option key={tenant._id} value={tenant._id}>
+                  {tenant.name}
+                </option>
+              ))}
+            </Form.Select>
           </Form.Group>
 
           <Form.Group className="mb-3">

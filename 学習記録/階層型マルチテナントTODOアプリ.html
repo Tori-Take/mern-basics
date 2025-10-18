@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>開発記録 - 階層型マルチテナントTODOアプリ</title>
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 960px;
+        }
+
+        .feature-card {
+            transition: transform .2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .architecture-highlight {
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="text-center mb-5">
+            <h1 class="display-4">開発記録</h1>
+            <p class="lead text-muted">階層型マルチテナントTODOアプリケーション</p>
+            <hr>
+        </header>
+
+        <main>
+            <!-- プロジェクト概要 -->
+            <section class="mb-5">
+                <h2><i class="bi bi-flag-fill text-primary"></i> 1. プロジェクト概要</h2>
+                <p>本プロジェクトは、企業などの組織構造に対応可能な、階層型マルチテナントTODO管理アプリケーションの開発を目的としています。管理者は自身の管轄下にある部署のユーザーやデータを一元管理できる、高度なアクセス制御機能の実現を目指しました。
+                </p>
+            </section>
+
+            <!-- 達成した機能 -->
+            <section class="mb-5">
+                <h2><i class="bi bi-check2-circle text-success"></i> 2. 達成した主要機能</h2>
+                <div class="row">
+                    <!-- ユーザー認証基盤 -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm feature-card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-key-fill"></i> ユーザー認証基盤</h5>
+                                <ul class="list-unstyled">
+                                    <li>✓ 新規組織登録と管理者作成</li>
+                                    <li>✓ JWTによるセキュアなログイン</li>
+                                    <li>✓ パスワード強制リセット機能</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 階層型組織管理 -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm feature-card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-diagram-3-fill"></i> 階層型組織管理</h5>
+                                <ul class="list-unstyled">
+                                    <li>✓ 権限に応じた組織一覧の表示</li>
+                                    <li>✓ 部署詳細ページの導入</li>
+                                    <li>✓ サブ部署の追加、部署名の編集</li>
+                                    <li>✓ 安全装置付きの部署削除機能</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 階層型ユーザー管理 -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm feature-card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-people-fill"></i> 階層型ユーザー管理</h5>
+                                <ul class="list-unstyled">
+                                    <li>✓ 管轄下のユーザーのみを一覧表示</li>
+                                    <li>✓ ユーザー作成・編集機能</li>
+                                    <li>✓ ユーザーの所属部署変更機能</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 高度な権限管理 -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm feature-card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-shield-lock-fill"></i> 高度な権限管理</h5>
+                                <ul class="list-unstyled">
+                                    <li>✓ 役割（ロール）管理機能</li>
+                                    <li>✓ 最上位管理者のみ役割定義が可能</li>
+                                    <li>✓ 下位管理者は役割の利用のみ可能</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- アーキテクチャ -->
+            <section class="mb-5">
+                <h2><i class="bi bi-braces text-info"></i> 3. アーキテクチャのハイライト</h2>
+                <div class="p-4 rounded architecture-highlight">
+                    <h5>バックエンド (Node.js / Express / MongoDB)</h5>
+                    <ul>
+                        <li>MongoDBの <code>$graphLookup</code> を活用し、組織階層データを効率的に取得。</li>
+                        <li><code>auth</code>, <code>admin</code>, <code>topLevelAdminOnly</code>
+                            といった再利用可能なミドルウェアを実装し、APIエンドポイントを宣言的に保護。</li>
+                        <li>各APIに厳格な権限チェックを組み込み、テナント間のデータ分離を徹底。</li>
+                    </ul>
+                    <hr>
+                    <h5>フロントエンド (React)</h5>
+                    <ul>
+                        <li><code>Context API</code> を用いて、アプリケーション全体で認証状態とユーザー情報を一元管理。</li>
+                        <li><code>React Router</code> を活用し、管理者用ルートや動的な詳細ページへの遷移を実現。</li>
+                        <li>一覧ページから詳細ページへ遷移するUIパターンを導入し、UXを向上。</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 今後の展望 -->
+            <section>
+                <h2><i class="bi bi-forward-fill text-warning"></i> 4. 今後の展望</h2>
+                <p>強固な管理基盤が完成した今、次はいよいよアプリケーションの核心的価値を高めるステップに進みます。</p>
+                <div class="alert alert-warning">
+                    <strong>次のステップ:</strong> TODO管理への階層型アクセス制御の適用
+                </div>
+                <p>管理者が自身の管轄下にある全ての部署のTODOを一覧で確認・管理できる機能を実装し、階層型マルチテナントの真価を発揮させます。</p>
+            </section>
+        </main>
+
+        <footer class="text-center text-muted mt-5">
+            <p>&copy; 2023 Your Project Name</p>
+        </footer>
+    </div>
+</body>
+
+</html>

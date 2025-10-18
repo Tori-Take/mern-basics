@@ -1,11 +1,27 @@
 const router = require('express').Router();
 const Role = require('../models/role.model');
 const User = require('../models/user.model');
+const Tenant = require('../models/tenant.model');
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 
 // 保護された必須ロールのリスト
 const PROTECTED_ROLES = ['user', 'admin'];
+
+// 最上位管理者のみアクセスを許可するミドルウェア
+const topLevelAdminOnly = async (req, res, next) => {
+  try {
+    const userTenant = await Tenant.findById(req.user.tenantId);
+    // ユーザーのテナントが存在し、かつ親(parent)がいない場合のみ許可
+    if (userTenant && userTenant.parent === null) {
+      next();
+    } else {
+      res.status(403).json({ message: 'この操作は最上位の管理者のみ許可されています。' });
+    }
+  } catch (error) {
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+};
 
 // --- 全てのロール管理APIは、ログイン済みかつ管理者である必要がある ---
 router.use(auth); // このファイル内のAPIは全てログイン必須
@@ -15,7 +31,7 @@ router.use(auth); // このファイル内のAPIは全てログイン必須
  * @desc    全てのロールを取得
  * @access  Private (Admin)
  */
-router.get('/', admin, async (req, res) => { // ★ adminミドルウェアを個別に追加
+router.get('/', admin, async (req, res) => {
   try {
     // ログイン中の管理者と同じテナントに所属するロールのみを取得
     const roles = await Role.find({ tenantId: req.user.tenantId }).sort({ createdAt: 'asc' });
@@ -31,7 +47,7 @@ router.get('/', admin, async (req, res) => { // ★ adminミドルウェアを�
  * @desc    新しいロールを作成
  * @access  Private (Admin)
  */
-router.post('/', admin, async (req, res) => { // ★ adminミドルウェアを個別に追加
+router.post('/', [admin, topLevelAdminOnly], async (req, res) => {
   const { name, description } = req.body;
 
   if (!name || name.trim() === '') {
@@ -62,7 +78,7 @@ router.post('/', admin, async (req, res) => { // ★ adminミドルウェアを�
  * @desc    ロールを更新
  * @access  Private (Admin)
  */
-router.put('/:id', admin, async (req, res) => { // ★ adminミドルウェアを個別に追加
+router.put('/:id', [admin, topLevelAdminOnly], async (req, res) => {
   const { name, description } = req.body;
 
   try {
@@ -95,7 +111,7 @@ router.put('/:id', admin, async (req, res) => { // ★ adminミドルウェア�
  * @desc    ロールを削除
  * @access  Private (Admin)
  */
-router.delete('/:id', admin, async (req, res) => { // ★ adminミドルウェアを個別に追加
+router.delete('/:id', [admin, topLevelAdminOnly], async (req, res) => {
   try {
     // ★ IDとテナントIDの両方で検索
     const roleToDelete = await Role.findOne({ _id: req.params.id, tenantId: req.user.tenantId });

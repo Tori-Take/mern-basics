@@ -129,12 +129,22 @@ router.post('/login', async (req, res) => {
 router.get('/auth', auth, async (req, res) => {
   try {
     // authミドルウェアでreq.userにIDがセットされている
-    const user = await User.findById(req.user.id).select('-password'); // パスワードを除外して取得
+    const user = await User.findById(req.user.id)
+      .select('-password')
+      .populate('tenantId', 'parent'); // ★ ユーザーの所属テナント情報を取得
+
     if (!user) {
       return res.status(404).json({ message: 'ユーザーが見つかりません。' });
     }
 
-    res.json(user);
+    // Mongooseドキュメントをプレーンなオブジェクトに変換
+    const userObject = user.toObject();
+
+    // ★ 最上位の管理者かどうかを判定するフラグを追加
+    // 'admin'ロールを持ち、かつ所属テナントに親(parent)がいない場合にtrue
+    userObject.isTopLevelAdmin = user.roles.includes('admin') && user.tenantId?.parent === null;
+
+    res.json(userObject);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラー');
@@ -146,9 +156,30 @@ router.get('/auth', auth, async (req, res) => {
 // @access  Private/Admin
 router.get('/', [auth, admin], async (req, res) => {
   try {
-    // ログイン中の管理者と同じテナントに所属するユーザーのみを取得
+    // --- 階層型アクセス制御の実装 ---
+    // 1. ログイン中の管理者がアクセス可能な全テナントIDのリストを取得する
+    const accessibleTenants = await Tenant.aggregate([
+      { $match: { _id: req.user.tenantId } }, // ログインユーザーのテナントから検索開始
+      { $graphLookup: {
+          from: 'tenants',
+          startWith: '$_id',
+          connectFromField: '_id',
+          connectToField: 'parent',
+          as: 'descendants'
+      }},
+      // 自身と子孫をフラットな配列に展開し、IDのみを抽出
+      { $project: { _id: 0, allIds: { $map: { input: { $concatArrays: [ [ "$$ROOT" ], "$descendants" ] }, as: "t", in: "$$t._id" } } } }
+    ]);
+
+    const accessibleTenantIds = accessibleTenants.length > 0 ? accessibleTenants[0].allIds : [];
+
+    if (accessibleTenantIds.length === 0) {
+      return res.json([]); // アクセス可能なテナントがない場合は空の配列を返す
+    }
+
+    // 2. アクセス可能なテナントに所属する全てのユーザーを取得する
     // パスワードを除外し、作成日が新しい順にソートして全ユーザーを取得
-    const users = await User.find({ tenantId: req.user.tenantId })
+    const users = await User.find({ tenantId: { $in: accessibleTenantIds } })
       .select('-password')
       .sort({ createdAt: -1 });
     res.json(users);
@@ -163,9 +194,26 @@ router.get('/', [auth, admin], async (req, res) => {
 // @access  Private/Admin
 router.get('/:id', [auth, admin], async (req, res) => {
   try {
-    // IDとテナントIDの両方で検索し、他テナントの情報を取得できないようにする
-    const user = await User.findOne({ _id: req.params.id, tenantId: req.user.tenantId })
-      .select('-password');
+    // --- 階層型アクセス制御 ---
+    // 1. 管理者がアクセス可能な全テナントIDのリストを取得
+    const accessibleTenants = await Tenant.aggregate([
+      { $match: { _id: req.user.tenantId } },
+      { $graphLookup: {
+          from: 'tenants',
+          startWith: '$_id',
+          connectFromField: '_id',
+          connectToField: 'parent',
+          as: 'descendants'
+      }},
+      { $project: { _id: 0, allIds: { $map: { input: { $concatArrays: [ [ "$$ROOT" ], "$descendants" ] }, as: "t", in: "$$t._id" } } } }
+    ]);
+    const accessibleTenantIds = accessibleTenants.length > 0 ? accessibleTenants[0].allIds : [];
+
+    // 2. 編集対象のユーザーが、アクセス可能なテナントのいずれかに所属しているかチェック
+    const user = await User.findOne({
+      _id: req.params.id,
+      tenantId: { $in: accessibleTenantIds }
+    }).select('-password');
 
     if (!user) {
       return res.status(404).json({ message: 'ユーザーが見つかりません。' });
@@ -186,10 +234,28 @@ router.get('/:id', [auth, admin], async (req, res) => {
 // @access  Private/Admin
 router.put('/:id', [auth, admin], async (req, res) => {
   try {
-    const { username, email, roles, status } = req.body;
+    const { username, email, roles, status, tenantId } = req.body; // ★ tenantIdを受け取る
 
-    // 更新対象のユーザーを検索
-    const user = await User.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
+    // --- 階層型アクセス制御 ---
+    // 1. 管理者がアクセス可能な全テナントIDのリストを取得
+    const accessibleTenants = await Tenant.aggregate([
+      { $match: { _id: req.user.tenantId } },
+      { $graphLookup: {
+          from: 'tenants',
+          startWith: '$_id',
+          connectFromField: '_id',
+          connectToField: 'parent',
+          as: 'descendants'
+      }},
+      { $project: { _id: 0, allIds: { $map: { input: { $concatArrays: [ [ "$$ROOT" ], "$descendants" ] }, as: "t", in: "$$t._id" } } } }
+    ]);
+    const accessibleTenantIds = accessibleTenants.length > 0 ? accessibleTenants[0].allIds : [];
+
+    // 2. 更新対象のユーザーが、アクセス可能なテナントのいずれかに所属しているかチェック
+    const user = await User.findOne({
+      _id: req.params.id,
+      tenantId: { $in: accessibleTenantIds }
+    });
     if (!user) {
       return res.status(404).json({ message: 'ユーザーが見つかりません。' });
     }
@@ -215,6 +281,9 @@ router.put('/:id', [auth, admin], async (req, res) => {
 
     // statusを更新
     if (status) user.status = status;
+
+    // ★ tenantIdを更新
+    if (tenantId) user.tenantId = tenantId;
 
     // rolesを更新
     if (roles) user.roles = roles; // rolesを更新

@@ -1,7 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function AdminDashboardPage() {
+  const { user } = useAuth();
+
   return (
     <div>
       <h1 className="text-center my-4">管理者ダッシュボード</h1>
@@ -21,19 +24,21 @@ function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* 役割管理カード (ここから追加) */}
-        <div className="col-md-6 col-lg-4">
-          <div className="card h-100 shadow-sm">
-            <div className="card-body text-center d-flex flex-column">
-              <i className="bi bi-tags-fill fs-1 text-info mb-3"></i>
-              <h5 className="card-title">役割管理</h5>
-              <p className="card-text">ユーザーに割り当てる役割（ロール）を動的に作成・編集・削除します。</p>
-              <Link to="/admin/roles" className="btn btn-info mt-auto">
-                Manage
-              </Link>
+        {/* 役割管理カード (最上位管理者のみ表示) */}
+        {user?.isTopLevelAdmin && (
+          <div className="col-md-6 col-lg-4">
+            <div className="card h-100 shadow-sm">
+              <div className="card-body text-center d-flex flex-column">
+                <i className="bi bi-tags-fill fs-1 text-info mb-3"></i>
+                <h5 className="card-title">役割管理</h5>
+                <p className="card-text">ユーザーに割り当てる役割（ロール）を動的に作成・編集・削除します。</p>
+                <Link to="/admin/roles" className="btn btn-info mt-auto">
+                  Manage
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* 組織管理カード (ここから追加) */}
         <div className="col-md-6 col-lg-4">

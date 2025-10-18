@@ -1,8 +1,32 @@
 const router = require('express').Router();
 const Tenant = require('../models/tenant.model');
+const User = require('../models/user.model'); // ★ Userモデルをインポート
 const mongoose = require('mongoose'); // ★ Mongooseをインポート
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
+
+/**
+ * ログイン中の管理者がアクセス可能な全てのテナントIDのリストを取得するヘルパー関数
+ * @param {string} userTenantId - ログイン中管理者のテナントID
+ * @returns {Promise<Array<mongoose.Types.ObjectId>>} - アクセス可能なテナントIDの配列
+ */
+const getAccessibleTenantIds = async (userTenantId) => {
+  const aggregationResult = await Tenant.aggregate([
+    { $match: { _id: new mongoose.Types.ObjectId(userTenantId) } },
+    {
+      $graphLookup: {
+        from: 'tenants',
+        startWith: '$_id',
+        connectFromField: '_id',
+        connectToField: 'parent',
+        as: 'descendants'
+      }
+    }
+  ]);
+
+  const selfAndDescendants = aggregationResult[0] ? [aggregationResult[0]._id, ...aggregationResult[0].descendants.map(d => d._id)] : [new mongoose.Types.ObjectId(userTenantId)];
+  return selfAndDescendants;
+};
 
 /**
  * @route   GET /api/tenants
@@ -11,42 +35,62 @@ const admin = require('../middleware/admin');
  */
 router.get('/', [auth, admin], async (req, res) => {
   try {
-    // 1. ログインユーザーが所属するテナントのIDを取得
-    const userTenantId = req.user.tenantId;
+    // 1. ログイン管理者がアクセス可能なテナントIDリストを取得
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
 
-    // 2. ログインユーザーのテナントから、その組織全体の階層を取得
-    //    $graphLookupを使って、親方向と子方向の両方を検索します。
-    const hierarchy = await Tenant.aggregate([
-      // ステップA: ユーザーの所属テナントを起点に、親を遡ってルートを見つける
-      { $graphLookup: {
-          from: 'tenants',
-          startWith: '$parent',
-          connectFromField: 'parent',
-          connectToField: '_id',
-          as: 'ancestors'
-      }},
-      // ステップB: ログインユーザーのテナントに絞り込む
-      { $match: { _id: userTenantId } },
-      // ステップC: 見つけたルートテナント（または自身）を起点に、子孫をすべて見つける
-      { $graphLookup: {
-          from: 'tenants',
-          startWith: { $ifNull: [ { $arrayElemAt: [ '$ancestors._id', -1 ] }, '$_id' ] }, // 親がいれば親から、いなければ自分から
-          connectFromField: '_id',
-          connectToField: 'parent',
-          as: 'descendants'
-      }},
-      // ステップD: 取得した全テナントを一つの配列にまとめる
-      { $project: { allTenants: { $setUnion: [ '$ancestors', '$descendants', ['$$ROOT'] ] } } },
-      { $unwind: '$allTenants' },
-      { $replaceRoot: { newRoot: '$allTenants' } },
-    ]);
+    if (accessibleTenantIds.length === 0) {
+      return res.json([]);
+    }
 
-    // 3. populateで親の名前を付与
-    const populatedHierarchy = await Tenant.populate(hierarchy, { path: 'parent', select: 'name' });
+    // 2. アクセス可能なテナントの情報のみをDBから取得する
+    const tenants = await Tenant.find({ _id: { $in: accessibleTenantIds } })
+      .populate('parent', 'name') // 親組織の名前も取得
+      .sort({ name: 1 }); // 名前順でソート
 
-    res.json(populatedHierarchy);
+    res.json(tenants);
+
   } catch (err) {
     console.error('【GET /api/tenants】API処理中にエラーが発生しました:', err);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+/**
+ * @route   GET /api/tenants/:id
+ * @desc    特定のテナント（部署）の詳細情報を取得する
+ * @access  Private (Admin)
+ */
+router.get('/:id', [auth, admin], async (req, res) => {
+  try {
+    const tenantId = req.params.id;
+
+    // --- セキュリティ強化 ---
+    // 1. ログイン管理者がアクセス可能なテナントIDリストを取得
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+    // 2. アクセスしようとしているテナントが、そのリストに含まれているか検証
+    const isAllowed = accessibleTenantIds.some(id => id.equals(tenantId));
+    if (!isAllowed) {
+      return res.status(403).json({ message: 'この部署にアクセスする権限がありません。' });
+    }
+
+    // 1. テナント自体の情報を取得し、親の名前をpopulateする
+    const tenant = await Tenant.findById(tenantId).populate('parent', 'name');
+
+    if (!tenant) {
+      return res.status(404).json({ message: '部署が見つかりません。' });
+    }
+
+    // 2. このテナントを親に持つ子テナント（サブ部署）の一覧を取得する
+    const children = await Tenant.find({ parent: tenantId }).select('name _id');
+
+    // 3. レスポンスとして、テナント情報と子テナント一覧を返す
+    res.json({
+      ...tenant.toObject(), // Mongooseドキュメントをプレーンなオブジェクトに変換
+      children,
+    });
+
+  } catch (err) {
+    console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');
   }
 });
@@ -84,6 +128,86 @@ router.post('/', [auth, admin], async (req, res) => {
   }
 });
 
-// Note: PUT (更新) や DELETE (削除) のAPIもここに追加していくことができます。
+/**
+ * @route   PUT /api/tenants/:id
+ * @desc    テナント（部署）名を更新する
+ * @access  Private (Admin)
+ */
+router.put('/:id', [auth, admin], async (req, res) => {
+  const { name } = req.body;
+
+  if (!name || name.trim() === '') {
+    return res.status(400).json({ message: 'テナント名は必須です。' });
+  }
+
+  try {
+    const tenantIdToUpdate = req.params.id;
+
+    // --- セキュリティ強化 ---
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+    const isAllowed = accessibleTenantIds.some(id => id.equals(tenantIdToUpdate));
+    if (!isAllowed) {
+      return res.status(403).json({ message: 'この部署を編集する権限がありません。' });
+    }
+
+    const tenant = await Tenant.findById(tenantIdToUpdate);
+    if (!tenant) return res.status(404).json({ message: 'テナントが見つかりません。' });
+
+
+    tenant.name = name.trim();
+    await tenant.save();
+
+    res.json(tenant);
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ message: 'そのテナント名は既に使用されています。' });
+    }
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+/**
+ * @route   DELETE /api/tenants/:id
+ * @desc    テナント（部署）を削除する
+ * @access  Private (Admin)
+ */
+router.delete('/:id', [auth, admin], async (req, res) => {
+  try {
+    const tenantIdToDelete = req.params.id;
+
+    // --- セキュリティ強化 ---
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+    const isAllowed = accessibleTenantIds.some(id => id.equals(tenantIdToDelete));
+    if (!isAllowed) {
+      return res.status(403).json({ message: 'この部署を削除する権限がありません。' });
+    }
+
+
+    // 安全装置1: 子テナント（サブ部署）が存在する場合は削除させない
+    const childCount = await Tenant.countDocuments({ parent: tenantIdToDelete });
+    if (childCount > 0) {
+      return res.status(400).json({ message: `この部署には ${childCount} 個のサブ部署が存在するため、削除できません。` });
+    }
+
+    // 安全装置2: ユーザーが所属している場合は削除させない
+    const userCount = await User.countDocuments({ tenantId: tenantIdToDelete });
+    if (userCount > 0) {
+      // --- デバッグ用ログ ---
+      // どのユーザーが所属しているために削除できないのかを確認する
+      const usersInTenant = await User.find({ tenantId: tenantIdToDelete }).select('username email');
+      console.log(`【DELETE /api/tenants】削除ブロック: テナント ${tenantIdToDelete} には以下のユーザーが所属しています:`, usersInTenant);
+      // --- デバッグ用ログここまで ---
+      return res.status(400).json({ message: `この部署には ${userCount} 人のユーザーが所属しているため、削除できません。` });
+    }
+
+    await Tenant.findByIdAndDelete(tenantIdToDelete);
+
+    res.json({ message: 'テナントが正常に削除されました。' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
 
 module.exports = router;

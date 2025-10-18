@@ -16,7 +16,8 @@ import ForceResetPasswordPage from './pages/ForceResetPasswordPage';
 import UserCreatePage from './pages/UserCreatePage';
 import RoleManagementPage from './pages/RoleManagementPage'; 
 import UserEditPage from './pages/UserEditPage';
-import TenantManagementPage from './pages/TenantManagementPage'; // ★ 新しく追加
+import TenantManagementPage from './pages/TenantManagementPage';
+import TenantDetailPage from './pages/TenantDetailPage'; // ★ 新しく追加
 
 // AppContentコンポーネントを新しく定義
 function AppContent() {
@@ -82,7 +83,13 @@ function AppContent() {
             path="/admin/tenants"
             element={
               <AdminRoute><TenantManagementPage /></AdminRoute>
-            } 
+            }
+          />
+          <Route
+            path="/admin/tenants/:id"
+            element={
+              <AdminRoute><TenantDetailPage /></AdminRoute> // ★ 新しく追加
+            }
           />
 
         </Routes>
