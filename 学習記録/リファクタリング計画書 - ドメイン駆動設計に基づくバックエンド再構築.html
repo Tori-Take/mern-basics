@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リファクタリング計画書 - ドメイン駆動設計 (超安全版)</title>
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            padding: 2rem;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 960px;
+        }
+
+        .step-card {
+            border-left: 5px solid;
+        }
+
+        .step-1 {
+            border-color: #0d6efd;
+        }
+
+        .step-2 {
+            border-color: #fd7e14;
+        }
+
+        .step-3 {
+            border-color: #6f42c1;
+        }
+
+        .step-4 {
+            border-color: #dc3545;
+        }
+
+        .step-5 {
+            border-color: #198754;
+        }
+
+        .step-6 {
+            border-color: #0dcaf0;
+        }
+
+        .step-7 {
+            border-color: #ffc107;
+        }
+
+        .verification-box {
+            background-color: #e9ecef;
+        }
+
+        code {
+            background-color: #d1d1d1;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="text-center mb-5">
+            <h1 class="display-5">リファクタリング計画書</h1>
+            <p class="lead text-muted">ドメイン駆動設計に基づくバックエンド再構築 (超安全版)</p>
+            <hr>
+        </header>
+
+        <main>
+            <!-- 目的 -->
+            <section class="mb-5">
+                <h2><i class="bi bi-bullseye text-primary"></i> 1. 目的</h2>
+                <p>現在のバックエンドのファイル構成を、ドメイン駆動設計（DDD）の考え方に基づいて再構築する。具体的には、「認証・認可」「組織管理」「タスク管理」といった業務領域（ドメイン）ごとにファイルを整理する。これにより、将来の機能追加を容易にし、コードの保守性と拡張性を飛躍的に向上させる。
+                </p>
+            </section>
+
+            <!-- 計画ステップ -->
+            <section class="mb-5">
+                <h2><i class="bi bi-signpost-split-fill text-success"></i> 2. 計画ステップ</h2>
+
+                <!-- ステップ1 -->
+                <div class="card shadow-sm mb-4 step-card step-1">
+                    <div class="card-header bg-primary text-white">
+                        <h4>ステップ 1: 新しいフォルダ構成の骨格作成</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">作業内容</h5>
+                        <ol>
+                            <li><code>server</code>ディレクトリ直下に<code>core</code>と<code>domains</code>フォルダを作成。</li>
+                            <li><code>server/core</code>内に<code>middleware</code>と<code>services</code>フォルダを作成。</li>
+                            <li><code>server/domains</code>内に<code>identity</code>, <code>organization</code>,
+                                <code>task</code>フォルダを作成。</li>
+                        </ol>
+                        <hr>
+                        <div class="p-3 rounded verification-box">
+                            <h6 class="card-subtitle mb-2"><i class="bi bi-clipboard2-check-fill"></i> 動作確認方法</h6>
+                            <p class="card-text mb-0">この時点では既存のファイルは何も移動していないため、サーバーは正常に起動し、アプリケーションはこれまで通り動作します。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ステップ2 -->
+                <div class="card shadow-sm mb-4 step-card step-2">
+                    <div class="card-header bg-warning text-dark">
+                        <h4>ステップ 2: <code>permissionService.js</code> の移行</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">作業内容</h5>
+                        <ol>
+                            <li><code>server/services/permissionService.js</code> を <code>server/core/services/</code>
+                                に移動する。</li>
+                            <li>このサービスを<code>require</code>している全てのファイル (<code>tenants.js</code>, <code>users.js</code>,
+                                <code>todos.js</code>) のパスを修正する。<br>例: <code>require('../services/...')</code> →
+                                <code>require('../../core/services/...')</code></li>
+                        </ol>
+                        <hr>
+                        <div class="p-3 rounded verification-box">
+                            <h6 class="card-subtitle mb-2"><i class="bi bi-clipboard2-check-fill"></i> 動作確認方法</h6>
+                            <p class="card-text mb-0">
+                                サーバーを再起動し、エラーなく起動することを確認します。その後、管理者でログインし、<strong>組織管理、ユーザー管理、TODOリスト</strong>が正常に表示されることを確認します。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ステップ3 -->
+                <div class="card shadow-sm mb-4 step-card step-3">
+                    <div class="card-header text-white" style="background-color: #6f42c1;">
+                        <h4>ステップ 3: ミドルウェア (<code>auth.js</code>, <code>admin.js</code>) の移行</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">作業内容</h5>
+                        <ol>
+                            <li><code>server/middleware/auth.js</code> と <code>admin.js</code> を
+                                <code>server/core/middleware/</code> に移動する。</li>
+                            <li>これらのミドルウェアを<code>require</code>している全てのファイル (<code>tenants.js</code>,
+                                <code>users.js</code>, <code>todos.js</code>, <code>roles.js</code>) のパスを修正する。<br>例:
+                                <code>require('../middleware/...')</code> →
+                                <code>require('../../core/middleware/...')</code></li>
+                        </ol>
+                        <hr>
+                        <div class="p-3 rounded verification-box">
+                            <h6 class="card-subtitle mb-2"><i class="bi bi-clipboard2-check-fill"></i> 動作確認方法</h6>
+                            <p class="card-text mb-0">
+                                サーバーを再起動し、エラーなく起動することを確認します。その後、<strong>ログインが必要なページ（TODOリストなど）と管理者専用ページ（組織管理など）</strong>へのアクセス制御が正しく機能していることを確認します。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ステップ4以降 -->
+                <p class="mt-5 text-center">--- <strong>ここからドメインごとの移行サイクルを開始します</strong> ---</p>
+
+                <div class="card shadow-sm mb-4 step-card step-4">
+                    <div class="card-header text-white" style="background-color: #dc3545;">
+                        <h4>ステップ 4: 「タスク管理(task)」ドメインの移行</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">作業内容</h5>
+                        <ol>
+                            <li><code>server/models/todo.model.js</code> を <code>server/domains/task/</code> に移動。</li>
+                            <li><code>server/routes/todos.js</code> を <code>server/domains/task/</code>
+                                に移動し、<code>todos.routes.js</code> にリネーム。</li>
+                            <li><strong><code>server.js</code>を修正:</strong> <code>todos</code>のルートパスを修正。</li>
+                            <li><strong><code>todos.routes.js</code>を修正:</strong> 関連する<code>require</code>パスを全て修正。</li>
+                        </ol>
+                        <hr>
+                        <div class="p-3 rounded verification-box">
+                            <h6 class="card-subtitle mb-2"><i class="bi bi-clipboard2-check-fill"></i> 動作確認方法</h6>
+                            <p class="card-text mb-0">サーバーを再起動し、<strong>TODO関連機能</strong>が全て正常に動作することを確認します。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4 step-card step-5">
+                    <div class="card-header bg-success text-white">
+                        <h4>ステップ 5: 「組織管理(organization)」ドメインの移行</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">作業内容</h5>
+                        <ol>
+                            <li><code>server/models/tenant.model.js</code> を <code>server/domains/organization/</code>
+                                に移動。</li>
+                            <li><code>server/routes/tenants.js</code> を <code>server/domains/organization/</code>
+                                に移動し、<code>tenants.routes.js</code> にリネーム。</li>
+                            <li><strong><code>server.js</code>を修正:</strong> <code>tenants</code>のルートパスを修正。</li>
+                            <li><strong><code>tenants.routes.js</code>を修正:</strong> 関連する<code>require</code>パスを全て修正。
+                            </li>
+                            <li><strong>影響範囲の修正:</strong>
+                                この移動によって影響を受ける他のファイル（<code>permissionService.js</code>など）のパスを修正。</li>
+                        </ol>
+                        <hr>
+                        <div class="p-3 rounded verification-box">
+                            <h6 class="card-subtitle mb-2"><i class="bi bi-clipboard2-check-fill"></i> 動作確認方法</h6>
+                            <p class="card-text mb-0">サーバーを再起動し、<strong>組織管理関連機能</strong>が全て正常に動作することを確認します。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-center">...以下、「認証・認可(identity)」ドメインも同様に移行...</p>
+
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>
