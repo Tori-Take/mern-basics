@@ -11,7 +11,7 @@ function LoginPage() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, forceReset } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,9 +28,13 @@ function LoginPage() {
   // ログイン状態(isAuthenticated)が変更されたら実行される
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/'); // ログインに成功したらホームページに遷移
+      if (forceReset) {
+        navigate('/force-reset-password'); // パスワードリセットページへ
+      } else {
+        navigate('/'); // 通常はホームページへ
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, forceReset, navigate]);
   // ★★★ ここまでが修正箇所 ★★★
 
   const { email, password } = formData;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { Table, Button, Spinner, Alert, Card } from 'react-bootstrap';
 
 function UserManagementPage() {
   const [users, setUsers] = useState([]);
@@ -10,6 +11,7 @@ function UserManagementPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        setLoading(true);
         const res = await axios.get('/api/users');
         setUsers(res.data);
       } catch (err) {
@@ -22,56 +24,68 @@ function UserManagementPage() {
     fetchUsers();
   }, []);
 
-  if (loading) return <div>ユーザー情報を読み込み中...</div>;
-  if (error) return <div className="alert alert-danger">{error}</div>;
+  if (loading) {
+    return (
+      <div className="text-center">
+        <Spinner animation="border" /> <span>ユーザー情報を読み込み中...</span>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center my-4">
-        <h1 className="m-0">ユーザー管理</h1>
-        <Link to="/admin/users/new" className="btn btn-success">
-          <i className="bi bi-plus-circle-fill me-2"></i>
-          新規ユーザー追加
-        </Link>
-      </div>
-
-      <div className="table-responsive">
-        <table className="table table-striped table-hover">
-          <thead className="table-dark">
+    <Card className="shadow-sm">
+      <Card.Header as="h2" className="d-flex justify-content-between align-items-center">
+        <span>ユーザー管理</span>
+        <Button as={Link} to="/admin/users/new" variant="primary">
+          ＋ 新規ユーザー追加
+        </Button>
+      </Card.Header>
+      <Card.Body>
+        {error && <Alert variant="danger">{error}</Alert>}
+        <Table striped bordered hover responsive>
+          <thead>
             <tr>
               <th>ユーザー名</th>
               <th>メールアドレス</th>
+              <th>役割 (ロール)</th>
               <th>ステータス</th>
-              <th>管理者</th>
-              <th>役割</th>
               <th>登録日</th>
               <th>操作</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
+            {users.map(user => (
               <tr key={user._id}>
                 <td>{user.username}</td>
                 <td>{user.email}</td>
-                <td>{user.status}</td>
-                <td>{user.isAdmin ? 'はい' : 'いいえ'}</td>
+                <td>{user.roles.join(', ')}</td>
                 <td>
-                  {user.roles.map(role => (
-                    <span key={role} className="badge bg-secondary me-1">{role}</span>
-                  ))}
+                  <span className={`badge bg-${user.status === 'active' ? 'success' : 'secondary'}`}>
+                    {user.status}
+                  </span>
                 </td>
-                <td>{new Date(user.createdAt).toLocaleDateString('ja-JP')}</td>
+                <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                 <td>
-                  <Link to={`/admin/users/${user._id}`} className="btn btn-sm btn-info">
-                    <i className="bi bi-pencil-square"></i> 編集
-                  </Link>
+                  <Button
+                    as={Link}
+                    to={`/admin/users/${user._id}`}
+                    variant="outline-secondary"
+                    size="sm"
+                  >
+                    編集
+                  </Button>
                 </td>
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
-    </div>
+        </Table>
+        {users.length === 0 && !error && (
+          <div className="text-center text-muted mt-3">
+            この組織にはまだ他のユーザーがいません。
+          </div>
+        )}
+      </Card.Body>
+    </Card>
   );
 }
 

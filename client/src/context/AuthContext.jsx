@@ -67,15 +67,19 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', res.data.token);
       setAuthToken(res.data.token);
 
-      // ログイン成功後、レスポンスに含まれるユーザー情報で直接stateを更新
-      setAuthState(prev => ({
-        ...prev,
-        isAuthenticated: true,
-        loading: false,
-        user: res.data.user,
-        forceReset: res.data.forceReset || false,
-      }));
-
+      if (res.data.forceReset) {
+        // パスワードリセットが必要な場合、ユーザー情報を別途読み込む
+        await loadUser();
+      } else {
+        // 通常ログインの場合、レスポンスに含まれるユーザー情報で直接stateを更新
+        setAuthState(prev => ({
+          ...prev,
+          isAuthenticated: true,
+          loading: false,
+          user: res.data.user,
+          forceReset: false,
+        }));
+      }
     } catch (err) {
       // エラーが発生した場合は、呼び出し元にエラーを再スローしてLoginPageで処理させる
       throw err;

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { Form, Button, Card, Alert, Spinner, InputGroup } from 'react-bootstrap';
 
 function UserCreatePage() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '',
-    isActive: true,
+    status: 'active',
     roles: ['user'], // デフォルトで 'user' ロールをセット
   });
   const [allRoles, setAllRoles] = useState([]);
@@ -17,7 +18,6 @@ function UserCreatePage() {
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false); // パスワード表示/非表示用のState
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   useEffect(() => {
     // ページロード時に利用可能な全ロールを取得
     const fetchRoles = async () => {
@@ -33,7 +33,11 @@ function UserCreatePage() {
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    if (name === 'status') {
+      setFormData(prev => ({ ...prev, status: checked ? 'active' : 'inactive' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleRoleChange = (e) => {
@@ -65,83 +69,80 @@ function UserCreatePage() {
   };
 
   return (
-    <div className="row justify-content-center">
-      <div className="col-md-8 col-lg-6">
-        <h1 className="text-center my-4">新規ユーザー追加</h1>
-        {error && <div className="alert alert-danger">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
+    <Card className="shadow-sm">
+      <Card.Header as="h2" className="text-center">新規ユーザー追加</Card.Header>
+      <Card.Body>
+        {success && <Alert variant="success">{success}</Alert>}
+        {error && <Alert variant="danger">{error}</Alert>}
 
-        <form onSubmit={onSubmit}>
-          <div className="mb-3">
-            <label htmlFor="name" className="form-label">ユーザー名</label>
-            <input type="text" className="form-control" id="name" name="name" value={formData.name} onChange={onChange} required />
-          </div>
+        <Form onSubmit={onSubmit}>
+          <Form.Group className="mb-3" controlId="username">
+            <Form.Label>ユーザー名</Form.Label>
+            <Form.Control type="text" name="username" value={formData.username} onChange={onChange} required />
+          </Form.Group>
 
-          <div className="mb-3">
-            <label htmlFor="email" className="form-label">メールアドレス</label>
-            <input type="email" className="form-control" id="email" name="email" value={formData.email} onChange={onChange} required />
-          </div>
+          <Form.Group className="mb-3" controlId="email">
+            <Form.Label>メールアドレス</Form.Label>
+            <Form.Control type="email" name="email" value={formData.email} onChange={onChange} required />
+          </Form.Group>
 
-          <div className="mb-3">
-            <label htmlFor="password" className="form-label">初期パスワード</label>
-            <div className="input-group">
-              <input
+          <Form.Group className="mb-3" controlId="password">
+            <Form.Label>初期パスワード</Form.Label>
+            <InputGroup>
+              <Form.Control
                 type={showPassword ? 'text' : 'password'}
-                className="form-control"
-                id="password"
                 name="password"
                 value={formData.password}
                 onChange={onChange}
                 required
                 minLength="6"
               />
-              <button className="btn btn-outline-secondary" type="button" onClick={() => setShowPassword(!showPassword)}>
-                <i className={showPassword ? "bi bi-eye-slash-fill" : "bi bi-eye-fill"}></i>
-              </button>
-            </div>
-          </div>
+              <Button variant="outline-secondary" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? '隠す' : '表示'}
+              </Button>
+            </InputGroup>
+          </Form.Group>
 
-          <div className="mb-3">
-            <label className="form-label">役割 (ロール)</label>
+          <Form.Group className="mb-3">
+            <Form.Label>役割 (ロール)</Form.Label>
             <div>
               {allRoles.map(role => (
-                <div className="form-check form-check-inline" key={role._id}>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id={`role-create-${role.name}`}
-                    value={role.name}
-                    checked={formData.roles.includes(role.name)}
-                    onChange={handleRoleChange}
-                    disabled={role.name === 'user'}
-                  />
-                  <label className="form-check-label" htmlFor={`role-create-${role.name}`}>{role.name}</label>
-                </div>
+                <Form.Check
+                  inline
+                  key={role._id}
+                  type="checkbox"
+                  id={`role-create-${role.name}`}
+                  label={role.name}
+                  value={role.name}
+                  checked={formData.roles.includes(role.name)}
+                  onChange={handleRoleChange}
+                  disabled={role.name === 'user'}
+                />
               ))}
             </div>
-          </div>
+          </Form.Group>
 
-          <div className="mb-4 form-check form-switch">
-            <input
+          <Form.Group className="mb-4">
+            <Form.Check
               type="checkbox"
-              className="form-check-input"
-              id="isActive"
-              name="isActive"
-              checked={formData.isActive}
+              id="status"
+              name="status"
+              label="アカウントを有効にする"
+              checked={formData.status === 'active'}
               onChange={onChange}
+              as={Form.Switch}
             />
-            <label className="form-check-label" htmlFor="isActive">アカウントを有効にする</label>
-          </div>
+          </Form.Group>
 
           <div className="d-flex justify-content-between">
             <Link to="/admin/users" className="btn btn-secondary">一覧に戻る</Link>
-            <button type="submit" className="btn btn-success" disabled={isSubmitting}>
-              {isSubmitting ? '作成中...' : '作成する'}
-            </button>
+            <Button type="submit" variant="success" disabled={isSubmitting}>
+              {isSubmitting ? <><Spinner as="span" size="sm" /> 作成中...</> : '作成する'}
+            </Button>
           </div>
-        </form>
-      </div>
-    </div>
+        </Form>
+      </Card.Body>
+    </Card>
   );
 }
 

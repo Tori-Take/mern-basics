@@ -18,7 +18,8 @@ router.use(admin);
  */
 router.get('/', async (req, res) => {
   try {
-    const roles = await Role.find().sort({ createdAt: 'asc' });
+    // ログイン中の管理者と同じテナントに所属するロールのみを取得
+    const roles = await Role.find({ tenantId: req.user.tenantId }).sort({ createdAt: 'asc' });
     res.json(roles);
   } catch (err) {
     console.error(err.message);
@@ -40,6 +41,7 @@ router.post('/', async (req, res) => {
 
   try {
     const newRole = new Role({
+      tenantId: req.user.tenantId, // ★ 管理者と同じテナントに作成
       name: name.trim(),
       description: description || '',
     });
@@ -65,13 +67,19 @@ router.put('/:id', async (req, res) => {
   const { name, description } = req.body;
 
   try {
-    const updatedRole = await Role.findByIdAndUpdate(
-      req.params.id,
-      { name, description },
-      { new: true, runValidators: true }
-    );
-    if (!updatedRole) {
+    // ★ IDとテナントIDの両方で検索し、他テナントのデータを操作できないようにする
+    const role = await Role.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
+    if (!role) {
       return res.status(404).json({ message: 'ロールが見つかりません。' });
+    }
+
+    // 更新内容を適用
+    if (name) role.name = name;
+    if (description) role.description = description;
+
+    const updatedRole = await role.save();
+    if (PROTECTED_ROLES.includes(role.name)) {
+      return res.status(400).json({ message: `保護されたロール '${role.name}' の名前は変更できません。` });
     }
     res.json(updatedRole);
   } catch (err) {
@@ -90,7 +98,8 @@ router.put('/:id', async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
   try {
-    const roleToDelete = await Role.findById(req.params.id);
+    // ★ IDとテナントIDの両方で検索
+    const roleToDelete = await Role.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
     if (!roleToDelete) {
       return res.status(404).json({ message: 'ロールが見つかりません。' });
     }
@@ -101,12 +110,12 @@ router.delete('/:id', async (req, res) => {
     }
 
     // データ整合性: このロールを使用しているユーザーがいないか確認
-    const userCount = await User.countDocuments({ roles: roleToDelete.name });
+    const userCount = await User.countDocuments({ tenantId: req.user.tenantId, roles: roleToDelete.name });
     if (userCount > 0) {
       return res.status(400).json({ message: `このロールは ${userCount} 人のユーザーに割り当てられているため、削除できません。` });
     }
 
-    await Role.findByIdAndDelete(req.params.id);
+    await roleToDelete.deleteOne();
     res.json({ message: 'ロールが正常に削除されました。' });
   } catch (err) {
     console.error(err.message);
