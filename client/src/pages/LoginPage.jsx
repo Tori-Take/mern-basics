@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Form, Button, Card, Alert, Spinner } from 'react-bootstrap';
+import { Form, Button, Card, Alert, Spinner, InputGroup } from 'react-bootstrap';
 
 function LoginPage() {
   const [formData, setFormData] = useState({
@@ -10,6 +10,7 @@ function LoginPage() {
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const { login, isAuthenticated, forceReset } = useAuth();
   const navigate = useNavigate();
@@ -70,7 +71,12 @@ function LoginPage() {
             </Form.Group>
             <Form.Group className="mb-4" controlId="password">
               <Form.Label>パスワード</Form.Label>
-              <Form.Control type="password" placeholder="パスワード" name="password" value={password} onChange={onChange} required />
+              <InputGroup>
+                <Form.Control type={showPassword ? 'text' : 'password'} placeholder="パスワード" name="password" value={password} onChange={onChange} required />
+                <Button variant="outline-secondary" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <i className="bi bi-eye-slash"></i> : <i className="bi bi-eye"></i>}
+                </Button>
+              </InputGroup>
             </Form.Group>
             <div className="d-grid">
               <Button variant="primary" type="submit" disabled={isSubmitting}>

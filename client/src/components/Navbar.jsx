@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Dropdown } from 'react-bootstrap';
 
 function Navbar() {
   const { isAuthenticated, logout, user } = useAuth();
@@ -12,23 +13,27 @@ function Navbar() {
   };
 
   const authLinks = (
-    <ul className="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
-      {/* 修正点1: user.isAdmin を user.roles.includes('admin') に変更 */}
+    <div className="d-flex align-items-center">
       {user && user.roles && user.roles.includes('admin') && (
-        <li className="nav-item">
-          <Link to="/admin/dashboard" className="nav-link">管理者ダッシュボード</Link>
-        </li>
+        <Link to="/admin/dashboard" className="nav-link text-white me-3">管理者ダッシュボード</Link>
       )}
-      <li className="nav-item">
-        <span className="navbar-text mx-3">
-          {/* user.name を user.username に修正 */}
-          ようこそ, {user ? user.username : 'ゲスト'}さん
-        </span>
-      </li>
-      <li className="nav-item">
-        <button onClick={onLogout} className="btn btn-outline-light">ログアウト</button>
-      </li>
-    </ul>
+      <Dropdown align="end">
+        <Dropdown.Toggle variant="primary" id="dropdown-user">
+          <i className="bi bi-person-circle me-1"></i>
+          {user ? user.username : 'ゲスト'}
+        </Dropdown.Toggle>
+
+        <Dropdown.Menu>
+          <Dropdown.Item as={Link} to="/profile">
+            <i className="bi bi-person-vcard me-2"></i>プロフィール
+          </Dropdown.Item>
+          <Dropdown.Divider />
+          <Dropdown.Item onClick={onLogout} className="text-danger">
+            <i className="bi bi-box-arrow-right me-2"></i>ログアウト
+          </Dropdown.Item>
+        </Dropdown.Menu>
+      </Dropdown>
+    </div>
   );
 
   const guestLinks = (

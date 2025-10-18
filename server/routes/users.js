@@ -131,7 +131,7 @@ router.get('/auth', auth, async (req, res) => {
     // authミドルウェアでreq.userにIDがセットされている
     const user = await User.findById(req.user.id)
       .select('-password')
-      .populate('tenantId', 'parent'); // ★ ユーザーの所属テナント情報を取得
+      .populate('tenantId', 'name parent'); // ★ ユーザーの所属テナント情報（名前と親）を取得
 
     if (!user) {
       return res.status(404).json({ message: 'ユーザーが見つかりません。' });
@@ -148,6 +148,71 @@ router.get('/auth', auth, async (req, res) => {
     userObject.name = userObject.username;
 
     res.json(userObject);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラー');
+  }
+});
+
+/**
+ * @route   PUT /api/users/profile
+ * @desc    ログイン中のユーザーが自身のプロフィール（ユーザー名、メール）を更新する
+ * @access  Private
+ */
+router.put('/profile', auth, async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
+    }
+
+    // メールが変更された場合、重複をチェック
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: 'このメールアドレスは既に使用されています。' });
+      }
+      user.email = email;
+    }
+
+    const updatedUser = await user.save();
+    const userObject = updatedUser.toObject();
+    delete userObject.password;
+    userObject.name = userObject.username; // フロントエンド互換性のため
+
+    res.json(userObject);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラー');
+  }
+});
+
+/**
+ * @route   PUT /api/users/profile/password
+ * @desc    ログイン中のユーザーが自身のパスワードを更新する
+ * @access  Private
+ */
+router.put('/profile/password', auth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: '現在のパスワードが正しくありません。' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.json({ message: 'パスワードが正常に更新されました。' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラー');
