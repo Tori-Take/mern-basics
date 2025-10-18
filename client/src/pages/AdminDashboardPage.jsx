@@ -35,6 +35,20 @@ function AdminDashboardPage() {
           </div>
         </div>
 
+        {/* 組織管理カード (ここから追加) */}
+        <div className="col-md-6 col-lg-4">
+          <div className="card h-100 shadow-sm">
+            <div className="card-body text-center d-flex flex-column">
+              <i className="bi bi-diagram-3-fill fs-1 text-warning mb-3"></i>
+              <h5 className="card-title">組織管理</h5>
+              <p className="card-text">部署やチームなどの組織階層を管理します。</p>
+              <Link to="/admin/tenants" className="btn btn-warning mt-auto">
+                Manage
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {/* アプリデータ管理カード (準備中) */}
         <div className="col-md-6 col-lg-4">
           <div className="card h-100 shadow-sm">

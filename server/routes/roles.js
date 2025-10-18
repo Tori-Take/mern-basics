@@ -8,15 +8,14 @@ const admin = require('../middleware/admin');
 const PROTECTED_ROLES = ['user', 'admin'];
 
 // --- 全てのロール管理APIは、ログイン済みかつ管理者である必要がある ---
-router.use(auth);
-router.use(admin);
+router.use(auth); // このファイル内のAPIは全てログイン必須
 
 /**
  * @route   GET /api/roles
  * @desc    全てのロールを取得
  * @access  Private (Admin)
  */
-router.get('/', async (req, res) => {
+router.get('/', admin, async (req, res) => { // ★ adminミドルウェアを個別に追加
   try {
     // ログイン中の管理者と同じテナントに所属するロールのみを取得
     const roles = await Role.find({ tenantId: req.user.tenantId }).sort({ createdAt: 'asc' });
@@ -32,7 +31,7 @@ router.get('/', async (req, res) => {
  * @desc    新しいロールを作成
  * @access  Private (Admin)
  */
-router.post('/', async (req, res) => {
+router.post('/', admin, async (req, res) => { // ★ adminミドルウェアを個別に追加
   const { name, description } = req.body;
 
   if (!name || name.trim() === '') {
@@ -63,7 +62,7 @@ router.post('/', async (req, res) => {
  * @desc    ロールを更新
  * @access  Private (Admin)
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', admin, async (req, res) => { // ★ adminミドルウェアを個別に追加
   const { name, description } = req.body;
 
   try {
@@ -96,7 +95,7 @@ router.put('/:id', async (req, res) => {
  * @desc    ロールを削除
  * @access  Private (Admin)
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', admin, async (req, res) => { // ★ adminミドルウェアを個別に追加
   try {
     // ★ IDとテナントIDの両方で検索
     const roleToDelete = await Role.findOne({ _id: req.params.id, tenantId: req.user.tenantId });

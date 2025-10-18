@@ -21,12 +21,15 @@ const uri = process.env.ATLAS_URI;
 // APIルートの設定
 const todosRouter = require('./routes/todos');
 const usersRouter = require('./routes/users');
+const rolesRouter = require('./routes/roles');
+const tenantsRouter = require('./routes/tenants'); // ★ 新しく追加
 // const authRouter = require('./routes/auth'); // auth.jsがまだ存在しないため一時的にコメントアウト
 
 app.use('/api/todos', todosRouter);
 // '/api/users' というパスにユーザー関連のルーターを適用する
 app.use('/api/users', usersRouter);
-app.use('/api/roles', require('./routes/roles'));
+app.use('/api/roles', rolesRouter);
+app.use('/api/tenants', tenantsRouter); // ★ 新しく追加
 
 // --- 本番環境用の設定 ---
 if (process.env.NODE_ENV === 'production') {
