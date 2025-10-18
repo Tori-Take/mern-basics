@@ -3,27 +3,7 @@ const Todo = require('../models/todo.model');
 const Tenant = require('../models/tenant.model'); // ★ Tenantモデルをインポート
 const mongoose = require('mongoose'); // ★ Mongooseをインポート
 const auth = require('../middleware/auth'); // 認証ミドルウェアをインポート
-
-/**
- * ログイン中の管理者がアクセス可能な全てのテナントIDのリストを取得するヘルパー関数
- * @param {string} userTenantId - ログイン中管理者のテナントID
- * @returns {Promise<Array<mongoose.Types.ObjectId>>} - アクセス可能なテナントIDの配列
- */
-const getAccessibleTenantIds = async (userTenantId) => {
-  const aggregationResult = await Tenant.aggregate([
-    { $match: { _id: new mongoose.Types.ObjectId(userTenantId) } },
-    {
-      $graphLookup: {
-        from: 'tenants',
-        startWith: '$_id',
-        connectFromField: '_id',
-        connectToField: 'parent',
-        as: 'descendants'
-      }
-    }
-  ]);
-  return aggregationResult[0] ? [aggregationResult[0]._id, ...aggregationResult[0].descendants.map(d => d._id)] : [];
-};
+const { getAccessibleTenantIds } = require('../services/permissionService');
 
 // --- すべてのTODO APIを認証ミドルウェアで保護 ---
 router.use(auth);
@@ -40,7 +20,7 @@ router.get('/', async (req, res) => {
     // ユーザーが管理者ロールを持っているかチェック
     if (req.user.roles.includes('admin')) {
       // 管理者の場合、配下の全テナントIDを取得
-      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id); // No change needed here, it was correct
       // アクセス可能なテナントに所属するTODOを全て取得
       todos = await Todo.find({ tenantId: { $in: accessibleTenantIds } })
         .populate('tenantId', 'name')
@@ -119,7 +99,7 @@ router.patch('/:id', async (req, res) => {
     const isRequester = todo.requester.some(id => id.equals(req.user.id)); // ★ 自分が依頼先に含まれているか
     let isAdminAllowed = false;
     if (req.user.roles.includes('admin')) {
-      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id); // No change needed here, it was correct
       isAdminAllowed = accessibleTenantIds.some(id => id.equals(todo.tenantId));
     }
 
@@ -172,7 +152,7 @@ router.put('/:id', async (req, res) => {
     const isCreator = todo.user.toString() === req.user.id;
     let isAdminAllowed = false;
     if (req.user.roles.includes('admin')) {
-      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id); // No change needed here, it was correct
       isAdminAllowed = accessibleTenantIds.some(id => id.equals(todo.tenantId));
     }
 
@@ -215,7 +195,7 @@ router.delete('/:id', async (req, res) => {
     const isCreator = todo.user.toString() === req.user.id;
     let isAdminAllowed = false;
     if (req.user.roles.includes('admin')) {
-      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id); // No change needed here, it was correct
       isAdminAllowed = accessibleTenantIds.some(id => id.equals(todo.tenantId));
     }
 

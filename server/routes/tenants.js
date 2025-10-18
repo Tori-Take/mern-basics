@@ -4,29 +4,7 @@ const User = require('../models/user.model'); // ★ Userモデルをインポ�
 const mongoose = require('mongoose'); // ★ Mongooseをインポート
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
-
-/**
- * ログイン中の管理者がアクセス可能な全てのテナントIDのリストを取得するヘルパー関数
- * @param {string} userTenantId - ログイン中管理者のテナントID
- * @returns {Promise<Array<mongoose.Types.ObjectId>>} - アクセス可能なテナントIDの配列
- */
-const getAccessibleTenantIds = async (userTenantId) => {
-  const aggregationResult = await Tenant.aggregate([
-    { $match: { _id: new mongoose.Types.ObjectId(userTenantId) } },
-    {
-      $graphLookup: {
-        from: 'tenants',
-        startWith: '$_id',
-        connectFromField: '_id',
-        connectToField: 'parent',
-        as: 'descendants'
-      }
-    }
-  ]);
-
-  const selfAndDescendants = aggregationResult[0] ? [aggregationResult[0]._id, ...aggregationResult[0].descendants.map(d => d._id)] : [new mongoose.Types.ObjectId(userTenantId)];
-  return selfAndDescendants;
-};
+const { getAccessibleTenantIds } = require('../services/permissionService');
 
 /**
  * @route   GET /api/tenants
@@ -36,7 +14,7 @@ const getAccessibleTenantIds = async (userTenantId) => {
 router.get('/', [auth, admin], async (req, res) => {
   try {
     // 1. ログイン管理者がアクセス可能なテナントIDリストを取得
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
 
     if (accessibleTenantIds.length === 0) {
       return res.json([]);
@@ -50,7 +28,7 @@ router.get('/', [auth, admin], async (req, res) => {
     res.json(tenants);
 
   } catch (err) {
-    console.error('【GET /api/tenants】API処理中にエラーが発生しました:', err);
+    console.error('【GET /api/tenants】 An error occurred during API processing:', err);
     res.status(500).send('サーバーエラーが発生しました。');
   }
 });
@@ -66,7 +44,7 @@ router.get('/:id', [auth, admin], async (req, res) => {
 
     // --- セキュリティ強化 ---
     // 1. ログイン管理者がアクセス可能なテナントIDリストを取得
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
     // 2. アクセスしようとしているテナントが、そのリストに含まれているか検証
     const isAllowed = accessibleTenantIds.some(id => id.equals(tenantId));
     if (!isAllowed) {
@@ -144,7 +122,7 @@ router.put('/:id', [auth, admin], async (req, res) => {
     const tenantIdToUpdate = req.params.id;
 
     // --- セキュリティ強化 ---
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
     const isAllowed = accessibleTenantIds.some(id => id.equals(tenantIdToUpdate));
     if (!isAllowed) {
       return res.status(403).json({ message: 'この部署を編集する権限がありません。' });
@@ -177,7 +155,7 @@ router.delete('/:id', [auth, admin], async (req, res) => {
     const tenantIdToDelete = req.params.id;
 
     // --- セキュリティ強化 ---
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
     const isAllowed = accessibleTenantIds.some(id => id.equals(tenantIdToDelete));
     if (!isAllowed) {
       return res.status(403).json({ message: 'この部署を削除する権限がありません。' });

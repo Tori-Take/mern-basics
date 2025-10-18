@@ -48,28 +48,6 @@ const startServer = async () => {
     await mongoose.connect(uri);
     console.log("MongoDB データベースへの接続が正常に確立されました");
 
-    // サーバー起動前にロールを初期化
-    // await initializeRoles(); // テナントごとにロールを作成するため、このグローバルな初期化は不要になりました。
-
-    // --- ここから動作確認用のコード ---
-    console.log('\n[動作確認] テナントモデルの動作を確認します...');
-    try {
-      const testTenantName = 'Default Tenant';
-      const existingTenant = await Tenant.findOne({ name: testTenantName });
-
-      if (!existingTenant) {
-        console.log(`'${testTenantName}' が見つかりません。新規作成します...`);
-        await Tenant.create({ name: testTenantName });
-        console.log(`✅ [成功] '${testTenantName}' の作成が完了しました。`);
-      } else {
-        console.log(`✅ [成功] '${testTenantName}' は既に存在します。モデルは正常に動作しています。`);
-      }
-    } catch (error) {
-      console.error('❌ [失敗] テナントの確認・作成中にエラーが発生しました:', error.message);
-    }
-    console.log('--- 動作確認完了 ---\n');
-    // --- ここまで ---
-
     app.listen(port, () => {
       console.log(`サーバーがポート ${port} で起動しました。`);
     });

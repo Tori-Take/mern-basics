@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リファクタリング計画書 - バックエンド共通ロジックのサービス化</title>
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            padding: 2rem;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 960px;
+        }
+
+        .step-card {
+            border-left: 5px solid;
+        }
+
+        .step-1 {
+            border-color: #0d6efd;
+        }
+
+        .step-2 {
+            border-color: #fd7e14;
+        }
+
+        .step-3 {
+            border-color: #198754;
+        }
+
+        .verification-box {
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="text-center mb-5">
+            <h1 class="display-5">リファクタリング計画書</h1>
+            <p class="lead text-muted">バックエンド共通ロジックのサービス化</p>
+            <hr>
+        </header>
+
+        <main>
+            <!-- 目的 -->
+            <section class="mb-5">
+                <h2><i class="bi bi-bullseye text-primary"></i> 1. 目的</h2>
+                <p>現在、複数のAPIルートファイル (<code>users.js</code>, <code>tenants.js</code>, <code>todos.js</code>)
+                    に重複して存在する権限チェックロジック (<code>getAccessibleTenantIds</code>)
+                    を、単一の「サービス」ファイルに集約する。これにより、コードの重複を排除し、保守性と可読性を向上させる。</p>
+            </section>
+
+            <!-- 計画ステップ -->
+            <section class="mb-5">
+                <h2><i class="bi bi-signpost-split-fill text-success"></i> 2. 計画ステップ</h2>
+
+                <!-- ステップ1 -->
+                <div class="card shadow-sm mb-4 step-card step-1">
+                    <div class="card-header bg-primary text-white">
+                        <h4>ステップ 1: サービスファイルの作成とロジックの集約</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">作業内容</h5>
+                        <ol>
+                            <li><code>server</code>ディレクトリ直下に<code>services</code>という新しいフォルダを作成する。</li>
+                            <li><code>server/services</code>内に<code>permissionService.js</code>という新しいファイルを作成する。</li>
+                            <li><code>tenants.js</code>などから<code>getAccessibleTenantIds</code>関数の定義をコピーし、<code>permissionService.js</code>に貼り付ける。
+                            </li>
+                            <li>関数をエクスポート (<code>module.exports</code>) して、他のファイルから呼び出せるようにする。</li>
+                        </ol>
+                        <hr>
+                        <div class="p-3 rounded verification-box">
+                            <h6 class="card-subtitle mb-2"><i class="bi bi-clipboard2-check-fill"></i> 動作確認方法</h6>
+                            <p class="card-text mb-0">
+                                この時点では、まだ既存のコードを変更していないため、アプリケーションの動作に変化はありません。バックエンドサーバーがエラーなく起動し、これまで通りログインや各ページの表示ができることを確認します。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ステップ2 -->
+                <div class="card shadow-sm mb-4 step-card step-2">
+                    <div class="card-header bg-warning text-dark">
+                        <h4>ステップ 2: APIルートファイルの修正</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">作業内容</h5>
+                        <p><code>getAccessibleTenantIds</code>関数が定義されている全てのAPIルートファイル (<code>tenants.js</code>,
+                            <code>todos.js</code>, <code>users.js</code>) に対して、以下の修正を順に行う。</p>
+                        <ol>
+                            <li>ファイルの先頭で、作成した<code>permissionService</code>をインポートする
+                                (<code>require('../services/permissionService')</code>)。</li>
+                            <li>ファイル内に直接定義されている<code>getAccessibleTenantIds</code>関数のコードブロックを完全に削除する。</li>
+                            <li>API内で<code>getAccessibleTenantIds</code>を呼び出している箇所が、インポートしたサービス経由で呼び出されるようにする。</li>
+                        </ol>
+                        <hr>
+                        <div class="p-3 rounded verification-box">
+                            <h6 class="card-subtitle mb-2"><i class="bi bi-clipboard2-check-fill"></i> 動作確認方法</h6>
+                            <p class="card-text">各ファイルを修正するたびに、関連する機能が以前と全く同じように動作することを確認します。</p>
+                            <ul>
+                                <li><strong><code>tenants.js</code>修正後:</strong>
+                                    管理者でログインし、「組織管理」ページが正しく表示されるか、部署詳細ページにアクセスできるかを確認。</li>
+                                <li><strong><code>todos.js</code>修正後:</strong>
+                                    管理者と一般ユーザーの両方でログインし、「TODOリスト」が権限に応じて正しく表示されるか、TODOの編集・削除・完了操作ができるかを確認。</li>
+                                <li><strong><code>users.js</code>修正後:</strong>
+                                    管理者でログインし、「ユーザー管理」ページが正しく表示されるか、ユーザー編集ページにアクセスできるかを確認。</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ステップ3 -->
+                <div class="card shadow-sm mb-4 step-card step-3">
+                    <div class="card-header bg-success text-white">
+                        <h4>ステップ 3: 最終確認と完了</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">作業内容</h5>
+                        <ol>
+                            <li>全ての修正が完了したら、重複したコードがプロジェクトから完全に削除されたことを確認する。</li>
+                            <li>アプリケーション全体の主要な機能（新規登録、ログイン、各管理ページ、TODO操作など）を一通りテストし、リファクタリング前と動作が変わらないことを最終確認する。</li>
+                        </ol>
+                        <hr>
+                        <div class="p-3 rounded verification-box">
+                            <h6 class="card-subtitle mb-2"><i class="bi bi-clipboard2-check-fill"></i> 動作確認方法</h6>
+                            <p class="card-text mb-0">全ての機能が正常に動作し、バックエンドサーバーのログにエラーが出ていないことを確認できれば、リファクタリングは成功です。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>
