@@ -4,6 +4,9 @@ const bcrypt = require('bcryptjs');
 const Role = require('../organization/role.model');
 const jwt = require('jsonwebtoken');
 const { getAccessibleTenantIds } = require('../../core/services/permissionService');
+const UserRepository = require('./repositories/user.repository');
+
+const userRepository = new UserRepository();
 
 /**
  * @class UserController
@@ -29,7 +32,7 @@ class UserController {
       if (existingTenant) {
         return res.status(400).json({ message: 'その組織名は既に使用されています。' });
       }
-      const existingUser = await User.findOne({ email });
+      const existingUser = await userRepository.findByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: 'このメールアドレスは既に使用されています。' });
       }
@@ -49,15 +52,13 @@ class UserController {
       const hashedPassword = await bcrypt.hash(password, salt);
 
       // --- 4. 新しいユーザー（最初の管理者）を作成 ---
-      const newUser = new User({
+      await userRepository.create({
         tenantId: newTenant._id,
         username,
         email,
         password: hashedPassword,
         roles: ['user', 'admin'],
       });
-
-      await newUser.save();
 
       res.status(201).json({ message: 'ユーザー登録が成功しました。' });
     } catch (err) {
@@ -79,7 +80,7 @@ class UserController {
         return res.status(400).json({ message: 'メールアドレスとパスワードを入力してください。' });
       }
 
-      const user = await User.findOne({ email });
+      const user = await userRepository.findByEmail(email);
       if (!user) {
         return res.status(400).json({ message: 'ユーザー名またはパスワードが無効です。' });
       }
@@ -106,7 +107,7 @@ class UserController {
           return res.json({ token, forceReset: true });
         }
 
-        const userToReturn = await User.findById(user.id).select('-password').populate('tenantId', 'name parent');
+        const userToReturn = await userRepository.findUserForLoginResponse(user.id);
         res.json({ token, user: userToReturn });
       });
     } catch (err) {
@@ -123,7 +124,7 @@ class UserController {
   static async getAuthUser(req, res) {
     try {
       // authミドルウェアでreq.userにIDがセットされている
-      const user = await User.findById(req.user.id)
+      const user = await userRepository.findById(req.user.id)
         .select('-password')
         .populate('tenantId', 'name parent'); // ★ ユーザーの所属テナント情報（名前と親）を取得
 
@@ -157,21 +158,24 @@ class UserController {
     const { email, username } = req.body; // usernameも受け取るが、現在はemailのみを処理対象とする
 
     try {
-      const user = await User.findById(req.user.id);
+      const user = await userRepository.findById(req.user.id);
       if (!user) {
         return res.status(404).json({ message: 'ユーザーが見つかりません。' });
       }
 
       if (email && email !== user.email) {
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
+        if (await userRepository.findByEmail(email)) {
           return res.status(400).json({ message: 'このメールアドレスは既に使用されています。' });
         }
         user.email = email;
       }
 
-      const updatedUser = await user.save();
-      const userObject = updatedUser.toObject();
+      const updatedUser = await userRepository.save(user);
+      // フロントエンドに返す前に、テナント情報をpopulateし直す
+      const populatedUser = await userRepository.findById(updatedUser._id)
+        .select('-password')
+        .populate('tenantId', 'name parent');
+      const userObject = populatedUser.toObject();
 
       userObject.name = userObject.username;
       delete userObject.password;
@@ -192,7 +196,7 @@ class UserController {
     const { currentPassword, newPassword } = req.body;
 
     try {
-      const user = await User.findById(req.user.id);
+      const user = await userRepository.findById(req.user.id);
       if (!user) {
         return res.status(404).json({ message: 'ユーザーが見つかりません。' });
       }
@@ -204,7 +208,7 @@ class UserController {
 
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(newPassword, salt);
-      await user.save();
+      await userRepository.save(user);
 
       res.json({ message: 'パスワードが正常に更新されました。' });
     } catch (err) {
@@ -221,10 +225,7 @@ class UserController {
   static async getAssignableUsers(req, res) {
     try {
       const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
-      const users = await User.find({ tenantId: { $in: accessibleTenantIds } })
-        .select('username tenantId')
-        .populate('tenantId', 'name')
-        .sort({ username: 1 });
+      const users = await userRepository.findAssignable(accessibleTenantIds);
       res.json(users);
     } catch (err) {
       console.error(err.message);
@@ -240,12 +241,7 @@ class UserController {
   static async getAllUsers(req, res) {
     try {
       const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
-      if (accessibleTenantIds.length === 0) {
-        return res.json([]);
-      }
-      const users = await User.find({ tenantId: { $in: accessibleTenantIds } })
-        .select('-password')
-        .sort({ createdAt: -1 });
+      const users = await userRepository.findAccessibleUsers(accessibleTenantIds);
       res.json(users);
     } catch (err) {
       console.error(err.message);
@@ -261,10 +257,7 @@ class UserController {
   static async getUserById(req, res) {
     try {
       const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
-      const user = await User.findOne({
-        _id: req.params.id,
-        tenantId: { $in: accessibleTenantIds }
-      }).select('-password');
+      const user = await userRepository.findAccessibleUserById(req.params.id, accessibleTenantIds);
 
       if (!user) {
         return res.status(404).json({ message: 'ユーザーが見つかりません。' });
@@ -287,26 +280,23 @@ class UserController {
   static async updateUser(req, res) {
     try {
       const { username, email, roles, status, tenantId } = req.body;
+
       const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
-      const user = await User.findOne({
-        _id: req.params.id,
-        tenantId: { $in: accessibleTenantIds }
-      });
+      const user = await userRepository.findFullAccessibleUserById(req.params.id, accessibleTenantIds);
+
       if (!user) {
         return res.status(404).json({ message: 'ユーザーが見つかりません。' });
       }
 
       if (email && email !== user.email) {
-        const existingEmail = await User.findOne({ email: email });
-        if (existingEmail) {
+        if (await userRepository.findByEmail(email)) {
           return res.status(400).json({ message: 'このメールアドレスは既に使用されています。' });
         }
         user.email = email;
       }
 
       if (username && username !== user.username) {
-        const existingUsername = await User.findOne({ username: username, tenantId: user.tenantId, _id: { $ne: user._id } });
-        if (existingUsername) {
+        if (await userRepository.findByUsernameInTenant(username, user.tenantId, user._id)) {
           return res.status(400).json({ message: 'このユーザー名は既に使用されています。' });
         }
         user.username = username;
@@ -316,7 +306,7 @@ class UserController {
       if (tenantId) user.tenantId = tenantId;
       if (roles) user.roles = roles;
 
-      const updatedUser = await user.save();
+      const updatedUser = await userRepository.save(user);
       res.json(updatedUser);
     } catch (err) {
       console.error(err.message);
@@ -337,27 +327,26 @@ class UserController {
         return res.status(400).json({ message: 'ユーザー名、メールアドレス、パスワードは必須です。' });
       }
 
-      const existingUser = await User.findOne({ $or: [{ email }, { username, tenantId: req.user.tenantId }] });
+      const existingUser = await userRepository.findForCreationCheck(email, username, req.user.tenantId);
       if (existingUser) {
         return res.status(400).json({ message: 'そのユーザー名またはメールアドレスは既に使用されています。' });
       }
 
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
-      const finalRoles = roles ? [...new Set(['user', ...roles])] : ['user'];
 
-      const newUser = new User({
+      const savedUser = await userRepository.create({
         tenantId: req.user.tenantId,
         username,
         email,
         password: hashedPassword,
-        roles: finalRoles,
+        roles: roles ? [...new Set(['user', ...roles])] : ['user'],
         status: status || 'active',
       });
-      const savedUser = await newUser.save();
 
       const userObject = savedUser.toObject();
       delete userObject.password;
+
       res.status(201).json(userObject);
     } catch (err) {
       console.error(err.message);
@@ -374,10 +363,7 @@ class UserController {
     try {
       const userIdToDelete = req.params.id;
       const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
-      const userToDelete = await User.findOne({
-        _id: userIdToDelete,
-        tenantId: { $in: accessibleTenantIds }
-      });
+      const userToDelete = await userRepository.findFullAccessibleUserById(userIdToDelete, accessibleTenantIds);
 
       if (!userToDelete) {
         return res.status(404).json({ message: 'ユーザーが見つからないか、削除する権限がありません。' });
@@ -387,7 +373,7 @@ class UserController {
         return res.status(400).json({ message: '自分自身のアカウントは削除できません。' });
       }
 
-      await User.findByIdAndDelete(userIdToDelete);
+      await userRepository.deleteById(userIdToDelete);
       res.json({ message: 'ユーザーが正常に削除されました。' });
     } catch (err) {
       console.error(err.message);
@@ -410,7 +396,7 @@ class UserController {
     try {
       // 権限チェック：自分のテナント配下のユーザーか確認
       const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
-      const user = await User.findOne({ _id: req.params.id, tenantId: { $in: accessibleTenantIds } });
+      const user = await userRepository.findFullAccessibleUserById(req.params.id, accessibleTenantIds);
       if (!user) {
         return res.status(404).json({ message: '対象のユーザーが見つからないか、操作する権限がありません。' });
       }
@@ -418,7 +404,7 @@ class UserController {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(temporaryPassword, salt);
       user.forcePasswordReset = true;
-      await user.save();
+      await userRepository.save(user);
 
       res.json({ message: `${user.username} のパスワードが一時パスワードに更新され、リセット待機状態に設定されました。` });
     } catch (err) {
@@ -440,11 +426,11 @@ class UserController {
         return res.status(400).json({ message: 'パスワードは6文字以上で入力してください。' });
       }
 
-      const user = await User.findById(req.user.id);
+      const user = await userRepository.findById(req.user.id);
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(newPassword, salt);
       user.forcePasswordReset = false;
-      await user.save();
+      await userRepository.save(user);
 
       res.json({ message: 'パスワードが正常に更新されました。新しいパスワードで再度ログインしてください。' });
     } catch (err) {

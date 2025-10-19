@@ -93,11 +93,23 @@ export function AuthProvider({ children }) {
     setAuthToken(null); // axiosのヘッダーからもトークンを削除
   };
 
+  // ユーザー情報を更新する処理
+  const updateUser = (newUserData) => {
+    setAuthState(prev => ({
+      ...prev,
+      user: {
+        ...prev.user, // 既存のユーザー情報
+        ...newUserData, // 新しい情報で上書き
+      }
+    }));
+  };
+
   const value = {
     ...authState,
     login,
     logout,
     loadUser,
+    updateUser, // valueにupdateUserを追加
   };
 
   return (

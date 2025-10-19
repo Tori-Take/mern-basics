@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - アーキテクチャ改善編</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+            font-size: 2.2em;
+        }
+
+        h2 {
+            font-size: 1.8em;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.85em;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        .highlight {
+            background-color: #f1faee;
+            border-left: 4px solid #457b9d;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .arrow {
+            font-size: 2em;
+            color: #457b9d;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - アーキテクチャ改善編</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>
+            DDD（ドメイン駆動設計）に基づいたファイル構成の再構築に続き、バックエンドの内部品質を劇的に向上させるための大規模なリファクタリングを実施しました。<br>
+            この取り組みにより、<strong>「コントローラー層」</strong>と<strong>「リポジトリパターン」</strong>という、現代的なソフトウェアアーキテクチャに不可欠な2つの設計パターンを導入することに成功しました。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>ステップ1：コントローラー層の導入</h2>
+        <p>
+            <strong>課題：</strong> <code>*.routes.js</code> ファイルが、APIのルーティングとビジネスロジックの両方を担当しており、コードが肥大化・複雑化していました。
+        </p>
+        <p>
+            <strong>解決策：</strong> ビジネスロジックを <code>*.controllers.js</code> ファイルに分離しました。これにより、各ファイルの責務が明確になりました。
+        </p>
+        <ul>
+            <li><strong>ルート (<code>*.routes.js</code>)</strong>: HTTPリクエストの交通整理に専念。</li>
+            <li><strong>コントローラー (<code>*.controllers.js</code>)</strong>: 実際のビジネス処理を実行。</li>
+        </ul>
+
+        <div class="highlight">
+            <h4>💡 Before (ルートファイル)</h4>
+            <pre><code>router.post('/login', async (req, res) => {
+  // ユーザー検索、パスワード比較、JWT生成などのロジックがここに混在
+});</code></pre>
+
+            <h4>✨ After (ルートファイル)</h4>
+            <pre><code>router.post('/login', UserController.login);</code></pre>
+        </div>
+    </div>
+
+    <div class="arrow">⬇</div>
+
+    <div class="container">
+        <h2>ステップ2：リポジトリパターンの導入</h2>
+        <p>
+            <strong>課題：</strong> コントローラー層を導入した後も、ビジネスロジック内に <code>User.findOne()</code> や <code>user.save()</code>
+            といったデータベース操作のコードが直接記述されており、ビジネスロジックが特定のデータベース技術（Mongoose）に依存していました。
+        </p>
+        <p>
+            <strong>解決策：</strong> データベースとの対話をすべてカプセル化する <code>*.repository.js</code>
+            ファイルを作成しました。コントローラーは、リポジトリのメソッドを呼び出すだけで、データの永続化方法を意識する必要がなくなりました。
+        </p>
+
+        <div class="highlight">
+            <h4>💡 Before (コントローラー)</h4>
+            <pre><code>// ビジネスロジック内にDB操作が直接書かれている
+const user = await User.findById(req.user.id);</code></pre>
+
+            <h4>✨ After (コントローラー)</h4>
+            <pre><code>// DB操作はリポジトリに委譲
+const user = await userRepository.findById(req.user.id);</code></pre>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>達成された成果：クリーンアーキテクチャの実現</h2>
+        <p>
+            この2段階のリファクタリングにより、バックエンドは責務が明確に分離された<strong>3層アーキテクチャ</strong>へと進化しました。
+        </p>
+        <ol>
+            <li><strong>ルーティング層 (<code>*.routes.js</code>)</strong>: HTTPリクエストの受付。</li>
+            <li><strong>コントローラー層 (<code>*.controllers.js</code>)</strong>: ビジネスロジックの実行。</li>
+            <li><strong>リポジトリ層 (<code>*.repository.js</code>)</strong>: データベースとの通信。</li>
+        </ol>
+        <p>
+            この構造は、コードの<strong>可読性</strong>、<strong>保守性</strong>、そして何よりも<strong>テストの容易性</strong>を劇的に向上させます。将来的にデータベースを変更する場合でも、ビジネスロジックに影響を与えることなく、リポジトリ層の修正だけで対応可能になりました。これは、プロフェッショナルな開発現場で採用されている、非常に堅牢でスケーラブルな設計です。
+        </p>
+    </div>
+
+</body>
+
+</html>
