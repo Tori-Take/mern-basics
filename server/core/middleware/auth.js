@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/user.model'); // Userモデルをインポート
+const User = require('../../models/user.model'); // Userモデルをインポート
 
 const auth = async (req, res, next) => {
   // 1. リクエストヘッダーからトークンを取得

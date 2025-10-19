@@ -2,8 +2,8 @@ const router = require('express').Router();
 const Tenant = require('../models/tenant.model');
 const User = require('../models/user.model'); // ★ Userモデルをインポート
 const mongoose = require('mongoose'); // ★ Mongooseをインポート
-const auth = require('../middleware/auth');
-const admin = require('../middleware/admin');
+const auth = require('../core/middleware/auth');
+const admin = require('../core/middleware/admin');
 const { getAccessibleTenantIds } = require('../core/services/permissionService');
 
 /**

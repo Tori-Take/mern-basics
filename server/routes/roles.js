@@ -2,8 +2,8 @@ const router = require('express').Router();
 const Role = require('../models/role.model');
 const User = require('../models/user.model');
 const Tenant = require('../models/tenant.model');
-const auth = require('../middleware/auth');
-const admin = require('../middleware/admin');
+const auth = require('../core/middleware/auth');
+const admin = require('../core/middleware/admin');
 
 // 保護された必須ロールのリスト
 const PROTECTED_ROLES = ['user', 'admin'];

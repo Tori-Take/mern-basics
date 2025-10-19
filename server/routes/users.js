@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken'); // ★ この行を追加
 const User = require('../models/user.model');
 const Tenant = require('../models/tenant.model'); // Tenantモデルをインポート
 const Role = require('../models/role.model'); // Roleモデルをインポート
-const auth = require('../middleware/auth');
-const admin = require('../middleware/admin');
+const auth = require('../core/middleware/auth');
+const admin = require('../core/middleware/admin');
 const { getAccessibleTenantIds } = require('../core/services/permissionService');
 
 /**
