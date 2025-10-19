@@ -10,7 +10,12 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // ミドルウェアの設定
-app.use(cors()); // CORSを有効にする
+// CORSを有効にする (より詳細な設定)
+app.use(cors({
+  origin: '*', // すべてのオリジンを許可 (開発用)。本番環境では特定のドメインに制限することを推奨します。
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // 許可するHTTPメソッド
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'], // 許可するヘッダー
+}));
 app.use(express.json()); // JSON形式のリクエストボディを解析できるようにする
 
 // MongoDBへの接続 (今はまだ接続文字列がありません)

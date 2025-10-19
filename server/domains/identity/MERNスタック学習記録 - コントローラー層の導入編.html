@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - コントローラー層の導入編</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1d3557;
+            border-bottom: 2px solid #457b9d;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 3px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.85em;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        strong {
+            color: #e63946;
+        }
+
+        .highlight {
+            background-color: #f1faee;
+            border-left: 4px solid #457b9d;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - コントローラー層の導入編</h1>
+
+    <div class="container">
+        <h2>はじめに</h2>
+        <p>
+            バックエンドのDDD（ドメイン駆動設計）への再構築が完了し、次のステップとして、さらなるコード品質の向上を目指しました。<br>
+            今回のリファクタリングでは、<strong>「コントローラー層」</strong>を導入し、ルーティングとビジネスロジックの責務を明確に分離することに成功しました。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>課題：ルートファイルの肥大化</h2>
+        <p>
+            リファクタリング以前は、<code>users.routes.js</code>のようなルートファイルが、リクエストの受付（ルーティング）だけでなく、データベースへのアクセス、データの加工、エラーハンドリングといった<strong>ビジネスロジック</strong>のすべてを担っていました。
+        </p>
+        <p>
+            これにより、ファイルは肥大化し、コードの見通しが悪くなっていました。どの部分が何を担当しているのかを把握するのが難しく、将来的な機能追加やメンテナンスが困難になるリスクを抱えていました。
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>解決策：コントローラー層の導入</h2>
+        <p>
+            この問題を解決するため、<code>identity</code>ドメインに<code>users.controllers.js</code>ファイルを新設しました。
+        </p>
+        <ul>
+            <li><strong>ルート (<code>users.routes.js</code>)</strong>:
+                「どのURLパスに、どのHTTPメソッドでアクセスされたか」という交通整理のみを担当します。具体的な処理は行わず、対応するコントローラーのメソッドを呼び出すだけです。</li>
+            <li><strong>コントローラー (<code>users.controllers.js</code>)</strong>:
+                ルートから渡されたリクエスト(<code>req</code>)とレスポンス(<code>res</code>)を使い、実際のビジネスロジック（ユーザー検索、パスワード検証、DB保存など）を実行します。
+            </li>
+        </ul>
+
+        <div class="highlight">
+            <h4>💡 Before (ルートファイル)</h4>
+            <pre><code>// ログイン処理の例
+router.post('/login', async (req, res) => {
+  // ユーザー検索、パスワード比較、JWT生成などのロジックがここに記述されていた
+});</code></pre>
+
+            <h4>✨ After (ルートファイル)</h4>
+            <pre><code>// ロジックはUserControllerに委譲
+router.post('/login', UserController.login);</code></pre>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>達成された成果と次のステップ</h2>
+        <p>
+            コントローラー層の導入により、以下の大きな成果を得ることができました。
+        </p>
+        <ul>
+            <li><strong>責務の分離:</strong> ルーティングとビジネスロジックが明確に分かれ、コードの可読性と保守性が劇的に向上しました。</li>
+            <li><strong>テストの容易性:</strong> ビジネスロジックが純粋な関数（メソッド）として分離されたことで、単体テストが書きやすくなりました。</li>
+            <li><strong>再利用性の向上:</strong> 複数のルートから同じロジックを呼び出すといった再利用が容易になりました。</li>
+        </ul>
+        <p>
+            このリファクタリングは、堅牢でスケーラブルなバックエンドアーキテクチャへの重要な一歩です。<br>
+            次のステップでは、計画書<code>refactoring-next-steps.html</code>に従い、<strong>「リポジトリパターンの導入」</strong>に進みます。これにより、ビジネスロジックとデータアクセスロジックをさらに分離し、よりクリーンなコードベースを目指します。
+        </p>
+    </div>
+
+</body>
+
+</html>

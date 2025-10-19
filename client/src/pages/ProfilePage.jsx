@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Form, Button, Card, Alert, Spinner, Row, Col, InputGroup } from 'react-bootstrap';
 
 function ProfilePage() {
-  const { user, setUser } = useAuth();
+  const { user, login } = useAuth(); // setUser の代わりに login を受け取る
   const [profileData, setProfileData] = useState({ username: '', email: '' });
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [error, setError] = useState('');
@@ -34,7 +34,10 @@ function ProfilePage() {
     setSuccess('');
     try {
       const res = await axios.put('/api/users/profile', profileData);
-      setUser(prevUser => ({ ...prevUser, ...res.data })); // AuthContextのユーザー情報を更新
+      // AuthContextを更新するために、login関数を再利用する
+      // login関数は内部でlocalStorageとuserステートを更新してくれる
+      const updatedUser = { ...user, ...res.data };
+      login(updatedUser, localStorage.getItem('token')); // 既存のトークンと更新されたユーザー情報でコンテキストを更新
       setSuccess('プロフィールが正常に更新されました。');
     } catch (err) {
       setError(err.response?.data?.message || 'プロフィールの更新に失敗しました。');

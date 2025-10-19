@@ -1,489 +1,88 @@
-const router = require('express').Router();
+const express = require('express');
+const router = express.Router();
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken'); // ★ この行を追加
+const jwt = require('jsonwebtoken');
 const User = require('./user.model');
-const Tenant = require('../organization/tenant.model'); // Tenantモデルをインポート
-const Role = require('../organization/role.model'); // Roleモデルをインポート
+const Tenant = require('../organization/tenant.model');
+const Role = require('../organization/role.model');
 const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');
 const { getAccessibleTenantIds } = require('../../core/services/permissionService');
+const UserController = require('./users.controllers');
 
 /**
  * @route   POST /api/users/register
  * @desc    新しいテナントと、そのテナントの最初の管理者ユーザーを登録する
  * @access  Public
  */
-router.post('/register', async (req, res) => {
-  try {
-    const { username, email, password, tenantName } = req.body;
-
-    // --- 入力値のバリデーション ---
-    if (!username || !email || !password || !tenantName) {
-      return res.status(400).json({ message: 'すべての必須項目（組織名, ユーザー名, メールアドレス, パスワード）を入力してください。' });
-    }
-
-    // --- テナント名とメールアドレスの重複チェック ---
-    const existingTenant = await Tenant.findOne({ name: tenantName });
-    if (existingTenant) {
-      return res.status(400).json({ message: 'その組織名は既に使用されています。' });
-    }
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'このメールアドレスは既に使用されています。' });
-    }
-
-    // --- 1. 新しいテナントを作成 ---
-    const newTenant = new Tenant({ name: tenantName });
-    await newTenant.save();
-
-    // --- 2. 新しいテナント用の基本ロールを作成 ---
-    // このテナントに所属する 'user' と 'admin' ロールを作成します。
-    await Role.insertMany([
-      { name: 'user', description: '一般ユーザー', tenantId: newTenant._id },
-      { name: 'admin', description: '管理者', tenantId: newTenant._id }
-    ]);
-
-    // --- 3. パスワードのハッシュ化 ---
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // --- 4. 新しいユーザー（最初の管理者）を作成 ---
-    const newUser = new User({
-      tenantId: newTenant._id, // 作成したテナントのIDを紐付け
-      username,
-      email,
-      password: hashedPassword,
-      roles: ['user', 'admin'], // 最初のユーザーは管理者権限を持つ
-    });
-
-    await newUser.save();
-
-    res.status(201).json({ message: 'ユーザー登録が成功しました。' });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
-});
+router.post('/register', UserController.register);
 
 // @route   POST /api/users/login
 // @desc    ユーザーを認証し、トークンを取得する
 // @access  Public
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body; // emailでログインするように変更
-
-    // 2. 必須項目チェック
-    if (!email || !password) {
-      return res.status(400).json({ message: 'メールアドレスとパスワードを入力してください。' });
-    }
-
-    // 3. ユーザーをメールアドレスで検索
-    const user = await User.findOne({ email });
-    if (!user) {
-      // セキュリティのため、どちらが間違っているか特定させないメッセージを返す
-      return res.status(400).json({ message: 'ユーザー名またはパスワードが無効です。' });
-    }
-
-    // 4. パスワードを比較
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'ユーザー名またはパスワードが無効です。' });
-    }
-
-    // 5. アカウントがアクティブかチェック
-    if (user.status !== 'active') {
-      return res.status(403).json({ message: 'このアカウントは現在利用できません。' });
-    }
-
-    // 6. JWTペイロードを作成 (トークンに含める情報)
-    const payload = {
-      user: {
-        id: user.id,
-        // tenantIdはミドルウェアでDBから取得するため、トークンには含めない
-      },
-    };
-
-    // 7. JWTに署名してトークンを生成
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, async (err, token) => {
-      if (err) throw err;
-
-      // パスワード強制リセットフラグをチェック
-      if (user.forcePasswordReset) {
-        return res.json({
-          token,
-          forceReset: true, // フロントエンドへの目印
-        });
-      }
-      // ログイン成功時に、JWTトークンとユーザー情報を返す
-      // ★ populateでテナント情報を付与してからレスポンスを返す
-      const userToReturn = await User.findById(user.id)
-        .select('-password')
-        .populate('tenantId', 'name parent');
-
-      res.json({ token, user: userToReturn });
-    });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
-});
+router.post('/login', UserController.login);
 
 // @route   GET /api/auth
 // @desc    トークンからユーザー情報を取得する
 // @access  Private
-router.get('/auth', auth, async (req, res) => {
-  try {
-    // authミドルウェアでreq.userにIDがセットされている
-    const user = await User.findById(req.user.id)
-      .select('-password')
-      .populate('tenantId', 'name parent'); // ★ ユーザーの所属テナント情報（名前と親）を取得
-
-    if (!user) {
-      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
-    }
-
-    // Mongooseドキュメントをプレーンなオブジェクトに変換
-    const userObject = user.toObject();
-
-    // ★ 最上位の管理者かどうかを判定するフラグを追加
-    // 'admin'ロールを持ち、かつ所属テナントに親(parent)がいない場合にtrue
-    userObject.isTopLevelAdmin = user.roles.includes('admin') && user.tenantId?.parent === null;
-
-    // ★ フロントエンドの互換性のために name プロパティを追加
-    userObject.name = userObject.username;
-
-    res.json(userObject);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラー');
-  }
-});
+router.get('/auth', auth, UserController.getAuthUser);
 
 /**
  * @route   PUT /api/users/profile
  * @desc    ログイン中のユーザーが自身のプロフィール（ユーザー名、メール）を更新する
  * @access  Private
  */
-router.put('/profile', auth, async (req, res) => {
-  const { email } = req.body;
-
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
-    }
-
-    // メールが変更された場合、重複をチェック
-    if (email && email !== user.email) {
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-        return res.status(400).json({ message: 'このメールアドレスは既に使用されています。' });
-      }
-      user.email = email;
-    }
-
-    const updatedUser = await user.save();
-    const userObject = updatedUser.toObject();
-    delete userObject.password;
-    userObject.name = userObject.username; // フロントエンド互換性のため
-
-    res.json(userObject);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラー');
-  }
-});
+router.put('/profile', auth, UserController.updateProfile);
 
 /**
  * @route   PUT /api/users/profile/password
  * @desc    ログイン中のユーザーが自身のパスワードを更新する
  * @access  Private
  */
-router.put('/profile/password', auth, async (req, res) => {
-  const { currentPassword, newPassword } = req.body;
-
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
-    }
-
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: '現在のパスワードが正しくありません。' });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-    await user.save();
-
-    res.json({ message: 'パスワードが正常に更新されました。' });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラー');
-  }
-});
+router.put('/profile/password', auth, UserController.updatePassword);
 
 /**
  * @route   GET /api/users/assignable
  * @desc    タスクを割り当て可能なユーザー（自部署とその配下）のリストを取得する
  * @access  Private
  */
-router.get('/assignable', auth, async (req, res) => {
-  try {
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
-    const users = await User.find({ tenantId: { $in: accessibleTenantIds } })
-      .select('username tenantId') // ★ tenantIdも取得
-      .populate('tenantId', 'name') // ★ tenantIdをpopulateして部署名を取得
-      .sort({ username: 1 }); // 名前順でソート
-    res.json(users);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
-});
+router.get('/assignable', auth, UserController.getAssignableUsers);
 
 // @route   GET /api/users
 // @desc    全ユーザーのリストを取得する (管理者のみ)
 // @access  Private/Admin
-router.get('/', [auth, admin], async (req, res) => {
-  try {
-    // --- 階層型アクセス制御の実装 ---
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
-    if (accessibleTenantIds.length === 0) {
-      return res.json([]); // アクセス可能なテナントがない場合は空の配列を返す
-    }
-
-    // 2. アクセス可能なテナントに所属する全てのユーザーを取得する
-    // パスワードを除外し、作成日が新しい順にソートして全ユーザーを取得
-    const users = await User.find({ tenantId: { $in: accessibleTenantIds } })
-      .select('-password')
-      .sort({ createdAt: -1 });
-    res.json(users);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
-});
+router.get('/', [auth, admin], UserController.getAllUsers);
 
 // @route   GET /api/users/:id
 // @desc    特定のユーザー情報を取得する (管理者のみ)
 // @access  Private/Admin
-router.get('/:id', [auth, admin], async (req, res) => {
-  try {
-    // --- 階層型アクセス制御 ---
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
-    // 2. 編集対象のユーザーが、アクセス可能なテナントのいずれかに所属しているかチェック
-    const user = await User.findOne({
-      _id: req.params.id,
-      tenantId: { $in: accessibleTenantIds }
-    }).select('-password');
-
-    if (!user) {
-      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
-    }
-
-    res.json(user);
-  } catch (err) {
-    console.error(err.message);
-    if (err.kind === 'ObjectId') {
-      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
-    }
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
-});
+router.get('/:id', [auth, admin], UserController.getUserById);
 
 // @route   PUT /api/users/:id
 // @desc    ユーザー情報を更新する (管理者のみ)
 // @access  Private/Admin
-router.put('/:id', [auth, admin], async (req, res) => {
-  try {
-    const { username, email, roles, status, tenantId } = req.body; // ★ tenantIdを受け取る
-
-    // --- 階層型アクセス制御 ---
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
-    // 2. 更新対象のユーザーが、アクセス可能なテナントのいずれかに所属しているかチェック
-    const user = await User.findOne({
-      _id: req.params.id,
-      tenantId: { $in: accessibleTenantIds }
-    });
-    if (!user) {
-      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
-    }
-
-    // --- 重複チェック ---
-    // 1. メールアドレスが変更され、かつ他のユーザーに既に使用されていないかチェック
-    if (email && email !== user.email) {
-      const existingEmail = await User.findOne({ email: email });
-      if (existingEmail) {
-        return res.status(400).json({ message: 'このメールアドレスは既に使用されています。' });
-      }
-      user.email = email;
-    }
-
-    // 2. ユーザー名が変更され、かつ同じテナント内の他のユーザーに既に使用されていないかチェック
-    if (username && username !== user.username) {
-      const existingUsername = await User.findOne({ username: username, tenantId: req.user.tenantId, _id: { $ne: user._id } });
-      if (existingUsername) {
-        return res.status(400).json({ message: 'このユーザー名は既に使用されています。' });
-      }
-      user.username = username;
-    }
-
-    // statusを更新
-    if (status) user.status = status;
-
-    // ★ tenantIdを更新
-    if (tenantId) user.tenantId = tenantId;
-
-    // rolesを更新
-    if (roles) user.roles = roles; // rolesを更新
-
-    const updatedUser = await user.save();
-
-    res.json(updatedUser);
-
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
-});
+router.put('/:id', [auth, admin], UserController.updateUser);
 
 // @route   POST /api/users
 // @desc    管理者が新しいユーザーを作成する
 // @access  Private/Admin
-router.post('/', [auth, admin], async (req, res) => {
-  try {
-    const { username, email, password, roles, status } = req.body;
-
-    // 必須項目チェック
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'ユーザー名、メールアドレス、パスワードは必須です。' });
-    }
-
-    // 重複チェック
-    const existingUser = await User.findOne({ $or: [{ email }, { username, tenantId: req.user.tenantId }] });
-    if (existingUser) {
-      return res.status(400).json({ message: 'そのユーザー名またはメールアドレスは既に使用されています。' });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const finalRoles = roles ? [...new Set(['user', ...roles])] : ['user'];
-
-    const newUser = new User({
-      tenantId: req.user.tenantId, // 管理者と同じテナントに作成
-      username,
-      email,
-      password: hashedPassword,
-      roles: finalRoles,
-      status: status || 'active',
-    });
-    const savedUser = await newUser.save();
-    
-    // フロントエンドの期待に合わせてレスポンスを整形
-    const userObject = savedUser.toObject();
-    userObject.name = userObject.username;
-    delete userObject.username;
-    delete userObject.password;
-    
-    res.status(201).json(userObject);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
-});
+router.post('/', [auth, admin], UserController.createUser);
 
 /**
  * @route   DELETE /api/users/:id
  * @desc    ユーザーを削除する (管理者のみ)
  * @access  Private/Admin
  */
-router.delete('/:id', [auth, admin], async (req, res) => {
-  try {
-    const userIdToDelete = req.params.id;
-
-    // --- 権限チェック ---
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
-    const userToDelete = await User.findOne({
-      _id: userIdToDelete,
-      tenantId: { $in: accessibleTenantIds }
-    });
-
-    if (!userToDelete) {
-      return res.status(404).json({ message: 'ユーザーが見つからないか、削除する権限がありません。' });
-    }
-
-    // 安全装置: 自分自身は削除できないようにする
-    if (userToDelete.id === req.user.id) {
-      return res.status(400).json({ message: '自分自身のアカウントは削除できません。' });
-    }
-
-    await User.findByIdAndDelete(userIdToDelete);
-
-    res.json({ message: 'ユーザーが正常に削除されました。' });
-
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
-});
+router.delete('/:id', [auth, admin], UserController.deleteUser);
 
 // @route   POST /api/users/:id/force-reset
 // @desc    管理者がユーザーのパスワードリセットを強制する
 // @access  Private/Admin
-router.post('/:id/force-reset', [auth, admin], async (req, res) => {
-  const { temporaryPassword } = req.body;
-
-  if (!temporaryPassword || temporaryPassword.length < 6) {
-    return res.status(400).json({ message: '6文字以上の一時パスワードを指定してください。' });
-  }
-
-  try {
-    const user = await User.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
-    if (!user) {
-      return res.status(404).json({ message: 'ユーザーが見つかりません。' });
-    }
-
-    // 一時パスワードをハッシュ化して設定
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(temporaryPassword, salt);
-    user.forcePasswordReset = true;
-    await user.save();
-
-    res.json({ message: `${user.username} のパスワードが一時パスワードに更新され、リセット待機状態に設定されました。` });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
-});
+router.post('/:id/force-reset', [auth, admin], UserController.forcePasswordReset);
 
 // @route   POST /api/users/force-reset-password
 // @desc    ユーザーが強制的にパスワードを再設定する
 // @access  Private (Logged-in user)
-router.post('/force-reset-password', auth, async (req, res) => {
-  try {
-    const { newPassword } = req.body;
-
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ message: 'パスワードは6文字以上で入力してください。' });
-    }
-
-    // authミドルウェアからユーザーIDを取得
-    const user = await User.findById(req.user.id);
-
-    // パスワードをハッシュ化して更新
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-    user.forcePasswordReset = false; // フラグを元に戻す
-    await user.save();
-
-    res.json({ message: 'パスワードが正常に更新されました。新しいパスワードで再度ログインしてください。' });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
-});
+router.post('/force-reset-password', auth, UserController.userForceResetPassword);
 
 module.exports = router;
