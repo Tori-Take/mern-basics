@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const Tenant = require('./tenant.model');
-const User = require('../../models/user.model'); // ★ Userモデルをインポート
+const User = require('../../domains/identity/user.model'); // ★ Userモデルをインポート
 const mongoose = require('mongoose'); // ★ Mongooseをインポート
 const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');

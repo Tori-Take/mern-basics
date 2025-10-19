@@ -18,7 +18,7 @@ const uri = process.env.ATLAS_URI;
 
 // APIルートの設定
 const todosRouter = require('./domains/task/todos.routes.js');
-const usersRouter = require('./routes/users.js');
+const usersRouter = require('./domains/identity/users.routes.js');
 const rolesRouter = require('./domains/organization/roles.routes.js');
 const tenantsRouter = require('./domains/organization/tenants.routes.js');
 // const authRouter = require('./routes/auth'); // auth.jsがまだ存在しないため一時的にコメントアウト

@@ -1,6 +1,6 @@
 // server/middleware/admin.js
 
-const User = require('../../models/user.model');
+const User = require('../../domains/identity/user.model');
 
 const admin = async (req, res, next) => {
   try {

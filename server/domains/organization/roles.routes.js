@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const Role = require('./role.model');
-const User = require('../../models/user.model');
+const User = require('../../domains/identity/user.model');
 const Tenant = require('./tenant.model');
 const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');

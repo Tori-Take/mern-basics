@@ -1,12 +1,12 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken'); // ★ この行を追加
-const User = require('../models/user.model');
-const Tenant = require('../domains/organization/tenant.model'); // Tenantモデルをインポート
-const Role = require('../domains/organization/role.model'); // Roleモデルをインポート
-const auth = require('../core/middleware/auth'); // No change needed here, it was correct
-const admin = require('../core/middleware/admin'); // No change needed here, it was correct
-const { getAccessibleTenantIds } = require('../core/services/permissionService');
+const User = require('./user.model');
+const Tenant = require('../organization/tenant.model'); // Tenantモデルをインポート
+const Role = require('../organization/role.model'); // Roleモデルをインポート
+const auth = require('../../core/middleware/auth');
+const admin = require('../../core/middleware/admin');
+const { getAccessibleTenantIds } = require('../../core/services/permissionService');
 
 /**
  * @route   POST /api/users/register

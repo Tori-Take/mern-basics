@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDDに基づくバックエンドフォルダ構造解説</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+        }
+
+        .tree {
+            list-style-type: none;
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+
+        .tree ul {
+            padding-left: 25px;
+            border-left: 1px dashed #aaa;
+        }
+
+        .tree li {
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .tree li::before {
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-family: monospace;
+        }
+
+        .folder::before {
+            content: '📁';
+            color: #f39c12;
+        }
+
+        .file::before {
+            content: '📄';
+            color: #3498db;
+        }
+
+        code {
+            background-color: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        .description {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .description strong {
+            color: #2980b9;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>ドメイン駆動設計（DDD）に基づく<br>バックエンドフォルダ構造解説</h1>
+
+    <div class="description">
+        このドキュメントは、ドメイン駆動設計（DDD）の原則に基づいて再構築されたバックエンドのフォルダ構造について解説します。この構造は、<strong>保守性</strong>、<strong>拡張性</strong>、そして<strong>可読性</strong>を向上させることを目的としています。
+    </div>
+
+    <h2>フォルダ構造全体像</h2>
+
+    <ul class="tree">
+        <li class="folder">server
+            <ul>
+                <li class="folder">core
+                    <ul>
+                        <li class="folder">middleware
+                            <ul>
+                                <li class="file">auth.js</li>
+                                <li class="file">admin.js</li>
+                            </ul>
+                        </li>
+                        <li class="folder">services
+                            <ul>
+                                <li class="file">permissionService.js</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li class="folder">domains
+                    <ul>
+                        <li class="folder">identity
+                            <ul>
+                                <li class="file">user.model.js</li>
+                                <li class="file">users.routes.js</li>
+                            </ul>
+                        </li>
+                        <li class="folder">organization
+                            <ul>
+                                <li class="file">tenant.model.js</li>
+                                <li class="file">role.model.js</li>
+                                <li class="file">tenants.routes.js</li>
+                                <li class="file">roles.routes.js</li>
+                            </ul>
+                        </li>
+                        <li class="folder">task
+                            <ul>
+                                <li class="file">todo.model.js</li>
+                                <li class="file">todos.routes.js</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li class="file">server.js</li>
+                <li class="file">... (package.json, .envなど)</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>各フォルダ・ファイルの役割</h2>
+
+    <section>
+        <h3><code>server.js</code></h3>
+        <div class="description">
+            Expressサーバーのエントリーポイント（起動ファイル）です。ミドルウェアの適用、APIルートのマッピング、データベース接続、サーバーの起動など、アプリケーション全体の基本的なセットアップを行います。
+        </div>
+    </section>
+
+    <section>
+        <h3><code>core</code></h3>
+        <div class="description">
+            <strong>ドメイン横断的な関心事</strong>を配置するディレクトリです。特定のビジネス領域（ドメイン）に依存せず、アプリケーション全体で共通して利用される機能をここに集約します。
+            <ul>
+                <li><strong><code>middleware/</code></strong>:
+                    Expressのリクエスト処理パイプラインに挟み込むミドルウェアを格納します。<code>auth.js</code>（認証）や<code>admin.js</code>（管理者権限チェック）などが該当します。
+                </li>
+                <li><strong><code>services/</code></strong>:
+                    複数のドメインから利用される可能性のある、再利用可能なビジネスロジックを格納します。<code>permissionService.js</code>（アクセス権限の階層チェック）などが該当します。
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h3><code>domains</code></h3>
+        <div class="description">
+            このアプリケーションの心臓部です。<strong>ビジネス領域（ドメイン）ごと</strong>にフォルダを分け、関連するファイルを凝集させます。これにより、「何に関するコードがどこにあるか」が一目瞭然になります。
+            <ul>
+                <li>
+                    <strong><code>identity/</code> (アイデンティティ)</strong>:
+                    ユーザー認証、ユーザー登録、プロフィール管理など、「ユーザーは誰か」という識別情報に関するドメインです。
+                    <ul>
+                        <li><code>user.model.js</code>: ユーザー情報のデータ構造を定義するMongooseモデル。</li>
+                        <li><code>users.routes.js</code>:
+                            ユーザー関連のAPIエンドポイント（<code>/api/users/...</code>）を定義するExpressルーター。</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong><code>organization/</code> (組織)</strong>: 組織（テナント）や役割（ロール）の管理など、ユーザーが所属するグループ構造に関するドメインです。
+                    <ul>
+                        <li><code>tenant.model.js</code>: 組織/部署のデータ構造を定義するモデル。</li>
+                        <li><code>role.model.js</code>: 役割のデータ構造を定義するモデル。</li>
+                        <li><code>tenants.routes.js</code>, <code>roles.routes.js</code>: それぞれのAPIエンドポイントを定義するルーター。</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong><code>task/</code> (タスク)</strong>: TODOリストの管理など、具体的なタスクに関するドメインです。
+                    <ul>
+                        <li><code>todo.model.js</code>: TODOアイテムのデータ構造を定義するモデル。</li>
+                        <li><code>todos.routes.js</code>: TODO関連のAPIエンドポイントを定義するルーター。</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+</body>
+
+</html>
