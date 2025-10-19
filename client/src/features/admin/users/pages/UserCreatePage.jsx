@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Form, Button, Card, Alert, Spinner, InputGroup } from 'react-bootstrap';
+import { useAuth } from '../../../../providers/AuthProvider';
 
 function UserCreatePage() {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ function UserCreatePage() {
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false); // パスワード表示/非表示用のState
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user: currentUser } = useAuth();
   useEffect(() => {
     // ページロード時に利用可能な全ロールを取得
     const fetchRoles = async () => {
@@ -29,7 +31,7 @@ function UserCreatePage() {
       }
     };
     fetchRoles();
-  }, []);
+  }, [currentUser]);
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;

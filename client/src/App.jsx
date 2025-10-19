@@ -10,12 +10,12 @@ import UserDashboardPage from './pages/UserDashboardPage'; // HomePageから変�
 import TodoPage from './features/todos/pages/TodoPage'; // 新しくインポート
 import LoginPage from './features/auth/pages/LoginPage';
 import RegisterPage from './features/auth/pages/RegisterPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import UserManagementPage from './pages/UserManagementPage';
+import AdminDashboardPage from './features/admin/pages/AdminDashboardPage';
+import UserManagementPage from './features/admin/users/pages/UserManagementPage';
 import ForceResetPasswordPage from './features/auth/pages/ForceResetPasswordPage';
-import UserCreatePage from './pages/UserCreatePage';
+import UserCreatePage from './features/admin/users/pages/UserCreatePage';
 import RoleManagementPage from './pages/RoleManagementPage'; 
-import UserEditPage from './pages/UserEditPage';
+import UserEditPage from './features/admin/users/pages/UserEditPage';
 import TenantManagementPage from './pages/TenantManagementPage';
 import TenantDetailPage from './pages/TenantDetailPage'; // ★ 新しく追加
 import ProfilePage from './features/profile/pages/ProfilePage'; // ★ 新しく追加

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios'; // axiosをインポート
-import { useAuth } from '../providers/AuthProvider'; // ★ useAuthフックをインポート
+import { useAuth } from '../../../providers/AuthProvider';
 import TodoCreateModal from '../components/TodoCreateModal';
 import TodoEditModal from '../components/TodoEditModal';
 import TodoFilterSortModal from '../components/TodoFilterSortModal';

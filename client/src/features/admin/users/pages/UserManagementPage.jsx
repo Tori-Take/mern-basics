@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Table, Button, Spinner, Alert, Card } from 'react-bootstrap';
+import { useAuth } from '../../../../providers/AuthProvider';
 
 function UserManagementPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     loadUsers();
@@ -18,7 +20,8 @@ function UserManagementPage() {
       setLoading(true);
       setError('');
       const res = await axios.get('/api/users');
-      setUsers(res.data);
+      // 自分自身をリストから除外
+      setUsers(res.data.filter(user => user._id !== currentUser._id));
     } catch (err) {
       setError(err.response?.data?.message || 'ユーザー情報の取得に失敗しました。');
     } finally {
@@ -26,7 +29,7 @@ function UserManagementPage() {
     }
   };
 
-  if (loading) {
+  if (loading || !currentUser) {
     return (
       <div className="text-center">
         <Spinner animation="border" /> <span>ユーザー情報を読み込み中...</span>

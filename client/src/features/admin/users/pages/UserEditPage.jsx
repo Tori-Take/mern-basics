@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Form, Button, Alert, Spinner, Card, Modal } from 'react-bootstrap';
+import { useAuth } from '../../../../providers/AuthProvider';
 
 function UserEditPage() {
   const { id } = useParams();
@@ -23,6 +24,7 @@ function UserEditPage() {
   const [showResetModal, setShowResetModal] = useState(false); // モーダル表示用のState
   const [showDeleteModal, setShowDeleteModal] = useState(false); // ★ 削除モーダル用のState
   const [temporaryPassword, setTemporaryPassword] = useState(''); // 一時パスワード入力用のState
+  const { user: currentUser } = useAuth();
 
 
   useEffect(() => {
@@ -53,7 +55,7 @@ function UserEditPage() {
       }
     };
 
-    fetchData();
+    if (currentUser) fetchData();
   }, [id]);
 
   const handleInputChange = (e) => {
