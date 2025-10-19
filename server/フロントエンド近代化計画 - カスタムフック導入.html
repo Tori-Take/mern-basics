@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>フロントエンド近代化計画 - カスタムフック導入</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f8f9fa;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #d90429;
+            border-bottom: 2px solid #ef233c;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 4px;
+            font-size: 2.5em;
+            color: #000;
+        }
+
+        h2 {
+            background-color: #ffebee;
+            padding: 12px 15px;
+            border-left: 6px solid #ef233c;
+            font-size: 1.8em;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #f8f9fa;
+            /* 明るい背景色に変更 */
+            color: #212529;
+            /* 暗い文字色に変更 */
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .step-card {
+            border-left: 5px solid #fb8500;
+            margin-top: 25px;
+        }
+
+        .concept-box {
+            background-color: #e0fbfc;
+            border-left: 5px solid #2ec4b6;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .check-point {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+        }
+
+        .check-point::before {
+            content: '✅ 動作確認';
+            font-weight: bold;
+            color: #155724;
+            display: block;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>フロントエンド近代化計画</h1>
+    <p class="text-center" style="font-size: 1.2em;">カスタムフックによるロジックの分離とコンポーネントの純粋化</p>
+
+    <div class="card">
+        <h2>はじめに：なぜ「フロントエンドの近代化」が必要か？</h2>
+        <p>
+            バックエンドが美しい4層アーキテクチャを手に入れた今、私たちの目はフロントエンドに向けられています。現在のReactコンポーネント、例えば<code>ProfilePage.jsx</code>は、UIの見た目を定義するJSXと、状態管理(<code>useState</code>)やAPI通信(<code>axios</code>)といったロジックが混在した、いわゆる<strong>「Fat
+                Component（太ったコンポーネント）」</strong>の状態です。
+        </p>
+        <p>
+            この状態は、コードの見通しを悪くし、ロジックの再利用を妨げ、テストを困難にします。この問題を解決するため、Reactの強力な機能である<strong>カスタムフック</strong>を導入し、ロジックとUIを完全に分離します。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>解決策：カスタムフックの導入</h2>
+        <div class="concept-box">
+            <h4>💡 カスタムフックとは？</h4>
+            <p>
+                <code>useState</code>や<code>useEffect</code>といったReactの標準フックを組み合わせて作る、<strong>「再利用可能なロジックの塊」</strong>です。慣習的に<code>use</code>で始まる名前を付けます（例:
+                <code>useProfile</code>）。<br>
+                カスタムフックを導入することで、コンポーネントの責務を以下のように明確に分離できます。
+            </p>
+            <ul>
+                <li><strong>UIコンポーネント (<code>*.jsx</code>):</strong> 「何を表示するか」という見た目の定義に専念します。</li>
+                <li><strong>カスタムフック (<code>use*.js</code>):</strong> 「どのように動作するか」というロジック（状態管理、API通信、副作用など）に専念します。</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>実装計画：<code>ProfilePage.jsx</code>のリファクタリング</h2>
+        <p>
+            状態管理とAPI通信が混在している<code>ProfilePage.jsx</code>は、カスタムフック導入の練習台として最適です。ステップごとに進めていきましょう。
+        </p>
+
+        <div class="card step-card">
+            <h3>ステップ1：<code>useProfileForm</code>フックの作成</h3>
+            <p>
+                まず、プロフィール情報（基本情報）の更新に関するロジックを分離します。
+            </p>
+            <ol>
+                <li><code>client/src/hooks</code>ディレクトリを新規作成します。</li>
+                <li><code>hooks</code>ディレクトリ内に<code>useProfileForm.js</code>ファイルを新規作成します。</li>
+                <li><code>ProfilePage.jsx</code>から、プロフィール情報に関する状態(<code>profileData</code>)、イベントハンドラ(<code>handleProfileChange</code>)、API送信ロジック(<code>handleProfileSubmit</code>)を<code>useProfileForm</code>フックに移植します。
+                </li>
+                <li>フックからは、コンポーネントが必要とする状態と関数をオブジェクトとして返します。</li>
+            </ol>
+            <pre><code>// useProfileForm.js の戻り値（イメージ）
+return {
+  profileData,
+  isSubmittingProfile,
+  error,
+  success,
+  handleProfileChange,
+  handleProfileSubmit,
+};</code></pre>
+        </div>
+
+        <div class="card step-card">
+            <h3>ステップ2：<code>ProfilePage</code>コンポーネントの純粋化</h3>
+            <p>
+                作成したカスタムフックを使って、<code>ProfilePage.jsx</code>をリファクタリングします。
+            </p>
+            <ol>
+                <li><code>ProfilePage.jsx</code>内で<code>useProfileForm</code>フックを呼び出します。</li>
+                <li>コンポーネント内の複雑なロジックがフックの呼び出し一行に集約され、JSXの記述に専念できる、非常にクリーンなコンポーネントに生まれ変わります。</li>
+            </ol>
+            <div class="check-point">
+                サーバーを再起動し、プロフィールページで基本情報の更新がこれまで通り正常に行えることを確認します。
+            </div>
+        </div>
+
+        <div class="card step-card">
+            <h3>ステップ3：<code>usePasswordForm</code>フックの作成と適用</h3>
+            <p>
+                同様に、パスワード変更に関するロジックも<code>usePasswordForm.js</code>という新しいカスタムフックに分離します。
+            </p>
+            <ol>
+                <li><code>usePasswordForm.js</code>を新規作成します。</li>
+                <li><code>ProfilePage.jsx</code>から、パスワード関連の状態(<code>passwordData</code>)、イベントハンドラ、API送信ロジックを移植します。</li>
+                <li><code>ProfilePage.jsx</code>で<code>usePasswordForm</code>フックを呼び出すように修正します。</li>
+            </ol>
+            <div class="check-point">
+                サーバーを再起動し、プロフィールページでパスワードの変更が正常に行えることを確認します。
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>完了時のメリット</h2>
+        <p>
+            このリファクタリングが完了すると、<code>ProfilePage.jsx</code>は、UIの構造を定義するだけの「宣言的な」コンポーネントになります。
+        </p>
+        <ul>
+            <li><strong>可読性の向上:</strong> コンポーネントのコードが短く、シンプルになり、何を表示しているのかが一目瞭然になります。</li>
+            <li><strong>ロジックの再利用:</strong>
+                例えば、将来別のページで同じようなプロフィール更新フォームが必要になった場合、<code>useProfileForm</code>フックを再利用するだけで済みます。</li>
+            <li><strong>テストの容易性:</strong> UIから独立した純粋なJavaScriptの関数であるカスタムフックは、単体テストが非常に容易になります。</li>
+        </ul>
+        <p>
+            このアプローチは、React開発におけるモダンなベストプラクティスであり、アプリケーションの品質を飛躍的に向上させます。
+        </p>
+    </div>
+
+</body>
+
+</html>

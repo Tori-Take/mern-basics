@@ -1,74 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { useProfileForm } from '../hooks/useProfileForm';
+import { usePasswordForm } from '../hooks/usePasswordForm';
 import { Form, Button, Card, Alert, Spinner, Row, Col, InputGroup } from 'react-bootstrap';
 
 function ProfilePage() {
-  const { user, updateUser } = useAuth(); // login の代わりに updateUser を受け取る
-  const [profileData, setProfileData] = useState({ username: '', email: '' });
-  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
-  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
-  const [showPassword, setShowPassword] = useState({ current: false, new: false, confirm: false });
+  const { user } = useAuth();
+  const {
+    profileData,
+    isSubmitting: isSubmittingProfile,
+    error: profileError,
+    success: profileSuccess,
+    handleChange: handleProfileChange,
+    handleSubmit: handleProfileSubmit,
+  } = useProfileForm();
 
-  useEffect(() => {
-    if (user) {
-      setProfileData({ username: user.username, email: user.email });
-    }
-  }, [user]);
-
-  const handleProfileChange = (e) => {
-    setProfileData({ ...profileData, [e.target.name]: e.target.value });
-  };
-
-  const handlePasswordChange = (e) => {
-    setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
-  };
-
-  const handleProfileSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmittingProfile(true);
-    setError('');
-    setSuccess('');
-    try {
-      const res = await axios.put('/api/users/profile', profileData);
-      updateUser(); // AuthContextにユーザー情報の再読み込みをトリガーさせる
-      setSuccess('プロフィールが正常に更新されました。');
-    } catch (err) {
-      setError(err.response?.data?.message || 'プロフィールの更新に失敗しました。');
-    } finally {
-      setIsSubmittingProfile(false);
-    }
-  };
-
-  const handlePasswordSubmit = async (e) => {
-    e.preventDefault();
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('新しいパスワードが一致しません。');
-      return;
-    }
-    setIsSubmittingPassword(true);
-    setError('');
-    setSuccess('');
-    try {
-      await axios.put('/api/users/profile/password', {
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
-      });
-      setSuccess('パスワードが正常に更新されました。');
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' }); // フォームをクリア
-    } catch (err) {
-      setError(err.response?.data?.message || 'パスワードの更新に失敗しました。');
-    } finally {
-      setIsSubmittingPassword(false);
-    }
-  };
-
-  const toggleShowPassword = (field) => {
-    setShowPassword(prev => ({ ...prev, [field]: !prev[field] }));
-  };
+  const {
+    passwordData,
+    isSubmitting: isSubmittingPassword,
+    error: passwordError,
+    success: passwordSuccess,
+    showPassword,
+    handleChange: handlePasswordChange,
+    handleSubmit: handlePasswordSubmit,
+    toggleShowPassword,
+  } = usePasswordForm();
 
   if (!user) {
     return <div className="text-center"><Spinner animation="border" /></div>;
@@ -78,8 +34,8 @@ function ProfilePage() {
     <Row className="justify-content-center">
       <Col lg={8}>
         <h1 className="text-center mb-4">プロフィール</h1>
-        {error && <Alert variant="danger">{error}</Alert>}
-        {success && <Alert variant="success">{success}</Alert>}
+        {(profileError || passwordError) && <Alert variant="danger">{profileError || passwordError}</Alert>}
+        {(profileSuccess || passwordSuccess) && <Alert variant="success">{profileSuccess || passwordSuccess}</Alert>}
 
         <Card className="shadow-sm mb-4">
           <Card.Header as="h5">基本情報</Card.Header>
