@@ -14,10 +14,10 @@ import AdminDashboardPage from './features/admin/pages/AdminDashboardPage';
 import UserManagementPage from './features/admin/users/pages/UserManagementPage';
 import ForceResetPasswordPage from './features/auth/pages/ForceResetPasswordPage';
 import UserCreatePage from './features/admin/users/pages/UserCreatePage';
-import RoleManagementPage from './pages/RoleManagementPage'; 
+import RoleManagementPage from './features/admin/roles/pages/RoleManagementPage'; 
 import UserEditPage from './features/admin/users/pages/UserEditPage';
-import TenantManagementPage from './pages/TenantManagementPage';
-import TenantDetailPage from './pages/TenantDetailPage'; // ★ 新しく追加
+import TenantManagementPage from './features/admin/tenants/pages/TenantManagementPage';
+import TenantDetailPage from './features/admin/tenants/pages/TenantDetailPage';
 import ProfilePage from './features/profile/pages/ProfilePage'; // ★ 新しく追加
 
 // AppContentコンポーネントを新しく定義

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Table, Button, Modal, Form, Spinner, Alert, Card } from 'react-bootstrap';
+import { Table, Button, Modal, Form, Spinner, Alert, Card, Badge } from 'react-bootstrap';
+import { useAuth } from '../../../../providers/AuthProvider';
 
 // フロントエンド側でも保護するロールを定義
 const PROTECTED_ROLES = ['user', 'admin'];
 
 function RoleManagementPage() {
+  const { user: currentUser } = useAuth();
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,8 +17,10 @@ function RoleManagementPage() {
   const [modalError, setModalError] = useState(''); // モーダル内のエラー
 
   useEffect(() => {
-    loadRoles();
-  }, []);
+    if (currentUser) {
+      loadRoles();
+    }
+  }, [currentUser]);
 
   const loadRoles = async () => {
     try {
@@ -110,7 +114,7 @@ function RoleManagementPage() {
                 <td>
                   {role.name}
                   {isProtected(role.name) && <span className="badge bg-secondary ms-2">保護</span>}
-                </td>
+              </td>
                 <td>{role.description}</td>
                 <td>
                   <button
