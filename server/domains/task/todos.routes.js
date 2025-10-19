@@ -1,9 +1,9 @@
 const router = require('express').Router();
-const Todo = require('../models/todo.model');
-const Tenant = require('../models/tenant.model'); // ★ Tenantモデルをインポート
+const Todo = require('./todo.model');
+const Tenant = require('../organization/tenant.model'); // ★ Tenantモデルをインポート
 const mongoose = require('mongoose'); // ★ Mongooseをインポート
-const auth = require('../core/middleware/auth'); // 認証ミドルウェアをインポート
-const { getAccessibleTenantIds } = require('../core/services/permissionService');
+const auth = require('../../core/middleware/auth'); // 認証ミドルウェアをインポート // No change needed here, it was correct
+const { getAccessibleTenantIds } = require('../../core/services/permissionService'); // No change needed here, it was correct
 
 // --- すべてのTODO APIを認証ミドルウェアで保護 ---
 router.use(auth);

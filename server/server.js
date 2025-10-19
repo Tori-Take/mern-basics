@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const Role = require('./models/role.model');
-const Tenant = require('./models/tenant.model'); // ★ Tenantモデルをインポート
 const path = require('path');
 
 // 環境変数を .env ファイルから読み込む
@@ -19,10 +17,10 @@ app.use(express.json()); // JSON形式のリクエストボディを解析でき
 const uri = process.env.ATLAS_URI;
 
 // APIルートの設定
-const todosRouter = require('./routes/todos');
-const usersRouter = require('./routes/users');
-const rolesRouter = require('./routes/roles');
-const tenantsRouter = require('./routes/tenants'); // ★ 新しく追加
+const todosRouter = require('./domains/task/todos.routes.js');
+const usersRouter = require('./routes/users.js');
+const rolesRouter = require('./domains/organization/roles.routes.js');
+const tenantsRouter = require('./domains/organization/tenants.routes.js');
 // const authRouter = require('./routes/auth'); // auth.jsがまだ存在しないため一時的にコメントアウト
 
 app.use('/api/todos', todosRouter);
