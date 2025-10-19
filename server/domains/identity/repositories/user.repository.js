@@ -139,6 +139,17 @@ class UserRepository {
       .select('-password')
       .populate('tenantId', 'name parent');
   }
+
+  /**
+   * 認証済みユーザーの情報を取得します（パスワード除外、テナント情報populate）。
+   * @param {string} id - 検索するユーザーのID。
+   * @returns {Promise<User|null>} 整形されたユーザーオブジェクト。
+   */
+  async findAuthUserById(id) {
+    return await User.findById(id)
+      .select('-password')
+      .populate('tenantId', 'name parent');
+  }
 }
 
 module.exports = UserRepository;

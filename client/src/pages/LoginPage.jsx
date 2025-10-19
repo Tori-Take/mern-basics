@@ -25,18 +25,16 @@ function LoginPage() {
     }
   }, [location, navigate]);
 
-  // ★★★ ここからが修正箇所 ★★★
-  // ログイン状態(isAuthenticated)が変更されたら実行される
+  // 認証状態の変更を監視して画面遷移を行う
   useEffect(() => {
     if (isAuthenticated) {
       if (forceReset) {
-        navigate('/force-reset-password'); // パスワードリセットページへ
+        navigate('/force-reset-password');
       } else {
-        navigate('/'); // 通常はホームページへ
+        navigate('/');
       }
     }
   }, [isAuthenticated, forceReset, navigate]);
-  // ★★★ ここまでが修正箇所 ★★★
 
   const { email, password } = formData;
 
@@ -48,9 +46,9 @@ function LoginPage() {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
-    try {
+    try {      
       await login(email, password);
-      // ログイン成功後のリダイレクトは上記のuseEffectに任せる
+      // ログイン成功後の画面遷移は上記のuseEffectに任せるため、ここでは何もしない
     } catch (err) {
       setError(err.response?.data?.message || 'ログインに失敗しました。');
       setIsSubmitting(false);

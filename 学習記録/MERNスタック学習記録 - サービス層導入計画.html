@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - サービス層導入計画</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f8f9fa;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #005f73;
+            border-bottom: 2px solid #0a9396;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 4px;
+            font-size: 2.5em;
+        }
+
+        h2 {
+            background-color: #e9ecef;
+            padding: 12px 15px;
+            border-left: 6px solid #0a9396;
+            font-size: 1.8em;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #212529;
+            color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .step-card {
+            border-left: 5px solid #fb8500;
+            margin-top: 25px;
+        }
+
+        .check-point {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+        }
+
+        .check-point::before {
+            content: '✅ 動作確認';
+            font-weight: bold;
+            color: #155724;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .code-block {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>サービス層導入計画</h1>
+
+    <div class="card">
+        <h2>はじめに：なぜ「サービス層」が必要か？</h2>
+        <p>
+            現在、私たちのバックエンドは「ルーティング層」「コントローラー層」「リポジトリ層」という見事な3層構造になっています。しかし、<code>users.controllers.js</code>をよく見ると、まだ2つの異なる責任を負っていることがわかります。
+        </p>
+        <ul>
+            <li><strong>HTTP関連の責任:</strong> <code>req</code>からデータを取り出し、<code>res</code>でJSONを返す。</li>
+            <li><strong>ビジネスロジックの責任:</strong> パスワードをハッシュ化したり、アクセス権限を計算したりする。</li>
+        </ul>
+        <p>
+            この2つの責任を分離し、コントローラーを純粋な「HTTPの専門家」にするため、ビジネスロジックに特化した<strong>サービス層</strong>を導入します。これにより、私たちのアーキテクチャはさらにクリーンで、テストしやすくなります。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>目指すアーキテクチャ</h2>
+        <p>最終的に、バックエンドは以下の4層構造へと進化します。</p>
+        <pre><code>[ルーティング層] ⇔ [コントローラー層] ⇔ [✨サービス層✨] ⇔ [リポジトリ層] ⇔ [DB]</code></pre>
+        <ul>
+            <li><strong>コントローラー層:</strong> HTTPリクエストの受付とレスポンスの送信に専念。</li>
+            <li><strong>サービス層 (新設):</strong> アプリケーション固有のビジネスルールを実行する「頭脳」。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>実装計画</h2>
+        <p>今回も、ステップごとにサーバーを再起動して動作確認を行いながら、着実に進めていきましょう。</p>
+
+        <div class="card step-card">
+            <h3>ステップ1：サービスファイルの作成とパスワード更新ロジックの移植</h3>
+            <p>
+                最初に、ユーザー自身がパスワードを更新するロジック (<code>updatePassword</code>) をサービス層へ移動させます。
+            </p>
+            <ol>
+                <li><code>server/domains/identity/</code>内に<code>services</code>ディレクトリを新規作成します。</li>
+                <li><code>services</code>ディレクトリ内に<code>user.service.js</code>ファイルを新規作成し、<code>UserService</code>クラスを定義します。
+                </li>
+                <li><code>UserService</code>に、パスワードの比較とハッシュ化、保存を行う<code>updateUserPassword</code>メソッドを実装します。</li>
+                <li><code>users.controllers.js</code>の<code>updatePassword</code>メソッドを修正し、この新しいサービスを呼び出すように変更します。</li>
+            </ol>
+            <div class="check-point">
+                サーバーを再起動し、プロフィールページでパスワードが正常に更新できることを確認します。
+            </div>
+        </div>
+
+        <div class="card step-card">
+            <h3>ステップ2：ユーザー登録ロジックの移植</h3>
+            <p>
+                次に、複数のモデル（テナント、ロール、ユーザー）を操作する、より複雑なユーザー登録ロジック (<code>register</code>)
+                をサービス層へ移植します。これはサービス層の価値が最も発揮される部分です。
+            </p>
+            <ol>
+                <li><code>UserService</code>に、テナント作成、ロール作成、ユーザー作成の一連の流れを実行する<code>registerNewTenantAndOwner</code>メソッドを実装します。
+                </li>
+                <li><code>users.controllers.js</code>の<code>register</code>メソッドを修正し、このサービスを呼び出すように変更します。</li>
+            </ol>
+            <div class="check-point">
+                サーバーを再起動し、新しい組織とオーナーアカウントの登録が正常に行えることを確認します。
+            </div>
+        </div>
+
+        <div class="card step-card">
+            <h3>ステップ3：残りの全ビジネスロジックの移植</h3>
+            <p>
+                最後に、コントローラーに残っている他のすべてのビジネスロジックをサービス層へ完全に分離します。
+            </p>
+            <ol>
+                <li><code>login</code>, <code>updateProfile</code>, <code>createUser</code>,
+                    <code>updateUser</code>など、コントローラー内のメソッドからビジネスロジックを抜き出し、それぞれ対応するメソッドを<code>UserService</code>に作成します。
+                </li>
+                <li>各コントローラーメソッドは、入力値の簡単な検証と、対応するサービスメソッドの呼び出し、そしてレスポンスの送信だけを行う、非常にスリムな形になります。</li>
+            </ol>
+            <div class="code-block">
+                <pre><code>// 最終的なコントローラーのイメージ
+static async someAction(req, res) {
+  try {
+    const result = await userService.someAction(req.body);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message });
+  }
+}</code></pre>
+            </div>
+            <div class="check-point">
+                サーバーを再起動し、ログイン、プロフィール更新、管理者によるユーザー管理など、アプリケーションの全機能がこれまで通り問題なく動作することを一通り確認します。
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>完了時のメリット</h2>
+        <p>
+            このリファクタリングが完了すると、各層の責任が完全に分離されます。
+        </p>
+        <ul>
+            <li><strong>コントローラー:</strong> HTTPの専門家。</li>
+            <li><strong>サービス:</strong> ビジネスルールの専門家。</li>
+            <li><strong>リポジトリ:</strong> データベースの専門家。</li>
+        </ul>
+        <p>
+            これにより、コードはさらにテストしやすくなり、将来の仕様変更にも柔軟に対応できる、極めて保守性の高いアーキテクチャが完成します。
+        </p>
+    </div>
+
+</body>
+
+</html>

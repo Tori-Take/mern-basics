@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DDDに基づくバックエンドフォルダ構造解説</title>
+    <title>DDDとクリーンアーキテクチャに基づくバックエンドフォルダ構造解説</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -18,7 +18,8 @@
 
         h1,
         h2,
-        h3 {
+        h3,
+        h4 {
             color: #2c3e50;
             border-bottom: 2px solid #3498db;
             padding-bottom: 10px;
@@ -27,6 +28,18 @@
         h1 {
             text-align: center;
             font-size: 2.5em;
+        }
+
+        h2 {
+            background-color: #e9ecef;
+            padding: 12px 15px;
+            border-left: 6px solid #3498db;
+        }
+
+        h4 {
+            font-size: 1.1em;
+            border-bottom-style: dotted;
+            margin-top: 25px;
         }
 
         .tree {
@@ -82,19 +95,41 @@
         .description strong {
             color: #2980b9;
         }
+
+        .flow-diagram {
+            background: #f1f3f5;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            line-height: 1.5;
+            border: 1px solid #dee2e6;
+        }
+
+        .analogy-box {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .debug-story {
+            background-color: #f8d7da;
+            border-left: 5px solid #dc3545;
+            padding: 15px;
+        }
     </style>
 </head>
 
 <body>
 
-    <h1>ドメイン駆動設計（DDD）に基づく<br>バックエンドフォルダ構造解説</h1>
+    <h1>DDDとクリーンアーキテクチャに基づく<br>バックエンドフォルダ構造解説</h1>
 
     <div class="description">
-        このドキュメントは、ドメイン駆動設計（DDD）の原則に基づいて再構築されたバックエンドのフォルダ構造について解説します。この構造は、<strong>保守性</strong>、<strong>拡張性</strong>、そして<strong>可読性</strong>を向上させることを目的としています。
+        このドキュメントは、ドメイン駆動設計（DDD）の原則とクリーンアーキテクチャの考え方に基づいて構築された、最新のバックエンドフォルダ構造について解説します。この構造は、<strong>保守性</strong>、<strong>拡張性</strong>、そして<strong>テスト容易性</strong>を最大化することを目的としています。
     </div>
 
     <h2>フォルダ構造全体像</h2>
-
+    <p>各ドメインは、責務が明確に分離された4つの層（+モデル）で構成されています。</p>
     <ul class="tree">
         <li class="folder">server
             <ul>
@@ -117,6 +152,17 @@
                     <ul>
                         <li class="folder">identity
                             <ul>
+                                <li class="folder">repositories
+                                    <ul>
+                                        <li class="file">user.repository.js</li>
+                                    </ul>
+                                </li>
+                                <li class="folder">services
+                                    <ul>
+                                        <li class="file">user.service.js</li>
+                                    </ul>
+                                </li>
+                                <li class="file">users.controllers.js</li>
                                 <li class="file">user.model.js</li>
                                 <li class="file">users.routes.js</li>
                             </ul>
@@ -125,6 +171,7 @@
                             <ul>
                                 <li class="file">tenant.model.js</li>
                                 <li class="file">role.model.js</li>
+                                <!-- 同様にcontrollers, services, repositoriesが配置される -->
                                 <li class="file">tenants.routes.js</li>
                                 <li class="file">roles.routes.js</li>
                             </ul>
@@ -132,6 +179,7 @@
                         <li class="folder">task
                             <ul>
                                 <li class="file">todo.model.js</li>
+                                <!-- 同様にcontrollers, services, repositoriesが配置される -->
                                 <li class="file">todos.routes.js</li>
                             </ul>
                         </li>
@@ -175,30 +223,129 @@
                 <li>
                     <strong><code>identity/</code> (アイデンティティ)</strong>:
                     ユーザー認証、ユーザー登録、プロフィール管理など、「ユーザーは誰か」という識別情報に関するドメインです。
-                    <ul>
-                        <li><code>user.model.js</code>: ユーザー情報のデータ構造を定義するMongooseモデル。</li>
-                        <li><code>users.routes.js</code>:
-                            ユーザー関連のAPIエンドポイント（<code>/api/users/...</code>）を定義するExpressルーター。</li>
-                    </ul>
                 </li>
                 <li>
                     <strong><code>organization/</code> (組織)</strong>: 組織（テナント）や役割（ロール）の管理など、ユーザーが所属するグループ構造に関するドメインです。
-                    <ul>
-                        <li><code>tenant.model.js</code>: 組織/部署のデータ構造を定義するモデル。</li>
-                        <li><code>role.model.js</code>: 役割のデータ構造を定義するモデル。</li>
-                        <li><code>tenants.routes.js</code>, <code>roles.routes.js</code>: それぞれのAPIエンドポイントを定義するルーター。</li>
-                    </ul>
                 </li>
                 <li>
                     <strong><code>task/</code> (タスク)</strong>: TODOリストの管理など、具体的なタスクに関するドメインです。
-                    <ul>
-                        <li><code>todo.model.js</code>: TODOアイテムのデータ構造を定義するモデル。</li>
-                        <li><code>todos.routes.js</code>: TODO関連のAPIエンドポイントを定義するルーター。</li>
-                    </ul>
                 </li>
             </ul>
         </div>
     </section>
+
+    <section>
+        <h3>各ドメイン内のファイルと責務</h3>
+        <div class="description">
+            各ドメインフォルダ（例: <code>identity</code>）の中は、以下のファイル群で構成され、それぞれが明確な役割を担います。
+        </div>
+
+        <div class="flow-diagram">
+            <h4>リクエストの流れと各層の役割 (例: <code>GET /api/users/:id</code>)</h4>
+            <pre><code>[Client] --- HTTPリクエスト ---> [① Routes] --┐
+                                             |
+      (レスポンス) <--- [② Controller] <---┘
+                         |
+                         | (ビジネスロジックを依頼)
+                         ↓
+      (結果) <--- [③ Service]
+                         |
+                         | (データ操作を依頼)
+                         ↓
+      (データ) <--- [④ Repository] <---> [⑤ Database]</code></pre>
+        </div>
+
+        <div class="description">
+            <ul>
+                <li>
+                    <strong>① <code>*.routes.js</code> (ルーティング層)</strong><br>
+                    【役割：交通整理の専門家】<br>
+                    APIエンドポイントの定義に専念します。<code>/api/users/:id</code> へのGETリクエストは、<code>UserController.getUserById</code>
+                    が担当する、といったマッピングのみを行います。
+                </li>
+                <li>
+                    <strong>② <code>*.controllers.js</code> (コントローラー層)</strong><br>
+                    【役割：HTTPの専門家】<br>
+                    リクエスト(<code>req</code>)からパラメータ（例:
+                    <code>req.params.id</code>）を取り出し、レスポンス(<code>res</code>)を返すことだけに責任を持ちます。ビジネスロジックはサービス層に委譲します。
+                </li>
+                <li>
+                    <strong>③ <code>*.service.js</code> (サービス層)</strong><br>
+                    【役割：ビジネスロジックの専門家】<br>
+                    アプリケーションの「頭脳」です。「ユーザーを取得するには、まずアクセス権限を計算し、その権限でリポジトリに検索を依頼する」といった、アプリケーション固有のルールを実行します。HTTPのことは一切知りません。
+                </li>
+                <li>
+                    <strong>④ <code>*.repository.js</code> (リポジトリ層)</strong><br>
+                    【役割：データベースの専門家】<br>
+                    Mongooseを使ったデータベースとの全ての対話（CRUD操作）をカプセル化します。「IDでユーザーを検索する」という依頼に対し、<code>User.findById()</code>
+                    を実行して結果を返します。ビジネスルールは一切知りません。
+                </li>
+                <li>
+                    <strong>⑤ <code>*.model.js</code> (モデル層)</strong><br>
+                    【役割：データの設計図】<br>
+                    データの構造（スキーマ）を定義します。リポジトリ層がこのモデルを使ってデータベースと対話します。
+                </li>
+            </ul>
+        </div>
+
+        <div class="analogy-box">
+            <h4>レストランでの例え</h4>
+            <p>この構造は、よくできたレストランの厨房に似ています。</p>
+            <ul>
+                <li><strong>ルーティング層:</strong> お客様の注文を厨房に伝える「ウェイター」</li>
+                <li><strong>コントローラー層:</strong> 注文票を読み解き、調理の段取りを指示する「スーシェフ（副料理長）」</li>
+                <li><strong>サービス層:</strong> レシピに基づき、複雑な調理工程を組み立てる「総料理長」</li>
+                <li><strong>リポジトリ層:</strong> 食材庫から必要な材料を正確に取ってくる「食材調達係」</li>
+                <li><strong>データベース:</strong> 食材が保管されている「食材庫」</li>
+            </ul>
+            <p>各担当が自分の仕事に集中することで、高品質な料理（レスポンス）を効率的に提供できるのです。</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>フロントエンドアーキテクチャ：認証状態の管理</h2>
+        <div class="description">
+            堅牢なバックエンドと同様に、フロントエンドもまた、認証情報を管理するための洗練されたアーキテクチャを持っています。その中心となるのが<code>AuthContext.jsx</code>です。
+            <ul>
+                <li><strong><code>AuthContext.jsx</code>:</strong>
+                    アプリケーション全体の「認証センター」です。ログイン状態(<code>isAuthenticated</code>)、ユーザー情報(<code>user</code>)、認証トークン(<code>token</code>)などを一元管理し、どのコンポーネントからでも<code>useAuth()</code>フックを通じてアクセスできるようにします。
+                </li>
+                <li><strong>ローディングガード:</strong>
+                    ログイン直後やページリロード時、APIからのデータ取得には僅かな時間がかかります。その間のUI崩れを防ぐため、データを表示するコンポーネント側で「門番」を設置します。
+                </li>
+            </ul>
+        </div>
+        <div class="analogy-box">
+            <h4>💡 ローディングガード (Loading Guard) パターン</h4>
+            <p>これは、非同期データに依存するコンポーネントを描画する際の非常に重要なテクニックです。</p>
+            <pre><code>// UserDashboardPage.jsx
+function UserDashboardPage() {
+  const { user } = useAuth();
+
+  // userオブジェクトがまだ読み込み中の場合は、スピナーを表示
+  if (!user) {
+    return &lt;Spinner /&gt;;
+  }
+
+  // userが確定してから、初めてユーザー名などを表示する
+  return &lt;h1&gt;ようこそ、{user.name}さん&lt;/h1&gt;;
+}</code></pre>
+            <p>この「門番」を設けることで、データが不完全な状態でUIが描画されることを防ぎ、常に安定した表示を保証します。</p>
+        </div>
+    </section>
+
+    <div class="debug-story">
+        <h2>デバッグの物語：非同期処理との戦い</h2>
+        <p>
+            「ログイン直後にユーザー名が表示されない」という問題は、Reactの非同期な状態更新と画面遷移のタイミングが競合する、典型的な<strong>レースコンディション</strong>でした。
+        </p>
+        <p>
+            私たちは、<code>Promise</code>の利用や<code>useEffect</code>による画面遷移など、様々なアプローチを試みましたが、最終的に<strong>「UIコンポーネント側でデータの存在を保証する（ローディングガード）」</strong>という最もシンプルで堅牢な解決策にたどり着きました。
+        </p>
+        <p>
+            この一連のデバッグは、単なるバグ修正ではなく、Reactの非同期な性質を深く理解し、それに対応するための実践的な設計パターンを学ぶ、極めて価値のある経験となりました。
+        </p>
+    </div>
 
 </body>
 

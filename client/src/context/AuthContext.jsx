@@ -58,27 +58,28 @@ export function AuthProvider({ children }) {
 
   // ログイン処理
   const login = async (email, password) => {
-    const config = { headers: { 'Content-Type': 'application/json' } };
+    const config = { headers: { "Content-Type": "application/json" } };
     const body = JSON.stringify({ email, password });
 
     try {
-      const res = await axios.post('/api/users/login', body, config);
-      
-      localStorage.setItem('token', res.data.token);
+      const res = await axios.post("/api/users/login", body, config);
+
+      localStorage.setItem("token", res.data.token);
       setAuthToken(res.data.token);
 
       if (res.data.forceReset) {
-        // パスワードリセットが必要な場合、ユーザー情報を別途読み込む
         await loadUser();
+        return { forceReset: true }; // 結果を直接返す
       } else {
-        // 通常ログインの場合、レスポンスに含まれるユーザー情報で直接stateを更新
-        setAuthState(prev => ({
+        setAuthState((prev) => ({
           ...prev,
+          token: res.data.token,
           isAuthenticated: true,
           loading: false,
           user: res.data.user,
           forceReset: false,
         }));
+        return { forceReset: false }; // 結果を直接返す
       }
     } catch (err) {
       // エラーが発生した場合は、呼び出し元にエラーを再スローしてLoginPageで処理させる
@@ -95,13 +96,10 @@ export function AuthProvider({ children }) {
 
   // ユーザー情報を更新する処理
   const updateUser = (newUserData) => {
-    setAuthState(prev => ({
-      ...prev,
-      user: {
-        ...prev.user, // 既存のユーザー情報
-        ...newUserData, // 新しい情報で上書き
-      }
-    }));
+    // フロントエンドのstateを直接更新するのではなく、
+    // バックエンドから最新の完全なユーザー情報を再取得して、状態の整合性を保つ。
+    // loadUserは内部でsetAuthStateを呼び出し、userとisAuthenticatedを正しく設定してくれる。
+    loadUser();
   };
 
   const value = {

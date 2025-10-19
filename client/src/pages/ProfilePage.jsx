@@ -34,7 +34,7 @@ function ProfilePage() {
     setSuccess('');
     try {
       const res = await axios.put('/api/users/profile', profileData);
-      updateUser(res.data); // AuthContextのユーザー情報を更新
+      updateUser(); // AuthContextにユーザー情報の再読み込みをトリガーさせる
       setSuccess('プロフィールが正常に更新されました。');
     } catch (err) {
       setError(err.response?.data?.message || 'プロフィールの更新に失敗しました。');

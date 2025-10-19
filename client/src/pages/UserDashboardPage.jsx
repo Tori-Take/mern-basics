@@ -1,18 +1,24 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Spinner } from 'react-bootstrap';
 
 function UserDashboardPage() {
   const { user } = useAuth();
 
-  // --- デバッグ用ログ ---
-  // このページが描画されるたびに、現在のユーザー情報をコンソールに出力します。
-  console.log('【UserDashboardPage】描画:', { user });
+  // userオブジェクトがまだ読み込まれていない場合は、ローディング表示をする
+  if (!user) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
+        <Spinner animation="border" />
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="text-center mb-5">
-        <h1>ようこそ、{user ? user.name : 'ゲスト'}さん</h1>
+        <h1>ようこそ、{user.name || user.username}さん</h1>
         <p className="lead text-muted">利用したいアプリケーションを選択してください。</p>
       </div>
 
@@ -32,7 +38,6 @@ function UserDashboardPage() {
         </div>
 
         {/* --- 管理者専用：管理者ダッシュボードへのカード --- */}
-        {/* 修正点: user.isAdmin を user.roles.includes('admin') に変更 */}
         {user && user.roles && user.roles.includes('admin') && (
           <div className="col-md-6 col-lg-4">
             <div className="card h-100 shadow-sm border-danger">

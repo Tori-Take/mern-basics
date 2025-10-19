@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { Form, Button, Card, Alert, Spinner, InputGroup } from 'react-bootstrap';
 
 function ForceResetPasswordPage() {
   const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ function ForceResetPasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState({ new: false, confirm: false });
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -18,6 +20,10 @@ function ForceResetPasswordPage() {
 
   const onChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const toggleShowPassword = (field) => {
+    setShowPassword(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
   const onSubmit = async (e) => {
@@ -48,31 +54,48 @@ function ForceResetPasswordPage() {
   };
 
   return (
-    <div className="row justify-content-center">
-      <div className="col-md-6">
-        <h1 className="text-center mb-4">新しいパスワードの設定</h1>
-        <p className="text-center text-muted">セキュリティのため、新しいパスワードを設定してください。</p>
-        <form onSubmit={onSubmit}>
-          {error && <div className="alert alert-danger">{error}</div>}
-          {success && <div className="alert alert-success">{success}</div>}
-
-          <div className="mb-3">
-            <label htmlFor="newPassword">新しいパスワード</label>
-            <input type="password" id="newPassword" className="form-control" name="newPassword" value={newPassword} onChange={onChange} required minLength="6" />
-          </div>
-          <div className="mb-3">
-            <label htmlFor="confirmPassword">新しいパスワード (確認用)</label>
-            <input type="password" id="confirmPassword" className="form-control" name="confirmPassword" value={confirmPassword} onChange={onChange} required minLength="6" />
-          </div>
-          <button
-            type="submit"
-            className="btn btn-primary w-100"
-            disabled={isSubmitting || success}
-          >
-            {isSubmitting ? '更新中...' : 'パスワードを更新'}
-          </button>
-        </form>
-      </div>
+    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+      <Card style={{ width: '100%', maxWidth: '450px' }} className="shadow-sm">
+        <Card.Header as="h2" className="text-center">新しいパスワードの設定</Card.Header>
+        <Card.Body>
+          <p className="text-center text-muted mb-4">セキュリティのため、新しいパスワードを設定してください。</p>
+          {error && <Alert variant="danger">{error}</Alert>}
+          {success && <Alert variant="success">{success}</Alert>}
+          <Form onSubmit={onSubmit}>
+            <Form.Group className="mb-3" controlId="newPassword">
+              <Form.Label>新しいパスワード</Form.Label>
+              <InputGroup>
+                <Form.Control type={showPassword.new ? 'text' : 'password'} name="newPassword" value={newPassword} onChange={onChange} required minLength="6" />
+                <Button variant="outline-secondary" onClick={() => toggleShowPassword('new')}>
+                  {showPassword.new ? <i className="bi bi-eye-slash"></i> : <i className="bi bi-eye"></i>}
+                </Button>
+              </InputGroup>
+            </Form.Group>
+            <Form.Group className="mb-4" controlId="confirmPassword">
+              <Form.Label>新しいパスワード (確認用)</Form.Label>
+              <InputGroup>
+                <Form.Control type={showPassword.confirm ? 'text' : 'password'} name="confirmPassword" value={confirmPassword} onChange={onChange} required minLength="6" />
+                <Button variant="outline-secondary" onClick={() => toggleShowPassword('confirm')}>
+                  {showPassword.confirm ? <i className="bi bi-eye-slash"></i> : <i className="bi bi-eye"></i>}
+                </Button>
+              </InputGroup>
+            </Form.Group>
+            <div className="d-grid">
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={isSubmitting || !!success}
+              >
+                {isSubmitting ? (
+                  <><Spinner as="span" animation="border" size="sm" /> 更新中...</>
+                ) : (
+                  'パスワードを更新'
+                )}
+              </Button>
+            </div>
+          </Form>
+        </Card.Body>
+      </Card>
     </div>
   );
 }
