@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios'; // axiosをインポート
 import { useAuth } from '../providers/AuthProvider'; // ★ useAuthフックをインポート
-import TodoCreateModal from '../TodoCreateModal';
-import TodoEditModal from '../TodoEditModal';
-import TodoFilterSortModal from '../TodoFilterSortModal';
+import TodoCreateModal from '../components/TodoCreateModal';
+import TodoEditModal from '../components/TodoEditModal';
+import TodoFilterSortModal from '../components/TodoFilterSortModal';
 import { ListGroup, Badge, Button, Card, Accordion, Form, Alert } from 'react-bootstrap'; // ★ Alertを追加
 
 const API_URL = '/api/todos';

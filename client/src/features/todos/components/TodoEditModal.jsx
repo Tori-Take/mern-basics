@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from './providers/AuthProvider'; // ★ useAuthフックをインポート
+import { useAuth } from '../../../providers/AuthProvider'; // ★ useAuthフックをインポート
 import axios from 'axios';
 import { Badge } from 'react-bootstrap';
 

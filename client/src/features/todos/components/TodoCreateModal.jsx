@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from './providers/AuthProvider';
+import { useAuth } from '../../../providers/AuthProvider';
 import { Badge } from 'react-bootstrap';
 
 const INITIAL_STATE = {

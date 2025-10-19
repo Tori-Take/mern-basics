@@ -7,12 +7,12 @@ import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute.jsx';
 import UserDashboardPage from './pages/UserDashboardPage'; // HomePageから変更
-import TodoPage from './pages/TodoPage'; // 新しくインポート
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import TodoPage from './features/todos/pages/TodoPage'; // 新しくインポート
+import LoginPage from './features/auth/pages/LoginPage';
+import RegisterPage from './features/auth/pages/RegisterPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
-import ForceResetPasswordPage from './pages/ForceResetPasswordPage';
+import ForceResetPasswordPage from './features/auth/pages/ForceResetPasswordPage';
 import UserCreatePage from './pages/UserCreatePage';
 import RoleManagementPage from './pages/RoleManagementPage'; 
 import UserEditPage from './pages/UserEditPage';

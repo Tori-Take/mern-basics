@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../providers/AuthProvider';
+import { useAuth } from '../../../providers/AuthProvider';
 import { Form, Button, Card, Alert, Spinner, InputGroup } from 'react-bootstrap';
 
 function ForceResetPasswordPage() {
