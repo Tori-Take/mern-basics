@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../providers/AuthProvider';
 
 /**
  * プロフィール情報フォームに関するロジックをカプセル化するカスタムフック

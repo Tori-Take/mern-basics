@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../providers/AuthProvider';
 import { useProfileForm } from '../hooks/useProfileForm';
 import { usePasswordForm } from '../hooks/usePasswordForm';
 import { Form, Button, Card, Alert, Spinner, Row, Col, InputGroup } from 'react-bootstrap';

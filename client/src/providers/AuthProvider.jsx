@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
-import setAuthToken from '../utils/setAuthToken';
+console.log("3. AuthProvider.jsx is being loaded."); // ★ デバッグログ
+import setAuthToken from '../lib/axios';
 
 // 1. Contextオブジェクトの作成
 const AuthContext = createContext();

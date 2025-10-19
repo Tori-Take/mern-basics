@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../providers/AuthProvider';
 import { Form, Button, Card, Alert, Spinner, InputGroup } from 'react-bootstrap';
 
 function LoginPage() {

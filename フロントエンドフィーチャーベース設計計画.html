@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>フロントエンドリファクタリング計画 - フィーチャーベース設計</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f8f9fa;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #0077b6;
+            border-bottom: 2px solid #00b4d8;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 4px;
+            font-size: 2.5em;
+            color: #03045e;
+        }
+
+        h2 {
+            background-color: #eaf4f4;
+            padding: 12px 15px;
+            border-left: 6px solid #00b4d8;
+            font-size: 1.8em;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #212529;
+            color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .step-card {
+            border-left: 5px solid #fb8500;
+            margin-top: 25px;
+        }
+
+        .concept-box {
+            background-color: #e0fbfc;
+            border-left: 5px solid #2ec4b6;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .check-point {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+        }
+
+        .check-point::before {
+            content: '✅ 動作確認';
+            font-weight: bold;
+            color: #155724;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .tree {
+            list-style-type: none;
+            padding-left: 20px;
+            line-height: 1.8;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        .tree ul {
+            padding-left: 25px;
+            border-left: 1px dashed #aaa;
+        }
+
+        .tree li {
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .tree li::before {
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-family: monospace;
+        }
+
+        .folder::before {
+            content: '📁';
+            color: #f39c12;
+        }
+
+        .file::before {
+            content: '📄';
+            color: #0077b6;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>フロントエンドリファクタリング計画</h1>
+    <p class="text-center" style="font-size: 1.2em;">フィーチャーベース設計による構造化</p>
+
+    <div class="card">
+        <h2>はじめに：なぜ「フィーチャーベース設計」が必要か？</h2>
+        <p>
+            バックエンドがドメインごとに整理されたように、フロントエンドもまた、アプリケーションの成長と共に構造的な課題に直面します。現在の「種類別」のフォルダ構造（<code>pages</code>,
+            <code>hooks</code>, <code>components</code>）は、関連するファイルが散在し、機能の全体像を把握しづらくなっています。
+        </p>
+        <p>
+            このリファクタリングでは、<strong>「機能（フィーチャー）」</strong>を軸にファイルを整理する「フィーチャーベース設計」を導入し、バックエンドと思想を統一した、スケーラブルなフロントエンドアーキテクチャを構築します。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>目指すアーキテクチャ</h2>
+        <p>最終的に、フロントエンドの<code>src</code>ディレクトリは以下の構造へと進化します。</p>
+        <div class="tree">
+            <ul>
+                <li class="folder">src
+                    <ul>
+                        <li class="folder">components/ <span style="color: #6c757d;">(共通UI部品)</span></li>
+                        <li class="folder">providers/ <span style="color: #6c757d;">(Context Provider)</span></li>
+                        <li class="folder">lib/ <span style="color: #6c757d;">(外部ライブラリ設定)</span></li>
+                        <li class="folder">features/ <span style="color: #6c757d;">(心臓部)</span>
+                            <ul>
+                                <li class="folder">auth/
+                                    <ul>
+                                        <li class="folder">pages/</li>
+                                        <li class="folder">hooks/</li>
+                                    </ul>
+                                </li>
+                                <li class="folder">profile/
+                                    <ul>
+                                        <li class="folder">pages/</li>
+                                        <li class="folder">hooks/</li>
+                                    </ul>
+                                </li>
+                                <li class="folder">todos/</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        <p class="mt-3">
+            この構造により、「プロフィール機能を修正したい」と思ったら、<code>features/profile/</code>の中だけを見れば良くなります。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>実装計画</h2>
+        <p>今回も、ステップごとに動作確認を行いながら、着実に進めていきましょう。</p>
+
+        <div class="card step-card">
+            <h3>ステップ1：基本構造のセットアップ</h3>
+            <p>
+                まず、新しいフォルダ構造の土台を作ります。
+            </p>
+            <ol>
+                <li><code>client/src/</code>内に<code>features</code>, <code>providers</code>,
+                    <code>lib</code>ディレクトリを新規作成します。
+                </li>
+                <li><code>client/src/context/AuthContext.jsx</code>を<code>client/src/providers/AuthProvider.jsx</code>に移動・リネームします。
+                </li>
+                <li><code>client/src/utils/setAuthToken.js</code>を<code>client/src/lib/axios.js</code>に移動・リネームし、axiosのインスタンス設定などを集約する場所にします。
+                </li>
+                <li>上記変更に伴い、<code>main.jsx</code>や<code>App.jsx</code>のインポートパスを修正します。</li>
+            </ol>
+            <div class="check-point">
+                アプリケーションを再起動し、これまで通りログインや表示が正常に行えることを確認します。この段階ではまだ機能の移動は行いません。
+            </div>
+        </div>
+
+        <div class="card step-card">
+            <h3>ステップ2：「プロフィール機能」の移行</h3>
+            <p>
+                私たちが直近でリファクタリングした「プロフィール機能」から、新しい構造への移行を開始します。
+            </p>
+            <ol>
+                <li><code>features/profile/pages/</code>を作成し、<code>ProfilePage.jsx</code>を移動します。</li>
+                <li><code>features/profile/hooks/</code>を作成し、<code>useProfileForm.js</code>と<code>usePasswordForm.js</code>を移動します。
+                </li>
+                <li><code>App.jsx</code>内のルーティング設定で、<code>ProfilePage</code>のインポートパスを新しいパスに修正します。</li>
+            </ol>
+            <div class="check-point">
+                アプリケーションを再起動し、プロフィールページの表示、情報更新、パスワード変更がすべて正常に動作することを確認します。
+            </div>
+        </div>
+
+        <div class="card step-card">
+            <h3>ステップ3：「認証機能」の移行</h3>
+            <p>
+                次に、ログイン、新規登録、パスワードリセットといった認証関連のページを<code>features/auth</code>にまとめます。
+            </p>
+            <ol>
+                <li><code>features/auth/pages/</code>を作成します。</li>
+                <li><code>LoginPage.jsx</code>, <code>RegisterPage.jsx</code>,
+                    <code>ForceResetPasswordPage.jsx</code>を新しいディレクトリに移動します。
+                </li>
+                <li><code>App.jsx</code>内のルーティング設定で、これらのページのインポートパスを修正します。</li>
+            </ol>
+            <div class="check-point">
+                アプリケーションを再起動し、新規登録、ログイン、パスワード強制リセットの一連のフローがすべて正常に動作することを確認します。
+            </div>
+        </div>
+
+        <div class="card step-card">
+            <h3>ステップ4：残りの機能の移行</h3>
+            <p>
+                最後に、残っているTODOアプリや管理者ダッシュボードなどの機能も、同様にそれぞれのフィーチャーフォルダへ移行していきます。
+            </p>
+            <ol>
+                <li><code>features/todos/</code>, <code>features/admin/</code>などのフォルダを作成します。</li>
+                <li>関連するページ、コンポーネント、フックをそれぞれのフォルダに整理・移動します。</li>
+                <li><code>App.jsx</code>のインポートパスをすべて更新します。</li>
+            </ol>
+            <div class="check-point">
+                すべての機能が移行された後、アプリケーション全体の最終的な動作確認を行います。
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>完了時のメリット</h2>
+        <p>
+            このリファクタリングが完了すると、私たちのフロントエンドはバックエンドと同様に、<strong>ドメイン（機能）ごとに凝集し、他の機能とは疎に結合した</strong>、極めてスケーラブルな構造になります。
+        </p>
+        <ul>
+            <li><strong>高い拡張性:</strong> 新しいアプリ（機能）の追加は、新しいフィーチャーフォルダを追加するだけで済みます。</li>
+            <li><strong>驚異的な保守性:</strong> 機能改修の際、変更が必要なファイルはすべて一つのフォルダ内にまとまっています。</li>
+            <li><strong>直感的な理解:</strong> フォルダ構造そのものが、アプリケーションの機能一覧として機能します。</li>
+        </ul>
+        <p>
+            これにより、今後の機能追加やメンテナンスが、より迅速かつ安全に行えるようになります。
+        </p>
+    </div>
+
+</body>
+
+</html>

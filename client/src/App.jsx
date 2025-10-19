@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css'; // BootstrapのCSSをインポート
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './providers/AuthProvider';
 import { Spinner } from 'react-bootstrap';
 import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';

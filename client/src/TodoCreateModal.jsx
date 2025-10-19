@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from './providers/AuthProvider';
 import { Badge } from 'react-bootstrap';
 
 const INITIAL_STATE = {
@@ -14,6 +15,7 @@ const INITIAL_STATE = {
 function TodoCreateModal({ show, onClose, onAdd }) {
   const [formData, setFormData] = useState(INITIAL_STATE);
   const [assignableUsers, setAssignableUsers] = useState([]);
+  const { user: currentUser } = useAuth(); // ★ ログインユーザー情報を取得
   const [groupedUsers, setGroupedUsers] = useState({});
   const [selectedTenant, setSelectedTenant] = useState('');
 
@@ -27,7 +29,8 @@ function TodoCreateModal({ show, onClose, onAdd }) {
       const fetchAssignableUsers = async () => {
         try {
           const res = await axios.get('/api/users/assignable');
-          setAssignableUsers(res.data);
+          const filteredUsers = res.data.filter(u => u._id !== currentUser._id); // ★ 自分自身を除外
+          setAssignableUsers(filteredUsers);
           // ユーザーを部署ごとにグループ化
           const grouped = res.data.reduce((acc, user) => {
             const tenantId = user.tenantId._id;
@@ -46,7 +49,7 @@ function TodoCreateModal({ show, onClose, onAdd }) {
 
       fetchAssignableUsers();
     }
-  }, [show]);
+  }, [show, currentUser]); // ★ currentUserを依存配列に追加
 
   const handleChange = (e) => {
     const { name, value } = e.target;
