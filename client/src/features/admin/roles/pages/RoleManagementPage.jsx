@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Table, Button, Modal, Form, Spinner, Alert, Card, Badge } from 'react-bootstrap';
 import { useAuth } from '../../../../providers/AuthProvider';
-
-// フロントエンド側でも保護するロールを定義
-const PROTECTED_ROLES = ['user', 'admin'];
+import { PROTECTED_ROLES } from '../../../../lib/constants';
 
 function RoleManagementPage() {
   const { user: currentUser } = useAuth();

@@ -6,7 +6,7 @@ import { Spinner } from 'react-bootstrap';
 import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute.jsx';
-import UserDashboardPage from './pages/UserDashboardPage'; // HomePageから変更
+import UserDashboardPage from './features/dashboard/pages/UserDashboardPage';
 import TodoPage from './features/todos/pages/TodoPage'; // 新しくインポート
 import LoginPage from './features/auth/pages/LoginPage';
 import RegisterPage from './features/auth/pages/RegisterPage';
