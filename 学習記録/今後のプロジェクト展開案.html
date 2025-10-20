@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今後のプロジェクト展開案 - ロードマップ</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+            color: #1a5276;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            padding-left: 15px;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            font-size: 1.5em;
+            border-bottom-style: dashed;
+            border-bottom-width: 1px;
+            color: #1a5276;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .value-box {
+            background-color: #eafaf1;
+            border-left: 5px solid #2ecc71;
+            padding: 20px;
+            margin-top: 25px;
+            border-radius: 5px;
+        }
+
+        .value-box strong {
+            color: #186a3b;
+            font-size: 1.1em;
+        }
+
+        ul {
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>今後のプロジェクト展開案 - ロードマップ</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">堅牢なアーキテクチャの上に、未来の価値を創造する</p>
+
+    <div class="card">
+        <h2>提案1：チーム利用への進化 - 「メンバー招待機能」</h2>
+        <h3>目的</h3>
+        <p>現在のアプリケーションを個人ツールから、組織のオーナーが新しいメンバーを招待・管理できるチームプラットフォームへと進化させます。</p>
+
+        <h3>実装計画</h3>
+        <ul>
+            <li><strong>バックエンド:</strong>
+                <ol>
+                    <li>管理者が新しいユーザーを作成するためのAPI (<code>POST /api/users</code>) を実装します。</li>
+                    <li>招待用のユニークなトークンを生成し、メールで送信する仕組みを構築します (<code>nodemailer</code>等を利用)。</li>
+                    <li>招待されたユーザーが、トークンを使ってパスワードを設定し、アカウントを有効化するフローを実装します。</li>
+                </ol>
+            </li>
+            <li><strong>フロントエンド:</strong>
+                <ol>
+                    <li>管理者ダッシュボードの「ユーザー管理」ページを拡張し、メンバーの招待ステータスを表示します。</li>
+                    <li>「メンバーを招待」ボタンと、メールアドレスを入力するフォームを設置します。</li>
+                    <li>招待されたユーザーがアクセスする、パスワード設定用の新しいページを作成します。</li>
+                </ol>
+            </li>
+        </ul>
+        <div class="value-box">
+            <strong>この機能がもたらす価値:</strong> アプリケーションが個人ツールから、<strong>共同作業を行うためのチームプラットフォーム</strong>へと進化します。
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>提案2：エンタープライズ対応 - 「階層型組織管理機能」</h2>
+        <h3>目的</h3>
+        <p>「親会社が子会社のデータもまとめて管理できる」といった、テナント間の階層関係を導入し、より大きな組織構造に対応します。</p>
+
+        <h3>実装計画</h3>
+        <ul>
+            <li><strong>バックエンド:</strong>
+                <ol>
+                    <li><code>Tenant</code>モデルに<code>parent</code>フィールドを追加し、自己参照の関係を構築します。</li>
+                    <li>「自分と、自分の配下にある全ての子孫テナント」のIDリストを取得する再帰的な関数を<code>TenantService</code>に実装します。</li>
+                    <li>データ取得APIを改修し、権限のある全てのテナントのデータを一度に取得できるようにします (<code>{ $in: [...] }</code>クエリを利用)。</li>
+                </ol>
+            </li>
+            <li><strong>フロントエンド:</strong>
+                <ol>
+                    <li>「組織管理」ページで、組織の階層構造をツリービューなどで視覚的に表示します。</li>
+                    <li>ユーザー一覧などの画面に、どの組織に所属しているかを表示する列を追加します。</li>
+                </ol>
+            </li>
+        </ul>
+        <div class="value-box">
+            <strong>この機能がもたらす価値:</strong>
+            アプリケーションが、中小企業だけでなく、<strong>複数の部門や支社を持つ大企業</strong>にも対応できる、本格的なエンタープライズ・ソフトウェアへと進化します。
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>提案3：品質と信頼性の向上 - 「自動テスト」の導入</h2>
+        <h3>目的</h3>
+        <p>コードの変更が既存の機能に悪影響を与えていないことを自動的に検証する仕組みを構築し、開発の速度と品質を両立させます。</p>
+
+        <h3>実装計画</h3>
+        <ul>
+            <li><strong>バックエンド:</strong>
+                <ol>
+                    <li><code>Jest</code>や<code>Supertest</code>といったテストフレームワークを導入します。</li>
+                    <li>まずは<code>Service</code>層のビジネスロジックから単体テストを作成します。</li>
+                    <li>次に、APIのエンドポイントをテストする結合テストを作成します。</li>
+                </ol>
+            </li>
+            <li><strong>フロントエンド:</strong>
+                <ol>
+                    <li><code>Vitest</code>や<code>React Testing Library</code>を導入します。</li>
+                    <li>まずは再利用可能な共通コンポーネントからテストを作成します。</li>
+                    <li>ユーザーの操作をシミュレートし、期待通りに画面が変化するかを検証するテストを作成します。</li>
+                </ol>
+            </li>
+        </ul>
+        <div class="value-box">
+            <strong>この機能がもたらす価値:</strong> 将来にわたって<strong>安心して機能追加やリファクタリングを続けられる、持続可能な開発基盤</strong>が完成します。
+        </div>
+    </div>
+
+</body>
+
+</html>
