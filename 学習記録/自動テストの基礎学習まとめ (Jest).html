@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自動テストの基礎学習まとめ (Jest)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom: none;
+        }
+
+        code {
+            background-color: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95em;
+        }
+
+        pre {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+        }
+
+        .concept {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .highlight {
+            background-color: #e8f6fd;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>自動テストの基礎学習まとめ (Jest)</h1>
+
+    <div class="concept">
+        <h2>1. 自動テストの目的とメリット</h2>
+        <p class="highlight">
+            <strong>「テストコード」という仕様書を書いておき、本体のコードを変更した際に、その仕様通りに動くかを自動で確認する仕組み。</strong>
+        </p>
+        <ul>
+            <li><strong>リファクタリングへの安心感：</strong>コードを綺麗にしても、既存の機能を壊していないことを保証できる。</li>
+            <li><strong>デグレード（機能退行）の防止：</strong>新しい機能追加によって、古い機能が壊れるのをすぐに検知できる。</li>
+            <li><strong>生きたドキュメント：</strong>テストコードが、コードの正しい使い方や仕様を示す「動く仕様書」になる。</li>
+        </ul>
+    </div>
+
+    <div class="concept">
+        <h2>2. Jestの基本構造</h2>
+        <p>Jestは、テストを記述するための便利な関数をグローバルに提供します。</p>
+
+        <h3><code>describe(name, fn)</code></h3>
+        <p>関連するテストをグループ化します。このグループを「テストスイート」と呼びます。</p>
+
+        <h3><code>it(name, fn)</code> または <code>test(name, fn)</code></h3>
+        <p>個々のテストケースを定義します。「このテストは何を検証するのか」を<code>name</code>に記述します。</p>
+
+        <h3><code>expect(value).matcher(expectedValue)</code></h3>
+        <p>テストの核となる部分。「<code>value</code>が<code>expectedValue</code>という期待値と一致すること」を表明（アサーション）します。</p>
+        <ul>
+            <li><code>.toBe(value)</code>: 厳密な等価性 (<code>===</code>) をチェックします。プリミティブな値（数値、文字列など）の比較に使います。</li>
+        </ul>
+    </div>
+
+    <div class="concept">
+        <h2>3. ソースコードとテストコードの分離</h2>
+        <p>自動テストの基本は、「テストされる側のコード」と「テストする側のコード」を別のファイルに分けることです。</p>
+
+        <h3>テスト対象のファイル (<code>utils.js</code>)</h3>
+        <p>テストしたい実際の機能（関数など）を定義し、<code>module.exports</code>で外部に公開します。</p>
+        <pre><code>// utils.js
+const sum = (a, b) => {
+  return a + b;
+};
+
+module.exports = {
+  sum,
+};</code></pre>
+
+        <h3>テストファイル (<code>utils.test.js</code>)</h3>
+        <p>テスト対象の機能を<code>require</code>でインポートし、その振る舞いを検証します。</p>
+        <pre><code>// utils.test.js
+const { sum } = require('./utils.js');
+
+describe('sum function', () => {
+  it('should return the sum of two positive numbers', () => {
+    expect(sum(1, 2)).toBe(3);
+  });
+});</code></pre>
+    </div>
+
+    <div class="concept">
+        <h2>4. テストの実行と命名規則</h2>
+        <h3>テストの実行コマンド</h3>
+        <p><code>package.json</code>の<code>scripts</code>に定義されたコマンドを実行します。</p>
+        <pre><code>npm test</code></pre>
+        <p>これは、<code>package.json</code>内の<code>"test": "jest"</code>という定義に基づいて<code>jest</code>コマンドを実行しています。</p>
+
+        <h3>テストファイルの命名規則</h3>
+        <p>Jestは以下のパターンのファイルを自動でテスト対象として認識します。</p>
+        <ul>
+            <li>ファイル名が <code>.test.js</code> で終わる (例: <code>utils.test.js</code>)</li>
+            <li>ファイル名が <code>.spec.js</code> で終わる (例: <code>utils.spec.js</code>)</li>
+            <li><code>__tests__/</code> ディレクトリの中にあるJSファイル</li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

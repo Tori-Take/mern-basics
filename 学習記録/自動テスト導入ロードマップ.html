@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自動テスト導入ロードマップ - 品質と信頼性への道</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+            color: #1a5276;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            padding-left: 15px;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        h3 {
+            font-size: 1.5em;
+            border-bottom-style: dashed;
+            border-bottom-width: 1px;
+            color: #1a5276;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .tag {
+            font-size: 0.8em;
+            font-weight: bold;
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: #fff;
+            margin-right: 15px;
+            white-space: nowrap;
+        }
+
+        .backend-tag {
+            background-color: #457b9d;
+        }
+
+        .frontend-tag {
+            background-color: #e63946;
+        }
+
+        ul,
+        ol {
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+
+        .final-message {
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1a5276;
+            padding: 30px;
+            background-color: #eafaf1;
+            border-radius: 10px;
+            border: 2px dashed #2ecc71;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>自動テスト導入ロードマップ</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">品質と信頼性への道</p>
+
+    <div class="card">
+        <h2><span class="tag backend-tag">フェーズ1</span> バックエンド：JestによるAPIテスト基盤の構築</h2>
+        <p>まずは、アプリケーションの心臓部であるバックエンドからテストを導入します。UIがない分、ロジックそのものに集中してテストの基本を学ぶことができます。</p>
+
+        <h3>ステップ1.1：テスト環境の構築</h3>
+        <ol>
+            <li><strong>テスト用ライブラリのインストール:</strong> <code>jest</code>, <code>supertest</code>,
+                <code>mongodb-memory-server</code> を導入します。</li>
+            <li><strong>設定ファイルの準備:</strong> <code>package.json</code> にテスト用スクリプトを追加し、Jestの設定ファイル
+                (<code>jest.config.js</code>) を作成します。</li>
+        </ol>
+
+        <h3>ステップ1.2：最初の「単体テスト」- Service層のテスト</h3>
+        <p>ビジネスロジックの塊である <code>Service</code> 層から始めます。データベースから切り離し、純粋なロジックが正しく動くかだけを検証します。</p>
+        <ol>
+            <li><strong>テスト対象の選定:</strong> シンプルな <code>userService</code> のメソッドを対象にします。</li>
+            <li><strong>テストコードの実装:</strong>
+                <ul>
+                    <li>正常系テスト：正しいデータを与えた場合の動作を確認します。</li>
+                    <li>異常系テスト：不正なデータを与えた場合に、期待通りにエラーが発生するかを確認します。</li>
+                    <li><strong>モックの活用:</strong> 依存する <code>Repository</code> 層を「偽物（モック）」に差し替える技術を学びます。</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>ステップ1.3：本命の「結合テスト」- APIエンドポイントのテスト</h3>
+        <p>実際にAPIを叩き、リクエストからレスポンスまでの一連の流れをテストします。ユーザーが実際に使う機能が正しく動作することを保証します。</p>
+        <ol>
+            <li><strong>テスト対象の選定:</strong> ユーザー登録API (<code>POST /api/users/register</code>) をターゲットにします。</li>
+            <li><strong>テストコードの実装:</strong> <code>supertest</code> でリクエストを送信し、レスポンスのステータスコードや内容、データベースの状態が期待通りか検証します。
+            </li>
+        </ol>
+    </div>
+
+    <div class="card">
+        <h2><span class="tag frontend-tag">フェーズ2</span> フロントエンド：Vitest & Testing LibraryによるUIテスト</h2>
+        <p>バックエンドで得た自信を元に、フロントエンドのテストに挑戦します。ユーザーの目に触れる部分の品質を保証します。</p>
+
+        <h3>ステップ2.1：テスト環境の構築</h3>
+        <ol>
+            <li><strong>テスト用ライブラリのインストール:</strong> <code>vitest</code>, <code>@testing-library/react</code>,
+                <code>jsdom</code>, <code>@testing-library/jest-dom</code> を導入します。</li>
+            <li><strong>設定ファイルの準備:</strong> <code>vite.config.js</code> に <code>vitest</code> の設定を追記します。</li>
+        </ol>
+
+        <h3>ステップ2.2：最初の「コンポーネントテスト」- 共通部品のテスト</h3>
+        <p>まずは、アプリケーションのどこでも使われる、独立した小さなUI部品からテストを始めます。</p>
+        <ol>
+            <li><strong>テスト対象の選定:</strong> 共通の <code>Button</code> や <code>Spinner</code> コンポーネントが最適です。</li>
+            <li><strong>テストコードの実装:</strong> コンポーネントが正しく表示されるか、クリックイベントが正しく発火するかなどを検証します。</li>
+        </ol>
+
+        <h3>ステップ2.3：応用編「統合テスト」- ページコンポーネントのテスト</h3>
+        <p>複数のコンポーネントが組み合わさり、API通信も発生する、より実践的なページのテストです。</p>
+        <ol>
+            <li><strong>テスト対象の選定:</strong> <code>LoginPage</code> が良い練習になります。</li>
+            <li><strong>テストコードの実装:</strong>
+                <ul>
+                    <li><strong>APIモッキング:</strong> <code>msw</code> (Mock Service Worker)
+                        を使い、バックエンドAPIへのリクエストを偽のレスポンスに置き換えます。</li>
+                    <li><strong>ユーザー操作のシミュレーション:</strong> ユーザーがフォームに入力し、ボタンをクリックする操作をコードで再現し、画面が期待通りに遷移・変化するかを検証します。
+                    </li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <div class="final-message">
+        さあ、まずは【フェーズ1】のステップ1.1「テスト環境の構築」から始めてみましょう！
+    </div>
+
+</body>
+
+</html>
