@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const Tenant = require('../../organization/tenant.model');
 const Role = require('../../organization/role.model');
-const jwt = require('jsonwebtoken');
+const generateToken = require('../../../core/utils/generateToken');
 const { getAccessibleTenantIds } = require('../../../core/services/permissionService');
 
 /**
@@ -130,8 +130,7 @@ class UserService {
       throw error;
     }
 
-    const payload = { user: { id: user.id } };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = generateToken(user.id);
 
     if (user.forcePasswordReset) {
       return { token, forceReset: true };

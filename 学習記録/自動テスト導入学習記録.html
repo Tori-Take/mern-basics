@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自動テスト導入 学習記録</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+            color: #1a5276;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            padding-left: 15px;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #283747;
+            color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .pass {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .fail {
+            color: #c0392b;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>自動テスト導入 学習記録</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">品質の高いソフトウェアへの道筋</p>
+
+    <div class="card">
+        <h2>ステップ1.2：最初の単体テスト</h2>
+        <p>
+            自動テスト導入の第一歩として、バックエンドの単体テストに着手しました。テスト対象として、認証機能の心臓部である<code>generateToken</code>関数を選択しました。この関数は外部依存がなく、単体テストの学習に最適でした。
+        </p>
+        <h3>学習の軌跡と乗り越えた壁</h3>
+        <ol>
+            <li><strong>テストツールの導入</strong>:
+                APIテスト用の<code>supertest</code>をサーバーの<code>devDependencies</code>としてインストールしました。</li>
+            <li><strong>テストファイルの作成</strong>:
+                Jestの慣習に従い、テスト対象の<code>core/utils/</code>内に<code>__tests__/generateToken.test.js</code>を作成しました。</li>
+            <li><strong><span class="fail">ERROR 1:</span> <code>Cannot find module</code></strong>:
+                テスト対象の<code>generateToken.js</code>の配置場所や、テストファイルからの相対パスが正しくなく、モジュールが見つからないエラーに直面。アーキテクチャを再確認し、ファイルを正しい<code>core/utils/</code>配下に配置することで解決しました。
+            </li>
+            <li><strong><span class="fail">ERROR 2:</span> <code>secretOrPrivateKey must have a value</code></strong>:
+                テスト実行環境では<code>.env</code>ファイルが読み込まれず、JWTの秘密鍵が未定義になる問題が発生。<code>package.json</code>の<code>jest</code>設定に<code>"setupFiles": ["dotenv/config"]</code>を追記し、テスト前に環境変数を読み込むことで解決しました。
+            </li>
+            <li><strong><span class="fail">ERROR 3:</span> <code>Multiple configurations found</code></strong>:
+                <code>package.json</code>への設定追記が、既存の<code>jest.config.js</code>と衝突。設定を<code>package.json</code>に一本化するため、<code>jest.config.js</code>を削除して解決しました。
+            </li>
+            <li><strong>テストツールの導入</strong>:
+                APIテスト用の<code>supertest</code>をサーバーの<code>devDependencies</code>としてインストールしました。</li>
+            <li><strong>テストファイルの作成</strong>:
+                Jestの慣習に従い、テスト対象の<code>core/utils/</code>内に<code>__tests__/generateToken.test.js</code>を作成しました。</li>
+            <li><strong><span class="fail">ERROR 1:</span> <code>Cannot find module</code></strong>:
+                テスト対象の<code>generateToken.js</code>の配置場所や、テストファイルからの相対パスが正しくなく、モジュールが見つからないエラーに直面。アーキテクチャを再確認し、ファイルを正しい<code>core/utils/</code>配下に配置することで解決しました。
+            </li>
+            <li><strong><span class="fail">ERROR 2:</span> <code>secretOrPrivateKey must have a value</code></strong>:
+                テスト実行環境では<code>.env</code>ファイルが読み込まれず、JWTの秘密鍵が未定義になる問題が発生。<code>package.json</code>の<code>jest</code>設定に<code>"setupFiles": ["dotenv/config"]</code>を追記し、テスト前に環境変数を読み込むことで解決しました。
+            </li>
+            <li><strong><span class="fail">ERROR 3:</span> <code>Multiple configurations found</code></strong>:
+                <code>package.json</code>への設定追記が、既存の<code>jest.config.js</code>と衝突。設定を<code>package.json</code>に一本化するため、<code>jest.config.js</code>を削除して解決しました。
+            </li>
+            <li><strong><span class="pass">テスト成功！</span></strong>: 上記すべての問題を解決し、ついに単体テストが成功しました。</li>
+        </ol>
+        <h3>得られた知見</h3>
+        <ul>
+            <li><strong>アーキテクチャの重要性</strong>:
+                <code>core</code>と<code>domains</code>の役割分担を再確認し、<code>utils</code>の正しい配置場所を特定しました。ドキュメントと実装を一致させることの重要性を学びました。
+            </li>
+            <li><strong>アーキテクチャの重要性</strong>:
+                <code>core</code>と<code>domains</code>の役割分担を再確認し、<code>utils</code>の正しい配置場所を特定しました。ドキュメントと実装を一致させることの重要性を学びました。
+            </li>
+            <li><strong>テスト環境の理解</strong>: Jestの実行環境は通常のアプリケーション実行環境とは異なり、環境変数などを明示的に設定する必要があることを学びました。</li>
+            <li><strong>コードの重複排除 (DRY)</strong>:
+                <code>user.service.js</code>内で直接<code>jwt.sign</code>が使われている箇所を発見。作成した<code>generateToken</code>ユーティリティを利用するようにリファクタリングし、コードの保守性を向上させました。
+            </li>
+            <li><strong>コードの重複排除 (DRY)</strong>:
+                <code>user.service.js</code>内で直接<code>jwt.sign</code>が使われている箇所を発見。作成した<code>generateToken</code>ユーティリティを利用するようにリファクタリングし、コードの保守性を向上させました。
+            </li>
+        </ul>
+    </div>
+
+</body>
+
+</html>
+
+```
+
+### 2. アーキテクチャドキュメントの更新
+
+今回の開発で、テストコードの置き場所が明確になりました。この情報を`フルスタック近代化完了報告.html`のフォルダ構成図に追記し、ドキュメントを最新の状態に保ちます。
+
+```diff
+--- a/c:/Users/Tori-Take/Desktop/mern-basics/学習記録/フルスタック近代化完了報告.html
++++ b/c:/Users/Tori-Take/Desktop/mern-basics/学習記録/フルスタック近代化完了報告.html
+@@ -183,6 +183,8 @@
+│ ├── middleware/ (認証など、横断的なミドルウェア)
+│ ├── services/ (複数ドメインで利用する共通サービス)
+│ └── utils/ (どのドメインにも属さない汎用ヘルパー)
++│ ├── __tests__/
++│ │ └── generateToken.test.js
+│
+└── domains/ (ビジネス領域ごとの関心事を集約)
+├── identity/ (認証・認可ドメイン)
+
+```
+
+### 3. 次回の開発学習内容の作成
+
+次回の学習計画を`次回の開発学習内容.html`として作成しました。いよいよ`supertest`を使った結合テストに挑戦します。
+
+```diff
+--- /dev/null
++++ b/c:/Users/Tori-Take/Desktop/mern-basics/学習記録/次回の開発学習内容.html
+@@ -0,0 +1,65 @@
++
+<!DOCTYPE html>
++<html lang="ja">
++
++
+
+<head>
+    +
+    <meta charset="UTF-8">
+    +
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    + <title>次回の開発学習内容</title>
+    + <style>
+        +body {
+            +font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            +line-height: 1.8;
+            +color: #212529;
+            +max-width: 1100px;
+            +margin: 40px auto;
+            +padding: 0 20px;
+            +background-color: #f9fbfd;
+            +
+        }
+
+        ++h1 {
+            +text-align: center;
+            +border-bottom: 5px solid #3498db;
+            +font-size: 3em;
+            +color: #1a5276;
+            +padding-bottom: 10px;
+            +
+        }
+
+        ++.card {
+            +background-color: #fff;
+            +border: 1px solid #d6eaf8;
+            +border-radius: 10px;
+            +padding: 35px;
+            +margin-bottom: 35px;
+            +box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+            +
+        }
+
+        ++code {
+            +background-color: #e9ecef;
+            +padding: 3px 7px;
+            +border-radius: 5px;
+            +font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            +font-size: 0.9em;
+            +
+        }
+
+        +
+    </style>
+    +
+</head>
++
++
+
+<body>
+    +
+    + <h1>次回の開発学習内容</h1>
+    +
+    + <div class="card">
+        + <h2>ロードマップ ステップ1.3：最初の「結合テスト」</h2>
+        + <p>
+            + 単体テストで自信をつけた今、次はいよいよ複数のコンポーネントが連携する動作を保証する<strong>結合テスト</strong>に挑戦します。
+            + </p>
+        + <p>
+            + 具体的には、<code>supertest</code>ライブラリを本格的に活用し、ユーザー登録API (<code>POST /api/users/register</code>)
+            のテストを作成します。このテストでは、擬似的なHTTPリクエストを送信し、データベースにユーザーが正しく作成され、期待通りのレスポンス（ステータスコードやJSONボディ）が返ってくるかという、一連の流れを検証します。
+            + </p>
+        + <p>
+            + このステップを通じて、APIテストの基本的な書き方と、テスト実行時に発生しがちな問題（テスト用データベースの分離など）への対処法を学びます。
+            + </p>
+        + </div>
+    +
+    +</body>
++
++
+
+</html>
+```
+
+以上で、今回の学習の記録と次回への準備が整いました。
+一歩ずつ着実に、しかし確実にプロジェクトの品質が向上していますね。この調子で進めていきましょう！
+
+<!--
+[PROMPT_SUGGESTION]はい、確認しました。次のステップ（結合テスト）に進みたいです。[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]結合テストについて、もう少し詳しく教えてください。[/PROMPT_SUGGESTION]
+-->

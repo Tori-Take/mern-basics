@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>次回の開発学習内容</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom: 5px solid #3498db;
+            font-size: 3em;
+            color: #1a5276;
+            padding-bottom: 10px;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>次回の開発学習内容</h1>
+
+    <div class="card">
+        <h2>ロードマップ ステップ1.3：最初の「結合テスト」</h2>
+        <p>
+            単体テストで自信をつけた今、次はいよいよ複数のコンポーネントが連携する動作を保証する<strong>結合テスト</strong>に挑戦します。
+        </p>
+        <p>
+            具体的には、<code>supertest</code>ライブラリを本格的に活用し、ユーザー登録API (<code>POST /api/users/register</code>)
+            のテストを作成します。このテストでは、擬似的なHTTPリクエストを送信し、データベースにユーザーが正しく作成され、期待通りのレスポンス（ステータスコードやJSONボディ）が返ってくるかという、一連の流れを検証します。
+        </p>
+        <p>
+            このステップを通じて、APIテストの基本的な書き方と、テスト実行時に発生しがちな問題（テスト用データベースの分離など）への対処法を学びます。
+        </p>
+    </div>
+
+</body>
+
+</html>
