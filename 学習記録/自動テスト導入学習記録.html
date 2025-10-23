@@ -171,6 +171,93 @@
         </ul>
     </div>
 
+    <div class="card">
+        <h2>フェーズ2：フロントエンドテスト</h2>
+        <h3>ステップ2.1 & 2.2：環境構築と最初のコンポーネントテスト</h3>
+        <p>
+            バックエンドの成功体験を元に、いよいよフロントエンドのテストに着手しました。Vite環境と親和性の高い<strong>Vitest</strong>と、Reactコンポーネントテストのデファクトスタンダードである<strong>React
+                Testing Library</strong>を導入しました。
+        </p>
+        <h3>学習の軌跡</h3>
+        <ol>
+            <li><strong>テスト環境の構築</strong>: 必要なライブラリ (<code>vitest</code>, <code>@testing-library/react</code>など)
+                をインストールし、<code>vite.config.js</code>と<code>setupTests.js</code>を設定。Jestとほぼ同じ感覚でテストが書ける環境を整えました。</li>
+            <li><strong>最初のコンポーネント作成</strong>: テスト対象として、再利用可能な<code>AlertMessage.jsx</code>コンポーネントを新規に作成しました。</li>
+            <li><strong>コンポーネントテストの実装</strong>: React Testing
+                Libraryの作法に則り、「メッセージが正しく表示されるか」「propsに応じて正しいスタイルが適用されるか」という2つのテストケースを実装しました。</li>
+            <li><strong><span class="pass">テスト成功！</span></strong>:
+                <code>npm test</code>コマンドを実行し、フロントエンドの最初のテストが成功することを確認。Vitestの便利なウォッチモードも体験しました。
+            </li>
+        </ol>
+        <h3>得られた知見</h3>
+        <ul>
+            <li><strong>モダンなフロントエンドテスト環境</strong>: Vite + Vitest + React Testing Libraryという、現在の主流構成を構築するスキルを習得しました。</li>
+            <li><strong>ユーザー目線のテスト</strong>: React Testing
+                Libraryの<code>screen.getByText</code>などを通じて、「ユーザーが画面をどう見るか」という観点でコンポーネントをテストする考え方を学びました。</li>
+            <li><strong>コンポーネントの品質保証</strong>: 小さなUI部品であっても、テストを書くことでその振る舞いが保証され、アプリケーション全体で安心して再利用できることを実感しました。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>ステップ2.3：ユーザー操作のテスト</h2>
+        <p>
+            コンポーネントの表示テストに続き、ユーザーがフォームに入力する、というインタラクティブな操作をシミュレートするテストに挑戦しました。テスト対象として、重要な<code>LoginPage</code>コンポーネントを選択しました。
+        </p>
+        <h3>学習の軌跡</h3>
+        <ol>
+            <li><strong>ユーザー操作ライブラリの導入</strong>: リアルなユーザー操作を再現するため、<code>@testing-library/user-event</code>を導入しました。</li>
+            <li><strong>フォーム入力テストの実装</strong>:
+                <code>userEvent.type</code>を使い、ログインフォームのメールアドレスとパスワード欄にテキストが入力できることを検証するテストを作成しました。
+            </li>
+            <li><strong><span class="fail">ERROR:</span>
+                    <code>TypeError: Cannot destructure property 'login' of ... undefined</code></strong>:
+                <code>LoginPage</code>が依存する<code>useAuth</code>フックが値を受け取れず、エラーが発生しました。
+            </li>
+            <li><strong>原因特定と解決</strong>:
+                テスト時に<code>AuthProvider</code>でコンポーネントをラップしていなかったことが原因と特定。テストコードを修正し、必要なContextを提供することで解決しました。</li>
+            <li><strong><span class="pass">テスト成功！</span></strong>: 修正後、ユーザー操作のテストが初めて成功しました。</li>
+        </ol>
+        <h3>得られた知見</h3>
+        <ul>
+            <li><strong>ユーザー操作のシミュレーション</strong>: <code>user-event</code>ライブラリを使い、キーボード入力などのユーザー操作をテストコードで再現する方法を学びました。
+            </li>
+            <li><strong>依存関係の提供</strong>:
+                テスト対象のコンポーネントがContextやRouterに依存している場合、テストでもそれらのProvider/Routerでラップする必要がある、という重要な原則を体感しました。</li>
+            <li><strong>より実践的なテストへ</strong>: 静的な表示だけでなく、動的なユーザーインタラクションをテストすることで、コンポーネントの振る舞いをより深く保証できるようになりました。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>ステップ2.4：API呼び出しと状態変化のテスト</h2>
+        <p>
+            フロントエンドテストの核心である、API呼び出しを伴うコンポーネントのテストに挑戦しました。実際のAPIを呼び出す代わりに、<strong>モック (Mock)</strong>
+            という技術を使い、<code>useAuth</code>フックをテスト用の偽物に置き換えることで、コンポーネントを独立した環境でテストしました。
+        </p>
+        <h3>学習の軌跡</h3>
+        <ol>
+            <li><strong>モックの実装</strong>:
+                Vitestの<code>vi.mock</code>を使い、<code>useAuth</code>フックの振る舞いをテストコード側で完全にコントロールする仕組みを構築しました。</li>
+            <li><strong>フォーム送信テスト</strong>:
+                ユーザーがログインボタンをクリックした際に、モックの<code>login</code>関数が正しい引数で呼び出されることを<code>toHaveBeenCalledWith</code>マッチャーで検証しました。
+            </li>
+            <li><strong>非同期エラーハンドリングのテスト</strong>:
+                <code>login</code>関数が意図的にエラーを返すように設定し、コンポーネントが非同期でエラーメッセージを正しく画面に表示することを<code>findByText</code>クエリで検証しました。
+            </li>
+            <li><strong><span class="pass">テスト成功！</span></strong>:
+                フォーム入力、送信、API呼び出し（モック）、状態変化という一連の複雑なインタラクションをテストすることに成功しました。</li>
+        </ol>
+        <h3>得られた知見</h3>
+        <ul>
+            <li><strong>モックの絶大な効果</strong>: モックを使うことで、バックエンドサーバーやネットワークの状態に依存しない、高速で安定したフロントエンドテストが可能になることを学びました。</li>
+            <li><strong>コンポーネントの責務の分離</strong>:
+                「UIの描画」と「外部との通信」を分離してテストする考え方を習得。コンポーネントは「正しいデータを渡されたら正しく表示する」「イベントが起きたら正しい関数を呼ぶ」という自身の責務に集中でき、テストがシンプルになりました。
+            </li>
+            <li><strong>非同期処理のテスト</strong>:
+                <code>async/await</code>と<code>findBy...</code>クエリを組み合わせることで、API呼び出し後の画面の更新といった非同期のUI変更も確実にテストできることを学びました。
+            </li>
+        </ul>
+    </div>
+
 </body>
 
 </html>
