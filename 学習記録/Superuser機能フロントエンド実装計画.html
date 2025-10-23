@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superuser機能 フロントエンド実装計画</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+            color: #1a5276;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding: 10px 15px;
+        }
+
+        h3 {
+            font-size: 1.5em;
+            border-bottom-style: dashed;
+            border-bottom-width: 2px;
+            color: #2980b9;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .task-number {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        ul {
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Superuser機能 フロントエンド実装計画</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">バックエンドの力を解き放つ、専用UIの構築</p>
+
+    <div class="card">
+        <h2><span class="task-number">1</span>Superuser専用ルートの作成</h2>
+        <h3>目的</h3>
+        <p>スーパー管理者（<code>superuser</code>ロールを持つユーザー）だけがアクセスできる特別なページへの「門番」を作ります。権限のないユーザーがURLを直接入力しても、ページが表示されないように保護します。
+        </p>
+        <h3 style="color: #c0392b; border-bottom-color: #c0392b;">重要な注意点</h3>
+        <p>
+            <strong>この実装は、既存の管理者機能（<code>AdminRoute</code>など）を一切変更・破壊しません。</strong><code>Superuser</code>は<code>admin</code>ロールも併せ持つため、既存の管理者画面にも引き続きアクセス可能です。今回のタスクは、完全に新しい機能を追加する安全な作業です。
+        </p>
+        <h3>作業内容</h3>
+        <ul>
+            <li><code>client/src/features/auth/</code> フォルダに <code>SuperuserRoute.jsx</code> という新しいファイルを作成します。</li>
+            <li>既存の <code>AdminRoute.jsx</code> を参考に、<code>useAuth</code> フックから取得したユーザー情報 (<code>user.roles</code>) に
+                <code>'superuser'</code> が含まれているかをチェックするロジックを実装します。
+            </li>
+            <li>権限があれば子コンポーネント（<code>&lt;Outlet /&gt;</code>）を表示し、なければログインページなどにリダイレクトします。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2><span class="task-number">2</span>APIサービスの作成</h2>
+        <h3>目的</h3>
+        <p>バックエンドの <code>/api/system</code> エンドポイントと通信するための関数を、一箇所にまとめます。これにより、UIコンポーネントのコードをクリーンに保ち、APIの仕様変更にも強くなります。
+        </p>
+        <h3>作業内容</h3>
+        <ul>
+            <li><code>client/src/features/</code> フォルダ内に <code>system</code> という新しいフォルダを作成します。</li>
+            <li>その中に <code>systemApiService.js</code> というファイルを作成します。</li>
+            <li>このファイルに、以下の2つの関数を実装します。
+                <ul>
+                    <li><code>getAllTenants()</code>: バックエンドの <code>GET /api/system/tenants</code> を呼び出す関数。</li>
+                    <li><code>deleteTenant(tenantId)</code>: バックエンドの <code>DELETE /api/system/tenants/:id</code>
+                        を呼び出す関数。</li>
+                </ul>
+            </li>
+            <li>内部では <code>axios</code> を使い、認証トークンをリクエストヘッダーに付与します。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2><span class="task-number">3</span>Superuser専用ダッシュボードページの作成</h2>
+        <h3>目的</h3>
+        <p>スーパー管理者が実際にテナント一覧を確認し、削除操作を行うための専用画面（UI）を作成します。</p>
+        <h3>作業内容</h3>
+        <ul>
+            <li><code>client/src/features/system/</code> フォルダ内に <code>pages</code> フォルダを作成し、その中に
+                <code>SystemDashboardPage.jsx</code> を作成します。
+            </li>
+            <li><code>useEffect</code> フックを使い、ページが読み込まれたらタスク2で作成した <code>systemApiService.getAllTenants()</code>
+                を呼び出して、全テナントのリストを取得します。</li>
+            <li>取得したテナント情報を <code>useState</code> で管理し、Bootstrapのテーブルなどを使って画面に一覧表示します。</li>
+            <li>各テナントの行に「削除」ボタンを配置します。</li>
+            <li>削除ボタンがクリックされたら、<code>window.confirm()</code> で確認ダイアログを表示し、ユーザーが「OK」を押したら
+                <code>systemApiService.deleteTenant(id)</code> を呼び出してテナントを削除します。
+            </li>
+            <li>削除が成功したら、再度テナント一覧を読み込み、画面を最新の状態に更新します。</li>
+            <li>API通信中（ローディング）、成功、失敗に応じて、スピナーやアラートメッセージを表示し、ユーザーに状態をフィードバックします。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2><span class="task-number">4</span>グローバルなルーティングの追加</h2>
+        <h3>目的</h3>
+        <p>アプリケーション全体で、スーパー管理者用のページへの道筋（URL）を作ります。</p>
+        <h3>作業内容</h3>
+        <ul>
+            <li><code>client/src/App.jsx</code> を開き、<code>&lt;Routes&gt;</code> の中に新しいルートを追加します。</li>
+            <li>タスク1で作成した <code>SuperuserRoute</code> を使い、例えば <code>/system/dashboard</code> のようなパスを保護します。</li>
+            <li>このパスにアクセスがあった場合、タスク3で作成した <code>SystemDashboardPage</code> が表示されるように設定します。</li>
+        </ul>
+    </div>
+
+</body>
+
+</html>
+```
+
+こちらの計画書をご確認いただき、問題がなければいよいよ実装の第一歩、タスク1「Superuser専用ルートの作成」に進みましょう！
+
+<!--
+[PROMPT_SUGGESTION]はい、この計画で進めたいです。タスク1の「Superuser専用ルートの作成」からお願いします。[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]タスク2の「APIサービスの作成」について、axiosのインスタンス化など、もう少し詳しく教えてください。[/PROMPT_SUGGESTION]
+-->
