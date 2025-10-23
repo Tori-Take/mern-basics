@@ -13,6 +13,6 @@ describe('generateToken utility', () => {
     // jwt.verifyでトークンが正しい秘密鍵で署名されているか、中身が正しいかを確認
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    expect(decoded.id).toBe(userId);
+    expect(decoded.user.id).toBe(userId);
   });
 });

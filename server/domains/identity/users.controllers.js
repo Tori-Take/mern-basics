@@ -62,7 +62,7 @@ class UserController {
 
   /**
    * @description Get user from token
-   * @route GET /api/auth
+   * @route GET /api/users/auth
    * @access Private
    */
   static async getAuthUser(req, res) {
