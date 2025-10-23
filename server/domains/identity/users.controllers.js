@@ -31,7 +31,9 @@ class UserController {
       res.status(201).json(result);
     } catch (err) {
       // サービス層からスローされたエラーをハンドリング
-      console.error('Registration Error:', err.message);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('Registration Error:', err.message);
+      }
       res.status(err.statusCode || 500).json({ message: err.message || 'サーバーエラーが発生しました。' });
     }
   }

@@ -107,19 +107,6 @@
             <li><strong><span class="fail">ERROR 3:</span> <code>Multiple configurations found</code></strong>:
                 <code>package.json</code>への設定追記が、既存の<code>jest.config.js</code>と衝突。設定を<code>package.json</code>に一本化するため、<code>jest.config.js</code>を削除して解決しました。
             </li>
-            <li><strong>テストツールの導入</strong>:
-                APIテスト用の<code>supertest</code>をサーバーの<code>devDependencies</code>としてインストールしました。</li>
-            <li><strong>テストファイルの作成</strong>:
-                Jestの慣習に従い、テスト対象の<code>core/utils/</code>内に<code>__tests__/generateToken.test.js</code>を作成しました。</li>
-            <li><strong><span class="fail">ERROR 1:</span> <code>Cannot find module</code></strong>:
-                テスト対象の<code>generateToken.js</code>の配置場所や、テストファイルからの相対パスが正しくなく、モジュールが見つからないエラーに直面。アーキテクチャを再確認し、ファイルを正しい<code>core/utils/</code>配下に配置することで解決しました。
-            </li>
-            <li><strong><span class="fail">ERROR 2:</span> <code>secretOrPrivateKey must have a value</code></strong>:
-                テスト実行環境では<code>.env</code>ファイルが読み込まれず、JWTの秘密鍵が未定義になる問題が発生。<code>package.json</code>の<code>jest</code>設定に<code>"setupFiles": ["dotenv/config"]</code>を追記し、テスト前に環境変数を読み込むことで解決しました。
-            </li>
-            <li><strong><span class="fail">ERROR 3:</span> <code>Multiple configurations found</code></strong>:
-                <code>package.json</code>への設定追記が、既存の<code>jest.config.js</code>と衝突。設定を<code>package.json</code>に一本化するため、<code>jest.config.js</code>を削除して解決しました。
-            </li>
             <li><strong><span class="pass">テスト成功！</span></strong>: 上記すべての問題を解決し、ついに単体テストが成功しました。</li>
         </ol>
         <h3>得られた知見</h3>
@@ -127,16 +114,44 @@
             <li><strong>アーキテクチャの重要性</strong>:
                 <code>core</code>と<code>domains</code>の役割分担を再確認し、<code>utils</code>の正しい配置場所を特定しました。ドキュメントと実装を一致させることの重要性を学びました。
             </li>
-            <li><strong>アーキテクチャの重要性</strong>:
-                <code>core</code>と<code>domains</code>の役割分担を再確認し、<code>utils</code>の正しい配置場所を特定しました。ドキュメントと実装を一致させることの重要性を学びました。
-            </li>
             <li><strong>テスト環境の理解</strong>: Jestの実行環境は通常のアプリケーション実行環境とは異なり、環境変数などを明示的に設定する必要があることを学びました。</li>
             <li><strong>コードの重複排除 (DRY)</strong>:
                 <code>user.service.js</code>内で直接<code>jwt.sign</code>が使われている箇所を発見。作成した<code>generateToken</code>ユーティリティを利用するようにリファクタリングし、コードの保守性を向上させました。
             </li>
-            <li><strong>コードの重複排除 (DRY)</strong>:
-                <code>user.service.js</code>内で直接<code>jwt.sign</code>が使われている箇所を発見。作成した<code>generateToken</code>ユーティリティを利用するようにリファクタリングし、コードの保守性を向上させました。
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>ステップ1.3：最初の「結合テスト」</h2>
+        <p>
+            単体テストの成功を受け、次は複数のコンポーネントが連携する動作を保証する「結合テスト」に挑戦しました。テスト対象として、アプリケーションの入り口である<strong>ユーザー登録API (`POST
+                /api/users/register`)</strong> を選択しました。
+        </p>
+        <h3>学習の軌跡と乗り越えた壁</h3>
+        <ol>
+            <li><strong>テスト用DBの準備</strong>:
+                本番データを汚さないよう、テスト実行中だけメモリ上で動作する<code>mongodb-memory-server</code>を導入。テストの開始・終了時にDBを自動でセットアップ・破棄するヘルパー関数
+                (<code>db.memory.js</code>) を作成しました。</li>
+            <li><strong>サーバーのテスト対応</strong>:
+                テストコードからExpressアプリを直接読み込めるように、<code>server.js</code>からアプリ設定部分を<code>app.js</code>に分離（関心の分離）するリファクタリングを行いました。
             </li>
+            <li><strong>結合テストの実装</strong>: <code>supertest</code>を使い、APIにリクエストを送信し、レスポンスとDBの状態を検証するテスト
+                (<code>users.routes.test.js</code>) を実装しました。</li>
+            <li><strong><span class="fail">ERROR 1:</span> <code>Cannot find module</code></strong>:
+                テストファイルの配置場所が誤っていたため、モジュール読み込みエラーが発生。テストファイルをアーキテクチャに沿った正しいドメイン配下
+                (<code>domains/identity/__tests__/</code>) に移動して解決しました。</li>
+            <li><strong><span class="pass">テスト成功！(with noise)</span></strong>:
+                テストは成功しましたが、異常系テストで意図的に発生させたエラーがコンソールに出力される「ノイズ」を確認しました。</li>
+            <li><strong>ノイズの除去</strong>: テスト環境 (<code>process.env.NODE_ENV === 'test'</code>)
+                では<code>console.error</code>を出力しないようコントローラーを修正し、クリーンなテスト結果を実現しました。</li>
+        </ol>
+        <h3>得られた知見</h3>
+        <ul>
+            <li><strong>結合テストの威力</strong>: APIリクエストからDB書き込みまで、一連のユーザーシナリオを自動で検証できることの強力さを実感しました。</li>
+            <li><strong>テスト環境の分離</strong>: インメモリDBや環境変数 (<code>NODE_ENV</code>) を活用し、本番環境とテスト環境を安全に分離する重要性を学びました。</li>
+            <li><strong>リファクタリングの価値</strong>:
+                <code>server.js</code>の分離は、テスト容易性を劇的に向上させました。テストしやすいコードは、良い設計のコードであることを体感しました。</li>
+            <li><strong>テストのセーフティネット効果</strong>: 正常系と異常系のテストを揃えることで、機能が「正しく動く」ことと「壊れない」ことの両方を保証できる安心感を得ました。</li>
         </ul>
     </div>
 
