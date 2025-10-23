@@ -21,11 +21,13 @@ const todosRouter = require('./domains/task/todos.routes.js');
 const usersRouter = require('./domains/identity/users.routes.js');
 const rolesRouter = require('./domains/organization/roles.routes.js');
 const tenantsRouter = require('./domains/organization/tenants.routes.js');
+const systemRouter = require('./domains/system/system.routes.js'); // ★ Superuser用のルートをインポート
 
 app.use('/api/todos', todosRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/roles', rolesRouter);
 app.use('/api/tenants', tenantsRouter);
+app.use('/api/system', systemRouter); // ★ Superuser用のルートをマッピング
 
 // --- 本番環境用の設定 ---
 if (process.env.NODE_ENV === 'production') {

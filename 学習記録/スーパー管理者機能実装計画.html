@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スーパー管理者機能 実装ロードマップ</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #343a40;
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f8f9fa;
+        }
+
+        h1,
+        h2 {
+            color: #005f73;
+            border-bottom: 2px solid #0a9396;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 4px;
+            font-size: 2.5em;
+        }
+
+        h2 {
+            background-color: #e9ecef;
+            padding: 12px 15px;
+            border-left: 6px solid #0a9396;
+            font-size: 1.8em;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .phase {
+            font-weight: bold;
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 15px;
+            margin-right: 10px;
+            display: inline-block;
+        }
+
+        .phase-1 {
+            background-color: #0077b6;
+        }
+
+        .phase-2 {
+            background-color: #fb8500;
+        }
+
+        .phase-3 {
+            background-color: #8ac926;
+        }
+
+        .phase-4 {
+            background-color: #d62828;
+        }
+
+        ul {
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>スーパー管理者機能 実装ロードマップ</h1>
+    <p style="text-align: center; font-size: 1.2em;">アプリケーションの「司令塔」を構築し、運用保守性を確立する</p>
+
+    <div class="card">
+        <h2><span class="phase phase-1">ステップ1</span><code>superadmin</code>ロールの導入と管理者ユーザーの準備</h2>
+        <p>まず、システムに「スーパー管理者」という新しい役割を定義し、その役割を持つ最初のユーザーを用意します。</p>
+        <ul>
+            <li><strong><code>User</code>モデルの更新:</strong>
+                <code>user.model.js</code>の<code>role</code>スキーマ定義に、新しい役割である<code>'superadmin'</code>を追加します。</li>
+            <li><strong>最初のスーパー管理者の指定:</strong>
+                運用担当者となる特定のユーザーの<code>role</code>を、データベース上で直接<code>'superadmin'</code>に変更します。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2><span class="phase phase-2">ステップ2</span>スーパー管理者専用ミドルウェアの作成</h2>
+        <p>次に、APIエンドポイントを「スーパー管理者だけが実行できる」ように保護するための「門番」となるミドルウェアを作成します。</p>
+        <ul>
+            <li><strong><code>superAdmin.js</code>の作成:</strong>
+                <code>core/middleware/</code>ディレクトリに<code>superAdmin.js</code>という新しいファイルを作成します。</li>
+            <li><strong>権限チェックロジックの実装:</strong>
+                このミドルウェアは、リクエストしてきたユーザーのロールが<code>'superadmin'</code>であることを検証し、もし違えば<code>403 Forbidden</code>エラーを返します。
+            </li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2><span class="phase phase-3">ステップ3</span>スーパー管理者用APIの作成 (全組織の一覧取得)</h2>
+        <p>いよいよスーパー管理者専用のAPIを作成します。まずは、システムに存在する全ての組織（テナント）を一覧表示する機能から実装しましょう。</p>
+        <ul>
+            <li><strong>テストの作成 (TDD):</strong>
+                <code>system.routes.test.js</code>を作成し、「スーパー管理者なら全組織リストを取得できる」「一般管理者では403エラーになる」といったテストケースを先に記述します。</li>
+            <li><strong>APIエンドポイントの作成:</strong>
+                <code>system.routes.js</code>を作成し、<code>GET /api/system/tenants</code>というエンドポイントを<code>auth</code>と<code>superAdmin</code>の両ミドルウェアで保護します。
+            </li>
+            <li><strong>ロジックの実装:</strong> コントローラーとサービスを作成し、データベースから全てのテナント情報を取得して返すロジックを実装します。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2><span class="phase phase-4">ステップ4</span>スーパー管理者用APIの作成 (組織の完全削除)</h2>
+        <p>最後に、この機能の核心である「組織を関連データごと完全に削除する」機能を実装します。これは非常に強力な機能なので、慎重に実装します。</p>
+        <ul>
+            <li><strong>テストの作成 (TDD):</strong> 組織削除のテストケースを追加し、「組織を削除すると、その組織に所属するユーザーやTODOも全て削除されること」を検証します。</li>
+            <li><strong>APIエンドポイントの作成:</strong>
+                <code>DELETE /api/system/tenants/:id</code>というエンドポイントを<code>superAdmin</code>ミドルウェアで保護します。</li>
+            <li><strong>カスケード削除ロジックの実装:</strong> サービス層に、指定された組織に紐づく全てのデータ（<code>User</code>, <code>Role</code>,
+                <code>Todo</code>など）を連鎖的に削除する<strong>「カスケード削除」</strong>のロジックを実装します。データの不整合を防ぐため、Mongooseのトランザクション機能の利用も検討します。
+            </li>
+        </ul>
+    </div>
+
+</body>
+
+</html>
