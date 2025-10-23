@@ -1,8 +1,8 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken'); // ★ トークン生成のためにインポート
 const app = require('../../../app'); // ★ 分割代入をやめて、appを直接インポート
 const { connectDB, disconnectDB, clearDB } = require('../../../core/config/db.memory');
+const generateToken = require('../../../core/utils/generateToken'); // ★ generateTokenユーティリティをインポート
 const User = require('../../identity/user.model');
 const Tenant = require('../../organization/tenant.model');
 
@@ -22,6 +22,9 @@ describe('Superuser System Routes', () => {
     await disconnectDB();
   });
 
+  let superuserToken, adminToken;
+  let superuser, adminUser;
+
   // 各テストケースの前に、クリーンな状態でテストデータを作成する
   const setupUsersAndTokens = async () => {
     // テナントを2つ作成
@@ -29,35 +32,46 @@ describe('Superuser System Routes', () => {
     const tenant2 = await new Tenant({ name: 'Admin Corp' }).save();
 
     // Superuserを作成して保存
-    const superuser = new User({
+    const newSuperuser = new User({
       tenantId: tenant1._id,
       username: 'superuser',
       email: 'superuser@test.com',
       password: 'password123',
       roles: ['superuser', 'admin', 'user'],
     });
-    await superuser.save();
+    await newSuperuser.save();
 
     // 通常のAdminユーザーを作成して保存
-    const adminUser = new User({
+    const newAdminUser = new User({
       tenantId: tenant2._id,
       username: 'admin',
       email: 'admin@test.com',
       password: 'password123',
       roles: ['admin', 'user'],
     });
-    await adminUser.save();
+    await newAdminUser.save();
 
-    // ★ テスト内で直接トークンを生成する
-    const superuserToken = jwt.sign({ user: { id: superuser.id } }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    const adminToken = jwt.sign({ user: { id: adminUser.id } }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    // ★★★ 解決策: DBから最新のMongooseモデルインスタンスを再取得する ★★★
+    superuser = await User.findById(newSuperuser._id);
+    adminUser = await User.findById(newAdminUser._id);
 
-    return { superuser, adminUser, superuserToken, adminToken };
+    // ★★★ 修正: generateTokenユーティリティを直接呼び出す ★★★
+    // generateTokenはユーザーIDを引数に取り、トークンを生成します。
+    // 実際のアプリケーションの挙動と一致させるため、ユーザーIDを渡します。
+    superuserToken = generateToken(superuser._id);
+    adminToken = generateToken(adminUser._id);
+
   };
 
-  describe('GET /api/system/tenants', () => {
-    it('should return all tenants for a superuser', async () => {
-      const { superuserToken } = await setupUsersAndTokens();
+  describe('System API Access Control', () => {
+    // このdescribeブロック内の各テストが実行される前に、
+    // 毎回クリーンなユーザーとトークンを作成する
+    beforeEach(async () => {
+      await setupUsersAndTokens();
+    });
+
+    describe('GET /api/system/tenants', () => {
+      it('should return all tenants for a superuser', async () => {
       // SuperuserとしてAPIをコール
       const res = await request(app)
         .get('/api/system/tenants')
@@ -70,9 +84,7 @@ describe('Superuser System Routes', () => {
       expect(res.body.some(t => t.name === 'Superuser Corp')).toBe(true);
       expect(res.body.some(t => t.name === 'Admin Corp')).toBe(true);
     });
-
-    it('should return 403 Forbidden for a non-superuser (admin)', async () => {
-      const { adminToken } = await setupUsersAndTokens();
+      it('should return 403 Forbidden for a non-superuser (admin)', async () => {
       // 通常のAdminとしてAPIをコール
       const res = await request(app)
         .get('/api/system/tenants')
@@ -82,21 +94,17 @@ describe('Superuser System Routes', () => {
       expect(res.statusCode).toBe(403);
       expect(res.body.message).toContain('Superuser権限が必要');
     });
-
-    it('should return 401 Unauthorized for a non-authenticated user', async () => {
-      await setupUsersAndTokens();
+      it('should return 401 Unauthorized for a non-authenticated user', async () => {
       // トークンなしでAPIをコール
       const res = await request(app).get('/api/system/tenants');
 
       // 認証がないため401エラーになることを確認
       expect(res.statusCode).toBe(401);
     });
-  });
+    });
 
-  describe('DELETE /api/system/tenants/:id', () => {
-    it('should allow a superuser to delete a tenant and its associated users', async () => {
-      const { superuserToken } = await setupUsersAndTokens();
-      // 削除対象のテナントとユーザーをこのテストケース内で作成
+    describe('DELETE /api/system/tenants/:id', () => {
+      it('should allow a superuser to delete a tenant and its associated users', async () => {
       const tenantToDelete = await new Tenant({ name: 'Tenant to Delete' }).save();
       await new User({
         tenantId: tenantToDelete._id,
@@ -122,10 +130,8 @@ describe('Superuser System Routes', () => {
       userCount = await User.countDocuments();
       expect(userCount).toBe(2); // doomed_userが削除され、2人になっている
     });
-
-    it('should return 403 Forbidden for a non-superuser (admin)', async () => {
-      const { adminToken } = await setupUsersAndTokens();
-      const tenantToDelete = await new Tenant({ name: 'Tenant to Delete' }).save();
+      it('should return 403 Forbidden for a non-superuser (admin)', async () => {
+      const tenantToDelete = await new Tenant({ name: 'Another Tenant to Delete' }).save();
       await new User({
         tenantId: tenantToDelete._id,
         username: 'doomed_user',
@@ -138,6 +144,7 @@ describe('Superuser System Routes', () => {
         .set('x-auth-token', adminToken);
 
       expect(res.statusCode).toBe(403);
+    });
     });
   });
 });
