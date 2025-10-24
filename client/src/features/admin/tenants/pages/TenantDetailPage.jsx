@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Card, Button, Spinner, Alert, Modal, Form, ListGroup, Breadcrumb } from 'react-bootstrap';
+import { Card, Button, Spinner, Alert, Modal, Form, ListGroup, Breadcrumb, Table, Badge } from 'react-bootstrap';
 
 function TenantDetailPage() {
   const { id } = useParams();
@@ -119,6 +119,33 @@ function TenantDetailPage() {
               ) : 'なし'}
             </ListGroup.Item>
           </ListGroup>
+
+          {/* ★★★ 所属ユーザー一覧の追加 ★★★ */}
+          <h3 className="h5 mt-4 mb-3">所属ユーザー</h3>
+          {tenant?.users && tenant.users.length > 0 ? (
+            <Table striped bordered hover responsive size="sm">
+              <thead>
+                <tr>
+                  <th>ユーザー名</th>
+                  <th>メールアドレス</th>
+                  <th>ロール</th>
+                  <th className="text-center">ステータス</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tenant.users.map(user => (
+                  <tr key={user._id}>
+                    <td><Link to={`/admin/users/${user._id}`}>{user.username}</Link></td>
+                    <td>{user.email}</td>
+                    <td>{user.roles.map(role => <Badge bg="secondary" className="me-1" key={role}>{role}</Badge>)}</td>
+                    <td className="text-center"><Badge bg={user.status === 'active' ? 'success' : 'danger'}>{user.status}</Badge></td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          ) : (
+            <p className="text-muted">この部署にはユーザーが所属していません。</p>
+          )}
         </Card.Body>
         <Card.Footer className="d-flex justify-content-between flex-wrap gap-2">
           <div>

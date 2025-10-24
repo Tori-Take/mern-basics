@@ -87,10 +87,14 @@ router.get('/:id', [auth, admin], async (req, res) => {
     // 2. このテナントを親に持つ子テナント（サブ部署）の一覧を取得する
     const children = await Tenant.find({ parent: tenantId }).select('name _id');
 
-    // 3. レスポンスとして、テナント情報と子テナント一覧を返す
+    // 3. このテナントに所属するユーザーの一覧を取得する
+    const users = await User.find({ tenantId: tenantId }).select('username email roles status');
+
+    // 4. レスポンスとして、テナント情報、子テナント一覧、所属ユーザー一覧を返す
     res.json({
       ...tenant.toObject(), // Mongooseドキュメントをプレーンなオブジェクトに変換
       children,
+      users,
     });
 
   } catch (err) {
