@@ -1,9 +1,13 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '../providers/AuthProvider';
+import { useAuth } from '../../providers/AuthProvider';
 import { Spinner } from 'react-bootstrap';
 
-const AdminRoute = () => {
+/**
+ * Superuser専用のルートを保護するコンポーネント。
+ * ログインしており、かつ'superuser'ロールを持つユーザーのみがアクセスできます。
+ */
+const SuperuserRoute = () => {
   const { user, isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
@@ -16,15 +20,15 @@ const AdminRoute = () => {
     );
   }
 
-  // 認証済みで、かつユーザー情報が存在し、'admin'ロールを持っているかチェック
-  const isAdmin = isAuthenticated && user && user.roles.includes('admin');
+  // 認証済みで、かつユーザー情報が存在し、'superuser'ロールを持っているかチェック
+  const isSuperuser = isAuthenticated && user && user.roles.includes('superuser');
 
   // 権限があれば子ルートのコンポーネントを表示し、なければログインページにリダイレクト
-  return isAdmin ? (
+  return isSuperuser ? (
     <Outlet />
   ) : (
     <Navigate to="/login" state={{ from: location }} replace />
   );
 };
 
-export default AdminRoute;
+export default SuperuserRoute;

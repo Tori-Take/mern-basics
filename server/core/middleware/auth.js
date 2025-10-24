@@ -2,8 +2,10 @@ const jwt = require('jsonwebtoken');
 const User = require('../../domains/identity/user.model'); // Userモデルをインポート
 
 const auth = async (req, res, next) => {
-  // 1. リクエストヘッダーからトークンを取得
-  const token = req.header('x-auth-token');
+  // 1. ヘッダーからトークンを取得
+  // 2. もしヘッダーになければ、リクエストボディからも探す（axiosのDELETEリクエストなどに対応するため）
+  // 3. それでもなければ、クエリパラメータからも探す（将来的な利用を想定）
+  const token = req.header('x-auth-token') || req.body.token || req.query.token;
 
   // 2. トークンが存在しない場合はエラー
   if (!token) {

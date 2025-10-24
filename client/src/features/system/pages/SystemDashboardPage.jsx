@@ -1,0 +1,54 @@
+import React from 'react';
+import { Card, Button, Row, Col } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+
+const SystemDashboardPage = () => {
+  return (
+    <div>
+      <h1 className="text-center mb-4">システム管理ダッシュボード</h1>
+      <p className="text-center text-muted mb-5">
+        システム全体の管理機能にアクセスします。これらの操作はシステム全体に影響を与えるため、慎重に行ってください。
+      </p>
+
+      <Row>
+        <Col md={6} lg={4} className="mb-4">
+          <Card className="shadow-sm h-100">
+            <Card.Body className="d-flex flex-column">
+              <Card.Title as="h2" className="h5">
+                <i className="bi bi-buildings me-2"></i>テナント管理
+              </Card.Title>
+              <Card.Text className="text-muted">
+                システムに存在する全てのテナント（組織・部署）を管理します。テナントの削除は、関連する全てのデータを削除する不可逆な操作です。
+              </Card.Text>
+              <div className="mt-auto">
+                <Link to="/system/tenants" className="btn btn-primary w-100">
+                  Manage
+                </Link>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+        {/* 将来の機能追加用のプレースホルダー */}
+        {/*
+        <Col md={6} lg={4} className="mb-4">
+          <Card className="shadow-sm h-100 bg-light">
+            <Card.Body className="d-flex flex-column text-center">
+              <Card.Title as="h2" className="h5 text-muted">
+                <i className="bi bi-journal-text me-2"></i>システムログ
+              </Card.Title>
+              <Card.Text className="text-muted">
+                （今後実装予定）
+              </Card.Text>
+              <div className="mt-auto">
+                <Button variant="secondary" disabled className="w-100">Manage</Button>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+        */}
+      </Row>
+    </div>
+  );
+};
+
+export default SystemDashboardPage;

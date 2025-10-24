@@ -5,7 +5,6 @@ import { AuthProvider, useAuth } from './providers/AuthProvider';
 import { Spinner } from 'react-bootstrap';
 import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';
-import AdminRoute from './components/AdminRoute.jsx';
 import UserDashboardPage from './features/dashboard/pages/UserDashboardPage';
 import TodoPage from './features/todos/pages/TodoPage'; // 新しくインポート
 import LoginPage from './features/auth/pages/LoginPage';
@@ -19,6 +18,10 @@ import UserEditPage from './features/admin/users/pages/UserEditPage';
 import TenantManagementPage from './features/admin/tenants/pages/TenantManagementPage';
 import TenantDetailPage from './features/admin/tenants/pages/TenantDetailPage';
 import ProfilePage from './features/profile/pages/ProfilePage'; // ★ 新しく追加
+import AdminRoute from './features/auth/AdminRoute.jsx'; // ★ パスを修正
+import SuperuserRoute from './features/auth/SuperuserRoute'; // ★ 新しく追加
+import SystemDashboardPage from './features/system/pages/SystemDashboardPage'; // ★ 新しく追加
+import SystemTenantManagementPage from './features/system/pages/SystemTenantManagementPage'; // ★ 新しく追加
 
 // AppContentコンポーネントを新しく定義
 function AppContent() {
@@ -50,49 +53,21 @@ function AppContent() {
           </Route>
 
           {/* === Admin Routes (for admin users only) === */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <AdminRoute><AdminDashboardPage /></AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/users"
-            element={
-              <AdminRoute><UserManagementPage /></AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/users/:id"
-            element={
-              <AdminRoute><UserEditPage /></AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/users/new"
-            element={
-              <AdminRoute><UserCreatePage /></AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/roles"
-            element={
-              <AdminRoute><RoleManagementPage /></AdminRoute>
+          <Route element={<AdminRoute />}>
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/users" element={<UserManagementPage />} />
+            <Route path="/admin/users/:id" element={<UserEditPage />} />
+            <Route path="/admin/users/new" element={<UserCreatePage />} />
+            <Route path="/admin/roles" element={<RoleManagementPage />} />
+            <Route path="/admin/tenants" element={<TenantManagementPage />} />
+            <Route path="/admin/tenants/:id" element={<TenantDetailPage />} />
+          </Route>
 
-            } 
-          />
-          <Route
-            path="/admin/tenants"
-            element={
-              <AdminRoute><TenantManagementPage /></AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/tenants/:id"
-            element={
-              <AdminRoute><TenantDetailPage /></AdminRoute> // ★ 新しく追加
-            }
-          />
+          {/* === Superuser Routes (for superuser only) === */}
+          <Route element={<SuperuserRoute />}>
+            <Route path="/system/dashboard" element={<SystemDashboardPage />} />
+            <Route path="/system/tenants" element={<SystemTenantManagementPage />} />
+          </Route>
 
         </Routes>
       </div>

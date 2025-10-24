@@ -14,8 +14,21 @@ function Navbar() {
 
   const authLinks = (
     <div className="d-flex align-items-center">
-      {user && user.roles && user.roles.includes('admin') && (
-        <Link to="/admin/dashboard" className="nav-link text-white me-3">管理者ダッシュボード</Link>
+      {/* Superuserの場合: 管理機能をドロップダウンにまとめる */}
+      {user && user.roles && user.roles.includes('superuser') && (
+        <Dropdown align="end" className="me-3">
+          <Dropdown.Toggle variant="outline-warning" id="dropdown-admin-menu">
+            <i className="bi bi-gear-wide-connected me-1"></i>管理メニュー
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <Dropdown.Item as={Link} to="/system/dashboard" className="fw-bold">システム管理 (全テナント)</Dropdown.Item>
+            <Dropdown.Item as={Link} to="/admin/dashboard">ユーザー管理 (自テナント)</Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+      )}
+      {/* SuperuserではないAdminの場合: 管理者ダッシュボードへの直接リンクを表示 */}
+      {user && user.roles && user.roles.includes('admin') && !user.roles.includes('superuser') && (
+        <Link to="/admin/dashboard" className="nav-link text-white me-3">ユーザー管理</Link>
       )}
       <Dropdown align="end">
         <Dropdown.Toggle variant="primary" id="dropdown-user">
