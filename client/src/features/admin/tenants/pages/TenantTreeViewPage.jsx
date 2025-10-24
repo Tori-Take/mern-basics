@@ -68,13 +68,12 @@ const TenantTreeViewPage = () => {
         ) : (
           <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/admin/dashboard" }}>管理者ダッシュボード</Breadcrumb.Item>
         )}
-        <Breadcrumb.Item linkAs={Link} linkProps={{ to: getBackLink() }}>テナント管理</Breadcrumb.Item>
-        <Breadcrumb.Item active>組織図</Breadcrumb.Item>
+        <Breadcrumb.Item active>組織・部署管理</Breadcrumb.Item>
       </Breadcrumb>
 
       <Card className="shadow-sm">
-        <Card.Header as="h2" className="h5 bg-light d-flex justify-content-between align-items-center">
-          <span><i className="bi bi-diagram-3 me-2"></i>組織図ビュー</span>
+        <Card.Header as="h2" className="d-flex justify-content-between align-items-center">
+          <span><i className="bi bi-diagram-3 me-2"></i>組織・部署管理 (組織図ビュー)</span>
           <Button as={Link} to={getBackLink()} variant="outline-secondary" size="sm">
             <i className="bi bi-list-ul me-1"></i>一覧で表示
           </Button>

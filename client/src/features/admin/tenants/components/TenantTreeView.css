@@ -19,9 +19,20 @@
 /* 各ノードの基本スタイル */
 .tenant-node {
   position: relative;
-  padding-left: 40px; /* 線を描画するスペース */
+  padding-left: 60px; /* 線を描画するスペースを広げる */
   list-style-type: none;
   margin-top: 10px;
+}
+
+/* ルートノードのスタイル調整 */
+.tree-root > .tenant-node {
+  padding-left: 0; /* ルートノードはインデント不要 */
+}
+
+/* ルートノードの上には線を描画しない */
+.tree-root > .tenant-node::before,
+.tree-root > .tenant-node::after {
+  display: none;
 }
 
 /* 子要素のコンテナ */
@@ -33,7 +44,7 @@
 
 /* ノードのカードスタイル */
 .tenant-card {
-  padding: 10px 20px;
+  padding: 5px 20px; /* 上下のパディングを減らす */
 }
 
 /* --- 線を描画するための疑似要素 --- */
@@ -42,10 +53,10 @@
 .tenant-node::before {
   content: '';
   position: absolute;
-  top: 25px; /* カードの高さの中央に合わせる */
-  left: 0;
+  top: 17px; /* カードの高さに合わせて中央を調整 */
+  left: 20px; /* ★ 水平線の開始位置を右に20pxずらす */
   border-top: 1px solid #adb5bd;
-  width: 40px;
+  width: 40px; /* padding-left(60px) - left(20px) = 40px */
   height: 0;
 }
 
@@ -54,12 +65,17 @@
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
+  left: 20px; /* ★ 垂直線の位置を右に20pxずらす */
   border-left: 1px solid #adb5bd;
   height: 100%;
 }
 
 /* 最後のノードの下に伸びる余分な線を消す */
 .tenant-node:last-child::after {
-  height: 25px; /* カードの高さの中央まで */
+  height: 17px; /* カードの高さに合わせて中央を調整 */
+}
+
+/* アクセス不可ノードのスタイル */
+.tenant-card-inaccessible {
+  background-color: #e9ecef; /* 少しグレーにする */
 }

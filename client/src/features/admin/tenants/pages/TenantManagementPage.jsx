@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, Button, Table, Spinner, Alert } from 'react-bootstrap';
+import { Card, Button, Table, Spinner, Alert, Breadcrumb } from 'react-bootstrap';
 import { tenantApiService } from '../tenantApiService'; // ★ APIサービスをインポート
 
 function TenantManagementPage() {
@@ -28,17 +28,25 @@ function TenantManagementPage() {
     return <div className="text-center"><Spinner animation="border" /> <span>組織情報を読み込み中...</span></div>;
   }
 
+  // ★★★ 解決策: 親組織の名前を効率的に検索するためのマップを作成 ★★★
+  const tenantMap = tenants.reduce((acc, tenant) => {
+    acc[tenant._id.toString()] = tenant;
+    return acc;
+  }, {});
+
   return (
     <>
+      <Breadcrumb>
+        <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/admin/dashboard" }}>管理者ダッシュボード</Breadcrumb.Item>
+        <Breadcrumb.Item active>組織・部署管理</Breadcrumb.Item>
+      </Breadcrumb>
+
       <Card className="shadow-sm">
         <Card.Header as="h2" className="d-flex justify-content-between align-items-center">
           <span><i className="bi bi-list-ul me-2"></i>組織・部署管理</span>
           <div>
             <Button as={Link} to="/admin/tenants/tree" variant="outline-secondary" className="me-2">
               <i className="bi bi-diagram-3 me-1"></i> 組織図で表示
-            </Button>
-            <Button variant="primary" onClick={() => alert('トップレベルの部署作成機能は詳細ページに移動しました。')}>
-              ＋ 新規部署を追加
             </Button>
           </div>
         </Card.Header>
@@ -49,6 +57,7 @@ function TenantManagementPage() {
               <tr>
                 <th>組織/部署名</th>
                 <th>親組織</th>
+                <th className="text-center">所属人数</th>
               </tr>
             </thead>
             <tbody>
@@ -59,7 +68,8 @@ function TenantManagementPage() {
                       {tenant.name}
                     </Link>
                   </td>
-                  <td>{tenant.parent ? tenant.parent.name : 'N/A (最上位)'}</td>
+                  <td>{tenant.parent ? tenantMap[tenant.parent.toString()]?.name : 'N/A (最上位)'}</td>
+                  <td className="text-center">{tenant.userCount}</td>
                 </tr>
               ))}
             </tbody>

@@ -10,10 +10,18 @@ import { Card } from 'react-bootstrap';
 const TenantNode = ({ node }) => {
   return (
     <li className="tenant-node">
-      <Card body className="d-inline-block shadow-sm tenant-card">
-        <Link to={`/admin/tenants/${node._id}`} className="stretched-link text-decoration-none text-dark fw-bold">
-          {node.name}
-        </Link>
+      <Card body className={`d-inline-block shadow-sm tenant-card ${node.isAccessible ? '' : 'tenant-card-inaccessible'}`}>
+        {node.isAccessible ? (
+          // アクセス可能なノードはリンクにする
+          <Link to={`/admin/tenants/${node._id}`} className="stretched-link text-decoration-none text-dark fw-bold">
+            {node.name}
+          </Link>
+        ) : (
+          // アクセス不可能なノード（親など）はただのテキストにする
+          <span className="text-muted fw-bold">
+            {node.name}
+          </span>
+        )}
       </Card>
 
       {node.children && node.children.length > 0 && (

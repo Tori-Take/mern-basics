@@ -6,6 +6,7 @@ const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');
 const { getAccessibleTenantIds } = require('../../core/services/permissionService');
 const TenantController = require('./tenants.controllers'); // ★ 新しくインポート
+const tenantService = require('./services/tenant.service'); // ★ 新しくインポート
 
 /**
  * @route   GET /api/tenants
@@ -14,17 +15,34 @@ const TenantController = require('./tenants.controllers'); // ★ 新しくイ�
  */
 router.get('/', [auth, admin], async (req, res) => {
   try {
-    // 1. ログイン管理者がアクセス可能なテナントIDリストを取得
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
+    // 1. ユーザーが所属する組織の最上位のルートIDを見つける
+    const rootId = await tenantService.findOrganizationRoot(req.user.tenantId);
 
-    if (accessibleTenantIds.length === 0) {
+    // 2. 組織全体の階層データを取得
+    const allTenantsInHierarchy = await tenantService.getTenantHierarchy(rootId);
+
+    if (!allTenantsInHierarchy || allTenantsInHierarchy.length === 0) {
       return res.json([]);
     }
 
-    // 2. アクセス可能なテナントの情報のみをDBから取得する
-    const tenants = await Tenant.find({ _id: { $in: accessibleTenantIds } })
-      .populate('parent', 'name') // 親組織の名前も取得
-      .sort({ name: 1 }); // 名前順でソート
+    // 3. ログインユーザーがアクセス可能なテナントIDリストを取得
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+
+    // 4. ツリー構造に変換（アクセス可能フラグを付与）
+    const tenantTree = tenantService.buildTenantTree(allTenantsInHierarchy, accessibleTenantIds);
+
+    // 5. ツリーを階層順のフラットなリストに戻すためのヘルパー関数
+    const flattenTreeWithDepth = (nodes, depth = 0) => {
+      let list = [];
+      nodes.forEach(node => {
+        const { children, ...restOfNode } = node; // childrenは再帰で使うので除外
+        list.push({ ...restOfNode, depth });
+        list = list.concat(flattenTreeWithDepth(node.children, depth + 1));
+      });
+      return list;
+    };
+
+    const tenants = flattenTreeWithDepth(tenantTree);
 
     res.json(tenants);
 

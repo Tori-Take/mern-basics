@@ -1,4 +1,5 @@
 const tenantService = require('./services/tenant.service');
+const { getAccessibleTenantIds } = require('../../core/services/permissionService');
 
 class TenantController {
   /**
@@ -6,11 +7,18 @@ class TenantController {
    */
   static async getTenantTree(req, res) {
     try {
-      // ログインユーザーのテナントIDとその全ての子孫テナントを取得
-      const allTenantsInHierarchy = await tenantService.getTenantHierarchy(req.user.tenantId);
+      // ユーザーが所属する組織の最上位のルートIDを見つける
+      const rootId = await tenantService.findOrganizationRoot(req.user.tenantId);
 
-      // ツリー構造に変換
-      const tenantTree = tenantService.buildTenantTree(allTenantsInHierarchy);
+      // 階層データを取得
+      const allTenantsInHierarchy = await tenantService.getTenantHierarchy(rootId);
+
+      // ログインユーザーがアクセス可能なテナントIDリストを取得
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+
+      // ツリー構造に変換（アクセス可能フラグを付与）
+      const tenantTree = tenantService.buildTenantTree(allTenantsInHierarchy, accessibleTenantIds);
+
       res.status(200).json(tenantTree);
     } catch (error) {
       console.error('【GET /api/tenants/tree】 An error occurred:', error);
