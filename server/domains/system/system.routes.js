@@ -18,4 +18,11 @@ router.get('/tenants', [auth, superuser], SystemController.getAllTenants);
  */
 router.delete('/tenants/:id', [auth, superuser], SystemController.deleteTenant);
 
+/**
+ * @route   GET /api/system/tenants/:id/tree
+ * @desc    Get organization chart for a specific tenant (Superuser only)
+ * @access  Private/Superuser
+ */
+router.get('/tenants/:id/tree', [auth, superuser], SystemController.getTenantTreeById);
+
 module.exports = router;

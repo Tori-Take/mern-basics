@@ -1,0 +1,65 @@
+/* ツリー全体のコンテナ */
+.tree-container {
+  overflow-x: auto; /* 横スクロールを有効にする */
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+/* ツリーのルート */
+.tree-root {
+  list-style-type: none;
+  padding-left: 0;
+  display: inline-block; /* コンテンツの幅に合わせる */
+  min-width: 100%;
+  white-space: nowrap; /* 折り返しを防ぐ */
+}
+
+/* 各ノードの基本スタイル */
+.tenant-node {
+  position: relative;
+  padding-left: 40px; /* 線を描画するスペース */
+  list-style-type: none;
+  margin-top: 10px;
+}
+
+/* 子要素のコンテナ */
+.children-container {
+  list-style-type: none;
+  padding-left: 0;
+  margin-top: 10px;
+}
+
+/* ノードのカードスタイル */
+.tenant-card {
+  padding: 10px 20px;
+}
+
+/* --- 線を描画するための疑似要素 --- */
+
+/* ノードから親へ伸びる水平線 */
+.tenant-node::before {
+  content: '';
+  position: absolute;
+  top: 25px; /* カードの高さの中央に合わせる */
+  left: 0;
+  border-top: 1px solid #adb5bd;
+  width: 40px;
+  height: 0;
+}
+
+/* 親から子へ伸びる垂直線 */
+.tenant-node::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-left: 1px solid #adb5bd;
+  height: 100%;
+}
+
+/* 最後のノードの下に伸びる余分な線を消す */
+.tenant-node:last-child::after {
+  height: 25px; /* カードの高さの中央まで */
+}

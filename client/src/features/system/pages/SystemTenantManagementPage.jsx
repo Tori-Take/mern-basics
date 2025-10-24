@@ -75,6 +75,9 @@ const SystemTenantManagementPage = () => {
                     <td>{tenant.name}</td>
                     <td><code>{tenant._id}</code></td>
                     <td className="text-center">
+                    <Button as={Link} to={`/system/tenants/${tenant._id}/tree`} variant="outline-info" size="sm" className="me-2" title="組織図を表示">
+                      <i className="bi bi-diagram-3"></i>
+                    </Button>
                       <Button variant="outline-danger" size="sm" onClick={() => handleDelete(tenant._id, tenant.name)} disabled={loading}>
                         {loading ? <Spinner as="span" animation="border" size="sm" /> : '削除'}
                       </Button>

@@ -5,6 +5,7 @@ const mongoose = require('mongoose'); // ★ Mongooseをインポート
 const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');
 const { getAccessibleTenantIds } = require('../../core/services/permissionService');
+const TenantController = require('./tenants.controllers'); // ★ 新しくインポート
 
 /**
  * @route   GET /api/tenants
@@ -32,6 +33,13 @@ router.get('/', [auth, admin], async (req, res) => {
     res.status(500).send('サーバーエラーが発生しました。');
   }
 });
+
+/**
+ * @route   GET /api/tenants/tree
+ * @desc    自身のテナント階層をツリー構造で取得する
+ * @access  Private (Admin)
+ */
+router.get('/tree', [auth, admin], TenantController.getTenantTree);
 
 /**
  * @route   GET /api/tenants/:id

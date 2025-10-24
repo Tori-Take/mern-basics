@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Card, Button, Table, Spinner, Alert } from 'react-bootstrap';
+import { tenantApiService } from '../tenantApiService'; // ★ APIサービスをインポート
 
 function TenantManagementPage() {
   const [tenants, setTenants] = useState([]);
@@ -15,8 +15,8 @@ function TenantManagementPage() {
   const loadTenants = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/tenants');
-      setTenants(res.data);
+      const data = await tenantApiService.getTenants(); // ★ APIサービス経由で取得
+      setTenants(data);
     } catch (err) {
       setError(err.response?.data?.message || '組織情報の取得に失敗しました。');
     } finally {
@@ -32,10 +32,15 @@ function TenantManagementPage() {
     <>
       <Card className="shadow-sm">
         <Card.Header as="h2" className="d-flex justify-content-between align-items-center">
-          <span>組織・部署管理</span>
-          <Button variant="primary" onClick={() => alert('トップレベルの部署作成機能は詳細ページに移動しました。')}>
-            ＋ 新規部署を追加
-          </Button>
+          <span><i className="bi bi-list-ul me-2"></i>組織・部署管理</span>
+          <div>
+            <Button as={Link} to="/admin/tenants/tree" variant="outline-secondary" className="me-2">
+              <i className="bi bi-diagram-3 me-1"></i> 組織図で表示
+            </Button>
+            <Button variant="primary" onClick={() => alert('トップレベルの部署作成機能は詳細ページに移動しました。')}>
+              ＋ 新規部署を追加
+            </Button>
+          </div>
         </Card.Header>
         <Card.Body>
           {error && <Alert variant="danger">{error}</Alert>}

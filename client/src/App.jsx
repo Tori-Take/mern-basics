@@ -22,6 +22,7 @@ import AdminRoute from './features/auth/AdminRoute.jsx'; // ★ パスを修正
 import SuperuserRoute from './features/auth/SuperuserRoute'; // ★ 新しく追加
 import SystemDashboardPage from './features/system/pages/SystemDashboardPage'; // ★ 新しく追加
 import SystemTenantManagementPage from './features/system/pages/SystemTenantManagementPage'; // ★ 新しく追加
+import TenantTreeViewPage from './features/admin/tenants/pages/TenantTreeViewPage'; // ★ 新しく追加
 
 // AppContentコンポーネントを新しく定義
 function AppContent() {
@@ -59,6 +60,8 @@ function AppContent() {
             <Route path="/admin/users/:id" element={<UserEditPage />} />
             <Route path="/admin/users/new" element={<UserCreatePage />} />
             <Route path="/admin/roles" element={<RoleManagementPage />} />
+            {/* ★★★ 修正: 具体的なパスを先に定義する ★★★ */}
+            <Route path="/admin/tenants/tree" element={<TenantTreeViewPage />} />
             <Route path="/admin/tenants" element={<TenantManagementPage />} />
             <Route path="/admin/tenants/:id" element={<TenantDetailPage />} />
           </Route>
@@ -67,6 +70,7 @@ function AppContent() {
           <Route element={<SuperuserRoute />}>
             <Route path="/system/dashboard" element={<SystemDashboardPage />} />
             <Route path="/system/tenants" element={<SystemTenantManagementPage />} />
+            <Route path="/system/tenants/:id/tree" element={<TenantTreeViewPage />} />
           </Route>
 
         </Routes>

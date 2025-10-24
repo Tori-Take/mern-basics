@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>組織図ビュー導入 完了報告</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+            color: #1a5276;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding: 10px 15px;
+        }
+
+        pre {
+            background-color: #283747;
+            color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .pass {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .debug-story {
+            background-color: #fef9e7;
+            border-left: 5px solid #f39c12;
+            padding: 25px;
+            margin-top: 30px;
+            border-radius: 8px;
+        }
+
+        .debug-story h3 {
+            color: #b7791f;
+            border-bottom-color: #f39c12;
+        }
+
+        .final-message {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #1a5276;
+            padding: 30px;
+            background-color: #eafaf1;
+            border-radius: 10px;
+            border: 2px dashed #2ecc71;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>組織図ビュー導入 完了報告</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">組織の可視性を高め、直感的な管理を実現する</p>
+
+    <div class="card">
+        <h2>はじめに</h2>
+        <p>
+            本開発では、組織構造を直感的に把握するための「組織図ビュー」機能を新たに導入しました。従来のリスト形式の表示に加え、階層的なツリービューを提供することで、管理者は組織の全体像を視覚的に理解し、より効率的な管理を行うことが可能になりました。
+        </p>
+        <p>
+            このドキュメントは、バックエンドのAPI設計から、フロントエンドの再帰コンポーネント実装、そしてデバッグの過程で得られた知見まで、本機能の開発軌跡を記録するものです。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>バックエンド実装：階層データAPIの構築</h2>
+        <p>
+            組織図を描画するため、親子関係がわかるネストされたツリー構造のデータを返す新しいAPIを、既存の機能に影響を与えない形で安全に追加しました。
+        </p>
+        <ol>
+            <li><strong>階層データ取得ロジックの実装:</strong>
+                <code>tenant.service.js</code>に、MongoDBの強力な<code>$graphLookup</code>集計パイプラインを利用して、指定されたテナント配下の全子孫を再帰的に取得する<code>getTenantHierarchy</code>関数を実装しました。
+            </li>
+            <li><strong>ツリー構造への変換:</strong>
+                取得したフラットなリストを、フロントエンドが扱いやすいネストされたJSONツリーに変換する<code>buildTenantTree</code>関数を実装しました。</li>
+            <li><strong>専用APIエンドポイントの追加:</strong>
+                <ul>
+                    <li>管理者向け: <code>GET /api/tenants/tree</code></li>
+                    <li>Superuser向け: <code>GET /api/system/tenants/:id/tree</code></li>
+                </ul>
+            </li>
+        </ol>
+        <div class="debug-story">
+            <h3>デバッグの物語：<code>403 Forbidden</code>とルーティングの罠</h3>
+            <p>
+                開発終盤、APIから<code>403 Forbidden</code>エラーが返されるという問題に直面しました。バックエンドに詳細な<code>console.log</code>を仕掛けた結果、リクエストが意図したコントローラーに到達する前に、Express.jsのルーターによって別のルート定義に誤ってマッチングされていることが判明しました。
+            </p>
+            <p>
+                具体的には、<code>/api/tenants/tree</code>へのリクエストが、それより先に定義されていた<code>/api/tenants/:id</code>に「<code>id</code>が<code>tree</code>である」と誤解釈されていたのです。
+            </p>
+            <p>
+                この経験から、<strong>Express.jsでは、より具体的なパス（例: <code>/tree</code>）を、より汎用的なパス（例:
+                    <code>/:id</code>）よりも先に定義しなければならない</strong>という、ルーティングの基本原則の重要性を再認識しました。
+            </p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>フロントエンド実装：再帰コンポーネントによる描画</h2>
+        <p>
+            バックエンドから受け取ったツリー構造のデータを、エレガントかつ効率的に画面に描画するため、Reactの「再帰コンポーネント」というテクニックを活用しました。
+        </p>
+        <ol>
+            <li><strong>再帰コンポーネント<code>TenantNode.jsx</code>の作成:</strong>
+                <ul>
+                    <li>一つの部署（ノード）を表示するコンポーネントを作成。</li>
+                    <li>部署名をクリックすると、その部署の詳細ページに遷移するリンクを設置。</li>
+                    <li>コンポーネント内に子部署のデータ(<code>node.children</code>)があれば、<strong>自分自身を再度呼び出して</strong>子部署を描画するロジックを実装しました。
+                    </li>
+                </ul>
+            </li>
+            <li><strong>専用ページ<code>TenantTreeViewPage.jsx</code>の作成:</strong>
+                <ul>
+                    <li>管理者とSuperuserでAPIを呼び分けるロジックを実装。</li>
+                    <li>取得したデータのルートノードを<code>TenantNode</code>に渡すことで、組織図全体の描画を開始します。</li>
+                </ul>
+            </li>
+            <li><strong>UI/UXの改善:</strong>
+                <ul>
+                    <li>CSSで親子関係を線で結び、視覚的な階層を表現。</li>
+                    <li>組織図が画面幅を超えた場合に横スクロールバーが表示されるようにし、大規模な組織でも快適に閲覧できるよう配慮しました。</li>
+                    <li>リスト表示と組織図表示を簡単に行き来できるよう、各ページに切り替えボタンを設置しました。</li>
+                </ul>
+            </li>
+        </ol>
+        <h3>再帰コンポーネントの核心部</h3>
+        <pre>
+// c:/Users/Tori-Take/Desktop/mern-basics/client/src/features/admin/tenants/components/TenantNode.jsx
+
+const TenantNode = ({ node }) => {
+  return (
+    &lt;li className="tenant-node"&gt;
+      &lt;Card body&gt;
+        &lt;Link to={`/admin/tenants/${node._id}`}&gt;
+          {node.name}
+        &lt;/Link&gt;
+      &lt;/Card&gt;
+
+      {/* もし子要素があれば、自分自身を再度呼び出す */}
+      {node.children && node.children.length > 0 && (
+        &lt;ul className="children-container"&gt;
+          {node.children.map(childNode => (
+            &lt;TenantNode key={childNode._id} node={childNode} /&gt;
+          ))}
+        &lt;/ul&gt;
+      )}
+    &lt;/li&gt;
+  );
+};
+        </pre>
+    </div>
+
+    <div class="final-message">
+        組織図ビュー機能、実装完了！<br>
+        これにより、組織管理の視認性と操作性が大幅に向上しました。
+    </div>
+
+</body>
+
+</html>

@@ -1,6 +1,5 @@
-const SystemService = require('./services/system.service');
-
-const systemService = new SystemService();
+const systemService = require('./system.service');
+const tenantService = require('../organization/services/tenant.service');
 
 class SystemController {
   /**
@@ -9,10 +8,10 @@ class SystemController {
    */
   static async getAllTenants(req, res) {
     try {
-      const tenants = await systemService.findAllTenants();
-      res.json(tenants);
+      const tenants = await systemService.getAllTenants();
+      res.status(200).json(tenants);
     } catch (err) {
-      res.status(500).json({ message: 'サーバーエラーが発生しました。' });
+      res.status(500).json({ message: 'テナント一覧の取得に失敗しました。', error: err.message });
     }
   }
 
@@ -24,12 +23,27 @@ class SystemController {
     try {
       const { id } = req.params;
       await systemService.deleteTenantAndAssociatedData(id);
-      res.json({ message: 'テナントおよび関連データが正常に削除されました。' });
+      res.status(200).json({ message: 'テナントおよび関連データが正常に削除されました。' });
     } catch (err) {
       // サービス層で発生したエラー（例：テナントが見つからない）をハンドリング
       res
         .status(err.statusCode || 500)
-        .json({ message: err.message || 'サーバーエラーが発生しました。' });
+        .json({ message: err.message || 'テナントの削除に失敗しました。' });
+    }
+  }
+
+  /**
+   * @description Get organization chart for a specific tenant
+   * @route GET /api/system/tenants/:id/tree
+   */
+  static async getTenantTreeById(req, res) {
+    try {
+      const { id } = req.params;
+      const allTenantsInHierarchy = await tenantService.getTenantHierarchy(id);
+      const tenantTree = tenantService.buildTenantTree(allTenantsInHierarchy);
+      res.status(200).json(tenantTree);
+    } catch (error) {
+      res.status(500).json({ message: '組織図の取得に失敗しました。', error: error.message });
     }
   }
 }
