@@ -25,4 +25,11 @@ router.delete('/tenants/:id', [auth, superuser], SystemController.deleteTenant);
  */
 router.get('/tenants/:id/tree', [auth, superuser], SystemController.getTenantTreeById);
 
+/**
+ * @route   GET /api/system/tenants/:id/departments
+ * @desc    Get a hierarchical list of departments for a specific organization (Superuser only)
+ * @access  Private/Superuser
+ */
+router.get('/tenants/:id/departments', [auth, superuser], SystemController.getDepartmentListById);
+
 module.exports = router;

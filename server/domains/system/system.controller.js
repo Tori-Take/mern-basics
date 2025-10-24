@@ -46,6 +46,36 @@ class SystemController {
       res.status(500).json({ message: '組織図の取得に失敗しました。', error: error.message });
     }
   }
+
+  /**
+   * @description Get a hierarchical list of departments for a specific organization
+   * @route GET /api/system/tenants/:id/departments
+   */
+  static async getDepartmentListById(req, res) {
+    try {
+      const { id } = req.params;
+      const rootId = await tenantService.findOrganizationRoot(id);
+      const allTenantsInHierarchy = await tenantService.getTenantHierarchy(rootId);
+      
+      // admin側のAPIと同様の処理を行う
+      const tenantTree = tenantService.buildTenantTree(allTenantsInHierarchy);
+      
+      const flattenTreeWithDepth = (nodes, depth = 0) => {
+        let list = [];
+        nodes.forEach(node => {
+          const { children, ...restOfNode } = node;
+          list.push({ ...restOfNode, depth });
+          if (children && children.length > 0) {
+            list = list.concat(flattenTreeWithDepth(children, depth + 1));
+          }
+        });
+        return list;
+      };
+      res.json(flattenTreeWithDepth(tenantTree));
+    } catch (err) {
+      res.status(500).json({ message: '部署一覧の取得に失敗しました。', error: err.message });
+    }
+  }
 }
 
 module.exports = SystemController;

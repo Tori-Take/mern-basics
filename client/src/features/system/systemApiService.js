@@ -36,9 +36,21 @@ const getTenantTreeById = async (tenantId) => {
   return response.data;
 };
 
+/**
+ * 指定されたIDの組織に属する部署の階層リストを取得します。
+ * Superuser権限が必要です。
+ * @param {string} tenantId 組織のID
+ * @returns {Promise<Array>} 部署の階層リスト
+ */
+const getDepartmentListById = async (tenantId) => {
+  const response = await axios.get(`${API_URL}/${tenantId}/departments`);
+  return response.data;
+};
+
 // 各関数をオブジェクトにまとめてエクスポート
 export const systemApiService = {
   getAllTenants,
   deleteTenant,
   getTenantTreeById,
+  getDepartmentListById,
 };

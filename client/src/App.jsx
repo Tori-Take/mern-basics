@@ -22,6 +22,7 @@ import AdminRoute from './features/auth/AdminRoute.jsx'; // ★ パスを修正
 import SuperuserRoute from './features/auth/SuperuserRoute'; // ★ 新しく追加
 import SystemDashboardPage from './features/system/pages/SystemDashboardPage'; // ★ 新しく追加
 import SystemTenantManagementPage from './features/system/pages/SystemTenantManagementPage'; // ★ 新しく追加
+import SystemOrganizationDetailPage from './features/system/pages/SystemOrganizationDetailPage'; // ★ 新しく追加
 import TenantTreeViewPage from './features/admin/tenants/pages/TenantTreeViewPage'; // ★ 新しく追加
 
 // AppContentコンポーネントを新しく定義
@@ -37,7 +38,7 @@ function AppContent() {
   }
 
   return (
-    <Router>
+    <>
       <Navbar />
       <div className="container mt-4">
         <Routes>
@@ -70,20 +71,23 @@ function AppContent() {
           <Route element={<SuperuserRoute />}>
             <Route path="/system/dashboard" element={<SystemDashboardPage />} />
             <Route path="/system/tenants" element={<SystemTenantManagementPage />} />
+            <Route path="/system/tenants/:id/departments" element={<SystemOrganizationDetailPage />} />
             <Route path="/system/tenants/:id/tree" element={<TenantTreeViewPage />} />
           </Route>
 
         </Routes>
       </div>
-    </Router>
+    </>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </Router>
   );
 }
 

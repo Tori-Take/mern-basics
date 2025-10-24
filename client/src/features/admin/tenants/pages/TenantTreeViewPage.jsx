@@ -30,6 +30,7 @@ const TenantTreeViewPage = () => {
       }
       setTreeData(data);
     } catch (err) {
+      console.error('Failed to fetch tree data:', err);
       setError(err.response?.data?.message || '組織図の取得に失敗しました。');
     } finally {
       setLoading(false);
@@ -43,7 +44,7 @@ const TenantTreeViewPage = () => {
   // 戻るボタンのリンク先を動的に決定
   const getBackLink = () => {
     if (isSuperuserView) {
-      return '/system/tenants'; // Superuserのテナント一覧へ
+      return `/system/tenants/${tenantIdFromParams}/departments`; // Superuserの組織詳細一覧へ
     }
     return '/admin/tenants'; // Adminのテナント一覧へ
   };
@@ -68,12 +69,15 @@ const TenantTreeViewPage = () => {
         ) : (
           <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/admin/dashboard" }}>管理者ダッシュボード</Breadcrumb.Item>
         )}
-        <Breadcrumb.Item active>組織・部署管理</Breadcrumb.Item>
+        <Breadcrumb.Item linkAs={Link} linkProps={{ to: getBackLink() }}>
+          {isSuperuserView ? '組織管理' : '組織・部署管理'}
+        </Breadcrumb.Item>
+        <Breadcrumb.Item active>組織図</Breadcrumb.Item>
       </Breadcrumb>
 
       <Card className="shadow-sm">
         <Card.Header as="h2" className="d-flex justify-content-between align-items-center">
-          <span><i className="bi bi-diagram-3 me-2"></i>組織・部署管理 (組織図ビュー)</span>
+          <span><i className="bi bi-diagram-3 me-2"></i>組織図ビュー</span>
           <Button as={Link} to={getBackLink()} variant="outline-secondary" size="sm">
             <i className="bi bi-list-ul me-1"></i>一覧で表示
           </Button>

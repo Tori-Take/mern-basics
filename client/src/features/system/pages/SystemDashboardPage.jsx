@@ -14,10 +14,10 @@ const SystemDashboardPage = () => {
         <Col md={6} lg={4}>
           <Card className="shadow-sm h-100">
             <Card.Body className="text-center d-flex flex-column">
-              <i className="bi bi-buildings fs-1 text-primary mb-3"></i>
-              <Card.Title as="h5">テナント管理</Card.Title>
+              <i className="bi bi-diagram-3 fs-1 text-primary mb-3"></i>
+              <Card.Title as="h5">組織管理</Card.Title>
               <Card.Text>
-                システムに存在する全てのテナント（組織・部署）を管理します。テナントの削除は、関連する全てのデータを削除する不可逆な操作です。
+                システムに存在する全ての組織を管理します。組織の削除は、関連する全てのデータを削除する不可逆な操作です。
               </Card.Text>
               <Link to="/system/tenants" className="btn btn-primary mt-auto">
                 Manage
