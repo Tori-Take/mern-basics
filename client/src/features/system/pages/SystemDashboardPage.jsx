@@ -10,27 +10,24 @@ const SystemDashboardPage = () => {
         システム全体の管理機能にアクセスします。これらの操作はシステム全体に影響を与えるため、慎重に行ってください。
       </p>
 
-      <Row>
-        <Col md={6} lg={4} className="mb-4">
+      <Row className="justify-content-center g-4">
+        <Col md={6} lg={4}>
           <Card className="shadow-sm h-100">
-            <Card.Body className="d-flex flex-column">
-              <Card.Title as="h2" className="h5">
-                <i className="bi bi-buildings me-2"></i>テナント管理
-              </Card.Title>
-              <Card.Text className="text-muted">
+            <Card.Body className="text-center d-flex flex-column">
+              <i className="bi bi-buildings fs-1 text-primary mb-3"></i>
+              <Card.Title as="h5">テナント管理</Card.Title>
+              <Card.Text>
                 システムに存在する全てのテナント（組織・部署）を管理します。テナントの削除は、関連する全てのデータを削除する不可逆な操作です。
               </Card.Text>
-              <div className="mt-auto">
-                <Link to="/system/tenants" className="btn btn-primary w-100">
-                  Manage
-                </Link>
-              </div>
+              <Link to="/system/tenants" className="btn btn-primary mt-auto">
+                Manage
+              </Link>
             </Card.Body>
           </Card>
         </Col>
         {/* 将来の機能追加用のプレースホルダー */}
         {/*
-        <Col md={6} lg={4} className="mb-4">
+        <Col md={6} lg={4}>
           <Card className="shadow-sm h-100 bg-light">
             <Card.Body className="d-flex flex-column text-center">
               <Card.Title as="h2" className="h5 text-muted">
