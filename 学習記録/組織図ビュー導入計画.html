@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>組織図ビュー導入計画</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+            color: #1a5276;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding: 10px 15px;
+        }
+
+        h3 {
+            font-size: 1.5em;
+            border-bottom-style: dashed;
+            border-bottom-width: 2px;
+            color: #2980b9;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .task-number {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        ul {
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>組織図ビュー導入計画</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">組織の可視性を高め、直感的な管理を実現する</p>
+
+    <div class="card">
+        <h2><span class="task-number">1</span>バックエンドAPIの強化</h2>
+        <h3>目的</h3>
+        <p>既存のリスト表示機能に影響を与えないよう、組織図専用の<strong>新しいAPIエンドポイント</strong>を2種類追加します。
+        </p>
+        <h3>作業内容</h3>
+        <ul>
+            <li><code>tenant.service.js</code>に、テナントリストをネストされたツリー構造に変換するヘルパー関数を実装します。</li>
+            <li><strong>管理者向けAPI:</strong> <code>tenants.routes.js</code>に、ログイン中の管理者が自身の組織図を見るための
+                <code>GET /api/tenants/tree</code> を作成します。
+            </li>
+            <li><strong>Superuser向けAPI:</strong> <code>system.routes.js</code>に、Superuserが任意のテナントの組織図を見るための
+                <code>GET /api/system/tenants/:id/tree</code> を作成します。
+            </li>
+            <li>既存の <code>GET /api/tenants</code>
+                は、これまで通りフラットなリストを返すまま変更しません。
+            </li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2><span class="task-number">2</span>再帰的なツリーコンポーネントの作成</h2>
+        <h3>目的</h3>
+        <p>ネストされたデータを受け取り、組織図の「ノード（各部署）」を再帰的に描画する、再利用可能なコンポーネント <code>TenantNode.jsx</code> を作成します。</p>
+        <h3>作業内容</h3>
+        <ul>
+            <li><code>client/src/features/admin/tenants/components/</code> フォルダに <code>TenantNode.jsx</code> を作成します。
+            </li>
+            <li>テナント名自体を、そのテナントの詳細ページ (<code>/admin/tenants/:id</code>) へのリンクにします。
+            </li>
+            <li>もし <code>node.children</code>
+                が存在すれば、その子要素をループ処理し、<strong>自分自身（<code>TenantNode</code>）を再度呼び出して</strong>描画します。この「再帰呼び出し」が、ツリー構造を実現する鍵です。
+            </li>
+            <li>CSSを工夫し、組織図全体を囲むコンテナに横スクロールバーが表示されるようにします。これにより、階層が深くなってもレイアウトが崩れません。</li>
+            <li><strong>【発展】</strong>各ノードに「<i class="bi bi-person-plus"></i>
+                メンバー追加」ボタンを設置し、その部署に直接ユーザーを追加できるモーダルを開く機能を実装します。</li>
+            <li><strong>【発展】</strong><code>dnd-kit</code>などのライブラリを使い、ドラッグ＆ドロップで組織構造を変更できる機能を実装します。</li>
+        </ul>
+        <h3>完成イメージ</h3>
+        <p>
+            最終的に、画面には以下のような階層的な組織図が表示されます。部署名がクリック可能なリンクになります。階層が深くなり画面幅を超えた場合は、横にスクロールして全体を見ることができます。
+        </p>
+        <pre
+            style="background-color: #f4f7f9; color: #333; border: 1px solid #ddd; line-height: 2.2; padding: 20px; border-radius: 5px;">
+&lt;a href="/admin/tenants/..."&gt;[ 本社 ]&lt;/a&gt;
+  │
+  ├─ &lt;a href="/admin/tenants/..."&gt;[ 営業部 ]&lt;/a&gt;
+  │
+  └─ &lt;a href="/admin/tenants/..."&gt;[ 開発部 ]&lt;/a&gt;
+      │
+      └─ &lt;a href="/admin/tenants/..."&gt;[ フロントエンドチーム ]&lt;/a&gt;
+        </pre>
+    </div>
+
+    <div class="card">
+        <h2><span class="task-number">3</span>新しい組織図ビューページの作成</h2>
+        <h3>目的</h3>
+        <p>組織図を専門に表示するための、<strong>新しいページコンポーネント</strong>を作成します。既存の<code>TenantManagementPage.jsx</code>は変更しません。</p>
+        <h3>作業内容</h3>
+        <ul>
+            <li><code>client/src/features/admin/tenants/pages/</code>フォルダに、<strong><code>TenantTreeViewPage.jsx</code></strong>という新しいファイルを作成します。
+            </li>
+            <li>このページは、URLのパラメータに応じて、管理者向けAPIかSuperuser向けAPIかを呼び分けます。</li>
+            <li>取得したツリーデータを、タスク2で作成した <code>TenantNode</code> コンポーネントに渡して組織図を描画します。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2><span class="task-number">4</span>ナビゲーションの整備</h2>
+        <h3>目的</h3>
+        <p>ユーザーがリスト表示と組織図表示を簡単に行き来できるように、画面にリンクを追加します。</p>
+        <h3>作業内容</h3>
+        <ul>
+            <li><code>App.jsx</code>に、新しいページへのルートを追加します。
+                <ul>
+                    <li>管理者用: <code>/admin/tenants/tree</code></li>
+                    <li>Superuser用: <code>/system/tenants/:id/tree</code></li>
+                </ul>
+            </li>
+            <li><strong>管理者画面:</strong> 既存の<code>TenantManagementPage.jsx</code>（リスト表示）に、「<i
+                    class="bi bi-diagram-3"></i> 組織図で表示」ボタンを追加します。</li>
+            <li><strong>Superuser画面:</strong> <code>SystemTenantManagementPage.jsx</code>の各テナントの行に、「<i
+                    class="bi bi-diagram-3"></i> 組織図」ボタンを追加し、各テナントの組織図ページへリンクします。</li>
+            <li>新しい<code>TenantTreeViewPage.jsx</code>（組織図表示）にも、「<i class="bi bi-list-ul"></i>
+                一覧で表示」のようなボタンを追加し、元のページへ戻れるようにします。</li>
+        </ul>
+    </div>
+
+</body>
+
+</html>
