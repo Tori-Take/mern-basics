@@ -277,13 +277,13 @@ class UserService {
   /**
    * 管理者が新しいユーザーを作成します。
    * @param {object} userData - 新規ユーザーのデータ。
-   * @param {string} adminTenantId - 管理者のテナントID。
+   * @param {string} targetTenantId - ユーザーを作成する対象のテナントID。
    * @returns {Promise<User>} 作成されたユーザーオブジェクト（パスワードなし）。
    */
-  async createUserByAdmin(userData, adminTenantId) {
+  async createUserByAdmin(userData, targetTenantId) {
     const { username, email, password, roles, status } = userData;
 
-    if (await this.userRepository.findForCreationCheck(email, username, adminTenantId)) {
+    if (await this.userRepository.findForCreationCheck(email, username, targetTenantId)) {
       const error = new Error('そのユーザー名またはメールアドレスは既に使用されています。');
       error.statusCode = 400;
       throw error;
@@ -293,7 +293,7 @@ class UserService {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const savedUser = await this.userRepository.create({
-      tenantId: adminTenantId,
+      tenantId: targetTenantId,
       username,
       email,
       password: hashedPassword,

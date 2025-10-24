@@ -175,11 +175,11 @@ class UserController {
    */
   static async createUser(req, res) {
     try {
-      const { username, email, password } = req.body; // 簡単なバリデーションのため
+      const { username, email, password, tenantId } = req.body; // tenantIdも受け取る
       if (!username || !email || !password) {
         return res.status(400).json({ message: 'ユーザー名、メールアドレス、パスワードは必須です。' });
       }
-      const userObject = await userService.createUserByAdmin(req.body, req.user.tenantId);
+      const userObject = await userService.createUserByAdmin(req.body, tenantId || req.user.tenantId);
       res.status(201).json(userObject);
     } catch (err) {
       res.status(err.statusCode || 500).json({ message: err.message || 'サーバーエラーが発生しました。' });

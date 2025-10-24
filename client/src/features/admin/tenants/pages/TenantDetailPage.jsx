@@ -150,6 +150,9 @@ function TenantDetailPage() {
         <Card.Footer className="d-flex justify-content-between flex-wrap gap-2">
           <div>
             <Button variant="outline-primary" className="me-2" onClick={() => handleOpenModal('edit')}>名前を編集</Button>
+            <Button as={Link} to="/admin/users/new" state={{ defaultTenantId: id }} variant="outline-info" className="me-2">
+              <i className="bi bi-person-plus me-1"></i>ユーザーを追加
+            </Button>
             <Button variant="outline-success" onClick={() => handleOpenModal('createSub')}>サブ部署を追加</Button>
           </div>
           <Button variant="outline-danger" onClick={() => setShowDeleteModal(true)}>この部署を削除</Button>

@@ -1,13 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('./user.model');
-const Tenant = require('../organization/tenant.model');
-const Role = require('../organization/role.model');
 const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');
-const { getAccessibleTenantIds } = require('../../core/services/permissionService');
 const UserController = require('./users.controllers');
 
 /**

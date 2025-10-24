@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Form, Button, Card, Alert, Spinner, InputGroup } from 'react-bootstrap';
 import { useAuth } from '../../../../providers/AuthProvider';
@@ -7,6 +7,7 @@ import { useAuth } from '../../../../providers/AuthProvider';
 function UserCreatePage() {
   const navigate = useNavigate();
 
+  const location = useLocation(); // ★ locationフックを使用
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -14,23 +15,35 @@ function UserCreatePage() {
     status: 'active',
     roles: ['user'], // デフォルトで 'user' ロールをセット
   });
+  const [allTenants, setAllTenants] = useState([]); // ★ テナント一覧を保持
   const [allRoles, setAllRoles] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false); // パスワード表示/非表示用のState
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user: currentUser } = useAuth();
+
   useEffect(() => {
-    // ページロード時に利用可能な全ロールを取得
-    const fetchRoles = async () => {
+    // ページロード時に利用可能な全ロールと全テナントを取得
+    const fetchData = async () => {
       try {
-        const res = await axios.get('/api/roles');
-        setAllRoles(res.data);
+        const [rolesRes, tenantsRes] = await Promise.all([
+          axios.get('/api/roles'),
+          axios.get('/api/tenants') // 階層化されたテナント一覧を取得
+        ]);
+        setAllRoles(rolesRes.data);
+        setAllTenants(tenantsRes.data);
+
+        // ★★★ 部署詳細ページから渡されたIDを初期値として設定 ★★★
+        const defaultTenantId = location.state?.defaultTenantId;
+        if (defaultTenantId) {
+          setFormData(prev => ({ ...prev, tenantId: defaultTenantId }));
+        }
       } catch (err) {
-        setError('ロールの取得に失敗しました。');
+        setError('初期データの取得に失敗しました。');
       }
     };
-    fetchRoles();
+    fetchData();
   }, [currentUser]);
 
   const onChange = (e) => {
@@ -86,6 +99,22 @@ function UserCreatePage() {
           <Form.Group className="mb-3" controlId="email">
             <Form.Label>メールアドレス</Form.Label>
             <Form.Control type="email" name="email" value={formData.email} onChange={onChange} required />
+          </Form.Group>
+
+          {/* ★★★ 所属部署選択ドロップダウンを追加 ★★★ */}
+          <Form.Group className="mb-3" controlId="tenantId">
+            <Form.Label>所属部署</Form.Label>
+            <Form.Select
+              name="tenantId"
+              value={formData.tenantId}
+              onChange={onChange}
+              required
+            >
+              <option value="">部署を選択してください</option>
+              {allTenants.map(tenant => (
+                <option key={tenant._id} value={tenant._id}>{tenant.name}</option>
+              ))}
+            </Form.Select>
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="password">
