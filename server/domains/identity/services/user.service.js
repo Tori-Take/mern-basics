@@ -164,34 +164,63 @@ class UserService {
 
   /**
    * ユーザーのプロフィール情報（メールアドレス）を更新します。
+   * @description Updates a user's profile information (username, email).
    * @param {string} userId - ユーザーのID。
-   * @param {string} newEmail - 新しいメールアドレス。
+   * @param {object} updateData - An object containing the data to update (e.g., { username, email }).
    * @returns {Promise<object>} 更新され、整形されたユーザーオブジェクト。
    * @throws {Error} ユーザーが見つからない、またはメールアドレスが重複している場合にエラーをスローします。
+   * @throws {CustomError} If user not found, or if email/username is already taken.
    */
-  async updateUserProfile(userId, newEmail) {
+  async updateUserProfile(userId, updateData) {
     const user = await this.userRepository.findById(userId);
     if (!user) {
-      const error = new Error('ユーザーが見つかりません。');
-      error.statusCode = 404;
-      throw error;
+      const err = new Error('ユーザーが見つかりません。');
+      err.statusCode = 404;
+      throw err;
     }
 
-    if (newEmail && newEmail !== user.email) {
-      if (await this.userRepository.findByEmail(newEmail)) {
-        const error = new Error('このメールアドレスは既に使用されています。');
-        error.statusCode = 400;
-        throw error;
-      }
-      user.email = newEmail;
+    // 変更があったかどうかを追跡するフラグ
+    let hasChanges = false;
+
+    // 1. ユーザー名の更新処理
+    if (updateData.username && updateData.username !== user.username) {
+      await this._validateAndSetUsername(user, updateData.username);
+      hasChanges = true;
     }
 
-    const updatedUser = await this.userRepository.save(user);
-    const populatedUser = await this.userRepository.findById(updatedUser._id)
-      .select('-password')
-      .populate('tenantId', 'name parent');
+    // 2. メールアドレスの更新処理
+    if (updateData.email && updateData.email !== user.email) {
+      await this._validateAndSetEmail(user, updateData.email);
+      hasChanges = true;
+    }
 
-    return populatedUser.toObject();
+    // 3. 変更があった場合のみDBに保存
+    if (hasChanges) {
+      await this.userRepository.save(user);
+    }
+
+    return this.getAuthenticatedUser(user._id); // 整形処理を共通化
+  }
+
+  async _validateAndSetUsername(user, newUsername) {
+    const existingUser = await this.userRepository.findByUsernameInTenant(newUsername, user.tenantId, user._id);
+    if (existingUser) {
+      const err = new Error('このユーザー名は既に使用されています。');
+      err.statusCode = 400;
+      throw err;
+    }
+    user.username = newUsername;
+  }
+
+  async _validateAndSetEmail(user, newEmail) {
+    const existingUser = await this.userRepository.findByEmail(newEmail);
+    // 他のユーザーがこのメールアドレスを使用していないかチェック
+    if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+      const err = new Error('このメールアドレスは既に使用されています。');
+      err.statusCode = 400;
+      throw err;
+    }
+    user.email = newEmail;
   }
 
   /**

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDD導入計画 - プロフィール更新機能編</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+            color: #1a5276;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding: 10px 15px;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .step-card {
+            margin-top: 25px;
+            padding: 25px;
+            border-radius: 8px;
+        }
+
+        .red {
+            border-left: 5px solid #c0392b;
+            background-color: #fdedec;
+        }
+
+        .green {
+            border-left: 5px solid #27ae60;
+            background-color: #eafaf1;
+        }
+
+        .refactor {
+            border-left: 5px solid #f39c12;
+            background-color: #fef9e7;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>TDD導入計画</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">プロフィール更新機能で学ぶ、品質向上の新サイクル</p>
+
+    <div class="card">
+        <h2>はじめに</h2>
+        <p>
+            これまでの学習で、私たちのプロジェクトはバックエンドとフロントエンドの両方に自動テストという強力なセーフティネットを備えました。
+            次なるステップとして、私たちは「テストを開発の道しるべにする」開発スタイル、<strong>テスト駆動開発（TDD）</strong>の習得を目指します。
+        </p>
+        <p>
+            題材として、すでに存在する「ユーザープロフィール更新機能」のバックエンドAPI (<code>PUT /api/users/profile</code>) を選択します。
+            この機能にTDDのサイクルを適用することで、既存コードの品質を保証し、より堅牢なものへと進化させる実践的なスキルを学びます。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>開発ロードマップ：Red → Green → Refactor</h2>
+        <p>以下の3ステップからなる短いサイクルを繰り返し、機能を完成させます。</p>
+
+        <div class="step-card red">
+            <h3>ステップ1：[RED] 失敗するテストを書く</h3>
+            <p><strong>目的：</strong>これから保証したい「機能の理想の振る舞い」をテストコードとして定義し、現状ではその保証がまだ無いことを「失敗」によって証明します。</p>
+            <p><strong>作業内容：</strong><code>users.routes.test.js</code>に、「ログインユーザーが名前を更新したら、成功して更新後の情報が返る」というテストケースを追加します。
+            </p>
+        </div>
+
+        <div class="step-card green">
+            <h3>ステップ2：[GREEN] テストを通過させる</h3>
+            <p><strong>目的：</strong>ステップ1で書いたテストをパスさせるため、最小限のコードを実装します。ここではコードの綺麗さよりも、まずテストを「緑」にすることが最優先です。</p>
+            <p><strong>作業内容：</strong><code>users.controllers.js</code>や<code>users.service.js</code>を修正・追記し、テストが期待するレスポンスを返すようにします。
+            </p>
+        </div>
+
+        <div class="step-card refactor">
+            <h3>ステップ3：[REFACTOR] リファクタリング</h3>
+            <p><strong>目的：</strong>テストが成功しているという安心感を武器に、コードを「清書」します。アーキテクチャに沿った、クリーンで保守性の高いコードに磨き上げます。</p>
+            <p><strong>作業内容：</strong>ステップ2で書いたコードの変数名を改善したり、ロジックを適切な場所に移動したりします。リファクタリング後も、テストが成功し続けることを確認します。</p>
+        </div>
+    </div>
+
+</body>
+
+</html>

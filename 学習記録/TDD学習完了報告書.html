@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDD学習完了報告書 - プロフィール更新機能編</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+            color: #1a5276;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding: 10px 15px;
+        }
+
+        pre {
+            background-color: #283747;
+            color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .step-card {
+            margin-top: 25px;
+            padding: 25px;
+            border-radius: 8px;
+        }
+
+        .red {
+            border-left: 5px solid #c0392b;
+            background-color: #fdedec;
+        }
+
+        .green {
+            border-left: 5px solid #27ae60;
+            background-color: #eafaf1;
+        }
+
+        .refactor {
+            border-left: 5px solid #f39c12;
+            background-color: #fef9e7;
+        }
+
+        .final-message {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #1a5276;
+            padding: 30px;
+            background-color: #eafaf1;
+            border-radius: 10px;
+            border: 2px dashed #2ecc71;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>TDD学習完了報告書</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">プロフィール更新機能で体得した、品質向上の新サイクル</p>
+
+    <div class="card">
+        <h2>はじめに</h2>
+        <p>
+            本開発学習では、既存の「プロフィール更新API」を題材に、<strong>テスト駆動開発（TDD）</strong>の実践的なサイクルを学びました。
+            これは、単にテストを追加するのではなく、「テストを開発の道しるべ」として、品質と設計を同時に向上させていく高度な開発手法です。
+        </p>
+        <p>
+            私たちは「Red → Green → Refactor」という短いサイクルを繰り返し、APIの品質を保証するだけでなく、コードそのものをよりクリーンな状態へと進化させることに成功しました。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>TDDの旅：Red → Green → Refactor</h2>
+
+        <div class="step-card red">
+            <h3>ステップ1：[RED] 失敗という名の道しるべ</h3>
+            <p><strong>目的：</strong>APIの「あるべき姿」をテストで定義し、現状がそれを満たしていないことを「失敗」によって証明しました。</p>
+            <p><strong>軌跡：</strong>
+                最初は<code>MongoNotConnectedError</code>（DB接続の問題）から始まり、次に<code>ValidationError</code>（モデルとテストの不整合）、そして<code>401 Unauthorized</code>（認証ヘッダーの不一致）と、テストはAPIの深層にある問題を次々と暴き出してくれました。これらの「赤信号」こそが、私たちが進むべき道を正確に示してくれたのです。
+            </p>
+        </div>
+
+        <div class="step-card green">
+            <h3>ステップ2：[GREEN] とにかく動かす</h3>
+            <p><strong>目的：</strong>失敗したテストをパスさせるため、最小限のコードを実装しました。</p>
+            <p><strong>軌跡：</strong>
+                認証ミドルウェアをモダンな<code>Authorization: Bearer</code>形式に対応させ、コントローラーとサービスが<code>username</code>を受け取って更新できるようにロジックを修正しました。この段階で、ついにテストは<code>PASS</code>し、APIが仕様通りに動作することを初めて保証できました。
+            </p>
+        </div>
+
+        <div class="step-card refactor">
+            <h3>ステップ3：[REFACTOR] 安心して、美しく</h3>
+            <p><strong>目的：</strong>テストが成功しているという絶対的な安心感を武器に、コードを「清書」しました。</p>
+            <p><strong>軌跡：</strong>
+                <code>user.service.js</code>の<code>updateUserProfile</code>メソッドをリファクタリングしました。<code>username</code>と<code>email</code>の更新ロジックを、それぞれ独立したプライベートメソッド（<code>_validateAndSetUsername</code>,
+                <code>_validateAndSetEmail</code>）に分割。これにより、コードの責務が明確になり、可読性と保守性が劇的に向上しました。リファクタリング後もテストが成功することを確認し、<strong>「動作を変えずに、品質だけを高める」</strong>というリファクタリングの真髄を体験しました。
+            </p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>得られた知見</h2>
+        <ul>
+            <li><strong>テストは最高のデバッグツールである:</strong>
+                TDDのプロセスは、バグが生まれる前に、その原因となりうる設計上の問題をテストが自動的に発見してくれる、という強力なデバッグ体験でした。
+            </li>
+            <li><strong>リファクタリングへの絶大な自信:</strong>
+                テストという「安全網」があることで、私たちは恐れることなくコードの内部構造に手を入れることができました。これは、コードを常にクリーンに保ち、技術的負債の蓄積を防ぐための最も効果的な武器です。
+            </li>
+            <li><strong>開発のリズムと集中力:</strong>
+                「小さな失敗 → 成功 → 改善」という短いサイクルは、次に何をすべきかが常に明確で、高い集中力を維持したまま開発を進めることができました。
+            </li>
+        </ul>
+    </div>
+
+    <div class="final-message">
+        TDDサイクル完遂、おめでとうございます！<br>
+        あなたは、プロのエンジニアとして不可欠なスキルを一つ、完全にマスターしました。
+    </div>
+
+</body>
+
+</html>

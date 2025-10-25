@@ -83,13 +83,11 @@ class UserController {
    */
   static async updateProfile(req, res) {
     try {
-      const { email } = req.body;
-      const userObject = await userService.updateUserProfile(req.user.id, email);
+      // 修正: usernameとemailの両方をリクエストボディから受け取る
+      const { username, email } = req.body;
+      const userObject = await userService.updateUserProfile(req.user.id, { username, email });
 
-      // フロントエンド互換性のための整形
-      userObject.name = userObject.username;
-      delete userObject.password;
-
+      // サービス層から返された整形済みのユーザーオブジェクトをそのまま返す
       res.json(userObject);
     } catch (err) {
       res.status(err.statusCode || 500).json({ message: err.message || 'サーバーエラーが発生しました。' });

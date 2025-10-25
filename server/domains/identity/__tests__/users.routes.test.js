@@ -1,26 +1,29 @@
 const request = require('supertest');
+const mongoose = require('mongoose');
 const app = require('../../../app'); // 分離したExpressアプリ本体
 const { connectDB, disconnectDB, clearDB } = require('../../../core/config/db.memory');
 const User = require('../user.model');
 const Tenant = require('../../organization/tenant.model');
+const generateToken = require('../../../core/utils/generateToken');
+
+// --- テスト全体のセットアップ ---
+// 全てのテストの前に一度だけ実行：インメモリDBに接続
+beforeAll(async () => {
+  await connectDB();
+});
+
+// 各テストケースの後処理：DBをクリーンアップ
+afterEach(async () => {
+  await clearDB();
+});
+
+// 全てのテストの後に一度だけ実行：DBから切断
+afterAll(async () => {
+  await disconnectDB();
+});
 
 // ユーザー認証関連API（登録・ログイン）のテストをグループ化
 describe('User Authentication Routes', () => {
-
-  // 全てのテストの前に一度だけ実行：インメモリDBに接続
-  beforeAll(async () => {
-    await connectDB();
-  });
-
-  // 各テストケースの後処理：DBをクリーンアップ
-  afterEach(async () => {
-    await clearDB();
-  });
-
-  // 全てのテストの後に一度だけ実行：DBから切断
-  afterAll(async () => {
-    await disconnectDB();
-  });
 
   // --- ユーザー登録APIのテスト ---
   describe('POST /api/users/register', () => {
@@ -188,4 +191,84 @@ describe('User Authentication Routes', () => {
     });
   });
 
+});
+
+describe('PUT /api/users/profile - User Profile Update', () => {
+  let user;
+  let token;
+  const newName = '新しい名前';
+  // 各テストの前に、DBをクリアし、テスト用のユーザーを作成・ログインしてトークンを生成する
+  beforeEach(async () => {
+    user = new User({
+      // 修正: スキーマに合わせて `username` を使用する
+      username: 'テストユーザー',
+      email: 'test.profile@example.com',
+      password: 'password123',
+      tenantId: new mongoose.Types.ObjectId(),
+      roles: ['user'],
+    });
+    await user.save();
+
+    // ログインしてトークンを取得
+    token = generateToken(user._id);
+  });
+
+  it('should allow a logged-in user to update their own name and return the updated user', async () => {
+    // 1. APIにリクエストを送信
+    const res = await request(app)
+      .put('/api/users/profile')
+      .set('Authorization', `Bearer ${token}`) // 認証ヘッダー
+      .send({ username: newName }); // 修正: `username` を送信する
+
+    // 2. レスポンスを検証
+    expect(res.statusCode).toEqual(200); // 成功ステータスが返ってくるはず
+    expect(res.body).toHaveProperty('username', newName); // 修正: `username` を検証する
+    expect(res.body).not.toHaveProperty('password'); // パスワードは含まれていないはず
+
+    // 3. データベースの状態を検証
+    const updatedUserInDb = await User.findById(user._id);
+    expect(updatedUserInDb.username).toBe(newName); // 修正: `username` を検証する
+  });
+
+  it('should allow a logged-in user to update their own email and return the updated user', async () => {
+    const newEmail = 'new.profile@example.com';
+
+    // 1. APIにリクエストを送信
+    const res = await request(app)
+      .put('/api/users/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ email: newEmail });
+
+    // 2. レスポンスを検証
+    expect(res.statusCode).toEqual(200);
+    expect(res.body).toHaveProperty('email', newEmail);
+    expect(res.body).not.toHaveProperty('password');
+
+    // 3. データベースの状態を検証
+    const updatedUserInDb = await User.findById(user._id);
+    expect(updatedUserInDb.email).toBe(newEmail);
+  });
+
+  it('should return 400 if the new email is already taken by another user', async () => {
+    const existingEmail = 'existing@example.com';
+
+    // 1. 準備: 別のユーザーが使用しているメールアドレスを準備
+    await new User({
+      username: 'anotherUser',
+      email: existingEmail,
+      password: 'password123',
+      tenantId: new mongoose.Types.ObjectId(),
+      roles: ['user'],
+    }).save();
+
+    // 2. APIにリクエストを送信 (ログイン中のユーザーが、既存のメールアドレスに更新しようとする)
+    const res = await request(app)
+      .put('/api/users/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ email: existingEmail });
+
+    // 3. レスポンスを検証
+    expect(res.statusCode).toEqual(400);
+    expect(res.body).toHaveProperty('message', 'このメールアドレスは既に使用されています。');
+  });
 });
