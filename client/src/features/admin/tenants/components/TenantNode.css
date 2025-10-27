@@ -1,21 +1,21 @@
-.tree-root {
+.tenant-node-list { /* リストビューのli要素をターゲット */
   list-style-type: none;
   padding-left: 20px;
 }
 
-.tree-root .selected {
+.tenant-node-list .selected { /* リストビューの選択されたspan要素をターゲット */
   background-color: #0d6efd;
   color: white;
   border-radius: 4px;
   padding: 2px 5px;
 }
 
-.tree-root span {
+.tenant-node-list span { /* リストビューのspan要素をターゲット */
   cursor: pointer;
   padding: 2px 5px;
 }
 
-.tree-root span:hover {
+.tenant-node-list span:hover { /* リストビューのspan要素のホバー状態をターゲット */
   background-color: #e9ecef;
   border-radius: 4px;
 }

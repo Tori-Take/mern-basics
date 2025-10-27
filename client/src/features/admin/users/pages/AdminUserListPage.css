@@ -1,0 +1,10 @@
+.username-link {
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+}
+
+.username-link:hover {
+  text-decoration: underline;
+  color: #0d6efd; /* Bootstrap's primary blue color */
+}

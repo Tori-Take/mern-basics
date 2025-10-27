@@ -61,7 +61,7 @@ function AdminUserListPage() {
             <tbody>
               {users.map(user => (
                 <tr key={user._id}>
-                  <td><Link to={`/admin/users/${user._id}`}>{user.username}</Link></td>
+                  <td>{user.username}</td>
                   <td>{user.email}</td>
                   <td>{user.roles.join(', ')}</td>
                   <td>
@@ -70,7 +70,7 @@ function AdminUserListPage() {
                     </span>
                   </td>
                   <td>
-                    <Link to={`/admin/users/${user._id}`} className="btn btn-outline-primary btn-sm me-2">
+                    <Link to={`/admin/users/${user._id}`} className="btn btn-outline-primary btn-sm">
                       編集
                     </Link>
                   </td>

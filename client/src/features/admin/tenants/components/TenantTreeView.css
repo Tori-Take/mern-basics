@@ -1,81 +1,64 @@
-/* ツリー全体のコンテナ */
 .tree-container {
-  overflow-x: auto; /* 横スクロールを有効にする */
+  overflow-x: auto;
   padding: 20px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
 }
 
-/* ツリーのルート */
 .tree-root {
   list-style-type: none;
-  padding-left: 0;
-  display: inline-block; /* コンテンツの幅に合わせる */
-  min-width: 100%;
-  white-space: nowrap; /* 折り返しを防ぐ */
+  margin: 0;
+  padding: 0;
+  display: inline-block; /* for white-space: nowrap to work */
 }
 
-/* 各ノードの基本スタイル */
 .tenant-node {
   position: relative;
-  padding-left: 60px; /* 線を描画するスペースを広げる */
+  padding-left: 30px; /* Space for the connector lines */
+}
+
+.children-container {
   list-style-type: none;
-  margin-top: 10px;
+  padding: 0;
+  margin: 0;
+  padding-left: 30px; /* Indent children */
 }
 
-/* ルートノードのスタイル調整 */
+/* Vertical line coming down from parent */
+.tenant-node::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -15px; /* Adjust based on card margin */
+  height: 100%;
+  border-left: 1px solid #ccc;
+}
+
+/* Horizontal line connecting to the node card */
+.tenant-node::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25px; /* Vertically center with the card */
+  width: 30px;
+  border-top: 1px solid #ccc;
+}
+
+/* Hide lines for the root node */
 .tree-root > .tenant-node {
-  padding-left: 0; /* ルートノードはインデント不要 */
+  padding-left: 0;
 }
-
-/* ルートノードの上には線を描画しない */
 .tree-root > .tenant-node::before,
 .tree-root > .tenant-node::after {
   display: none;
 }
 
-/* 子要素のコンテナ */
-.children-container {
-  list-style-type: none;
-  padding-left: 0;
-  margin-top: 10px;
+/* Adjust line for the last child node */
+.tenant-node:last-child::before {
+  height: 40px; /* Stop the vertical line at the card */
 }
 
-/* ノードのカードスタイル */
 .tenant-card {
-  padding: 5px 20px; /* 上下のパディングを減らす */
-}
-
-/* --- 線を描画するための疑似要素 --- */
-
-/* ノードから親へ伸びる水平線 */
-.tenant-node::before {
-  content: '';
-  position: absolute;
-  top: 17px; /* カードの高さに合わせて中央を調整 */
-  left: 20px; /* ★ 水平線の開始位置を右に20pxずらす */
-  border-top: 1px solid #adb5bd;
-  width: 40px; /* padding-left(60px) - left(20px) = 40px */
-  height: 0;
-}
-
-/* 親から子へ伸びる垂直線 */
-.tenant-node::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 20px; /* ★ 垂直線の位置を右に20pxずらす */
-  border-left: 1px solid #adb5bd;
-  height: 100%;
-}
-
-/* 最後のノードの下に伸びる余分な線を消す */
-.tenant-node:last-child::after {
-  height: 17px; /* カードの高さに合わせて中央を調整 */
-}
-
-/* アクセス不可ノードのスタイル */
-.tenant-card-inaccessible {
-  background-color: #e9ecef; /* 少しグレーにする */
+  min-width: 150px;
+  margin: 15px 0;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  display: inline-block;
 }

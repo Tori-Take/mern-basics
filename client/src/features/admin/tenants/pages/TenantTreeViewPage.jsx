@@ -84,7 +84,7 @@ const TenantTreeViewPage = () => {
         </Card.Header>
         <Card.Body className="tree-container">
           <ul className="tree-root">
-            {treeData.map(rootNode => <TenantNode key={rootNode._id} node={rootNode} />)}
+            {treeData.map(rootNode => <TenantNode key={rootNode._id} node={rootNode} viewMode="card" />)}
           </ul>
         </Card.Body>
       </Card>

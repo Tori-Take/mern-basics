@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { Form, Button, Card, Alert, Spinner, InputGroup } from 'react-bootstrap';
+import { Form, Button, Card, Alert, Spinner, InputGroup, Modal } from 'react-bootstrap';
 import { useAuth } from '../../../../providers/AuthProvider';
+import TenantNode from '../../../admin/tenants/components/TenantNode';
+import '../../../admin/tenants/components/TenantNode.css';
 
 function UserCreatePage() {
   const navigate = useNavigate();
-
   const location = useLocation(); // ★ locationフックを使用
   const [formData, setFormData] = useState({
     username: '',
@@ -14,6 +15,7 @@ function UserCreatePage() {
     password: '',
     status: 'active',
     roles: ['user'], // デフォルトで 'user' ロールをセット
+    tenantId: null, // ★ tenantIdを管理
   });
   const [allTenants, setAllTenants] = useState([]); // ★ テナント一覧を保持
   const [allRoles, setAllRoles] = useState([]);
@@ -22,6 +24,12 @@ function UserCreatePage() {
   const [showPassword, setShowPassword] = useState(false); // パスワード表示/非表示用のState
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user: currentUser } = useAuth();
+
+  // モーダル関連のState
+  const [showModal, setShowModal] = useState(false);
+  const [treeData, setTreeData] = useState([]);
+  const [treeLoading, setTreeLoading] = useState(false);
+  const [selectedTenantId, setSelectedTenantId] = useState(null);
 
   useEffect(() => {
     // ページロード時に利用可能な全ロールと全テナントを取得
@@ -37,14 +45,14 @@ function UserCreatePage() {
         // ★★★ 部署詳細ページから渡されたIDを初期値として設定 ★★★
         const defaultTenantId = location.state?.defaultTenantId;
         if (defaultTenantId) {
-          setFormData(prev => ({ ...prev, tenantId: defaultTenantId }));
+          setSelectedTenantId(defaultTenantId);
         }
       } catch (err) {
         setError('初期データの取得に失敗しました。');
       }
     };
     fetchData();
-  }, [currentUser]);
+  }, [currentUser, location.state]);
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -70,9 +78,16 @@ function UserCreatePage() {
     setError('');
     setSuccess('');
     setIsSubmitting(true);
+
+    // ★ 選択された部署IDをフォームデータに含める
+    const submissionData = {
+      ...formData,
+      tenantId: selectedTenantId,
+    };
+
     try {
       // POSTエンドポイントを使用して新しいユーザーを作成
-      await axios.post('/api/users', formData);
+      await axios.post('/api/users', submissionData);
       setSuccess('新しいユーザーが正常に作成されました。');
       // 2秒後にユーザー一覧にリダイレクト
       setTimeout(() => navigate('/admin/users'), 2000);
@@ -82,6 +97,31 @@ function UserCreatePage() {
       setIsSubmitting(false);
     }
   };
+
+  const handleOpenModal = async () => {
+    setShowModal(true);
+    setTreeLoading(true);
+    try {
+      const res = await axios.get('/api/tenants/tree');
+      setTreeData(res.data);
+    } catch (err) {
+      setError('組織図の取得に失敗しました。');
+    } finally {
+      setTreeLoading(false);
+    }
+  };
+
+  const handleNodeClick = (node) => {
+    setSelectedTenantId(node._id);
+  };
+
+  const handleSelectDepartment = () => {
+    // この関数はモーダルを閉じるだけ。実際のIDはselectedTenantIdで管理
+    setShowModal(false);
+  };
+
+  // ★ 表示用の部署名を取得
+  const tenantName = allTenants.find(t => t._id === selectedTenantId)?.name || '未選択';
 
   return (
     <Card className="shadow-sm">
@@ -102,19 +142,12 @@ function UserCreatePage() {
           </Form.Group>
 
           {/* ★★★ 所属部署選択ドロップダウンを追加 ★★★ */}
-          <Form.Group className="mb-3" controlId="tenantId">
+          <Form.Group className="mb-3">
             <Form.Label>所属部署</Form.Label>
-            <Form.Select
-              name="tenantId"
-              value={formData.tenantId}
-              onChange={onChange}
-              required
-            >
-              <option value="">部署を選択してください</option>
-              {allTenants.map(tenant => (
-                <option key={tenant._id} value={tenant._id}>{tenant.name}</option>
-              ))}
-            </Form.Select>
+            <div className="d-flex align-items-center">
+              <Form.Control type="text" value={tenantName} readOnly required className="me-2" />
+              <Button variant="outline-primary" onClick={handleOpenModal}>選択</Button>
+            </div>
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="password">
@@ -173,6 +206,28 @@ function UserCreatePage() {
           </div>
         </Form>
       </Card.Body>
+
+      {/* 部署選択モーダル */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>部署の選択</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {treeLoading ? (
+            <div className="text-center"><Spinner animation="border" /></div>
+          ) : (
+            <ul className="tree-root">
+              {treeData.map(rootNode => (
+                <TenantNode key={rootNode._id} node={rootNode} onNodeClick={handleNodeClick} selectedTenantId={selectedTenantId} />
+              ))}
+            </ul>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>キャンセル</Button>
+          {selectedTenantId && <Button variant="primary" onClick={handleSelectDepartment}>決定</Button>}
+        </Modal.Footer>
+      </Modal>
     </Card>
   );
 }
