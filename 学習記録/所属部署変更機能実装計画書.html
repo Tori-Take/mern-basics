@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDD実践記録：所属部署変更機能の実装</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+            color: #1a5276;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding: 10px 15px;
+        }
+
+        pre {
+            background-color: #283747;
+            color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .step-card {
+            margin-top: 25px;
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 5px solid #f39c12;
+            background-color: #fef9e7;
+        }
+
+        .step-card h3 {
+            color: #b7791f;
+            border-bottom-color: #f39c12;
+        }
+
+        .ui-mockup {
+            border: 2px dashed #bdc3c7;
+            padding: 20px;
+            background-color: #fdfefe;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .phase-card {
+            margin-top: 25px;
+            padding: 25px;
+            border-radius: 8px;
+        }
+
+        .phase-1 {
+            border-left: 5px solid #3498db;
+            background-color: #ecf5fb;
+        }
+
+        .prompt-box,
+        .response-box {
+            background-color: #fdfefe;
+            border: 1px solid #e5e7e9;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+        }
+
+        .prompt-box h3,
+        .response-box h3 {
+            margin-top: 0;
+            font-size: 1.2em;
+            color: #566573;
+            border-bottom: 1px solid #e5e7e9;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>所属部署変更機能 実装計画書</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">管理者による、視覚的なユーザー所属部署の変更機能</p>
+    <div class="card">
+        <h2>1. 本開発の目的：CDDプロセスの実践と確立</h2>
+        <p>
+            本開発は、単に「所属部署変更機能」を実装するだけでなく、私たちが定義した<strong>対話駆動開発（CDD）</strong>のプロセスと、そのベストプラクティスを実践・検証するための、最初の公式な実験モデルと位置づけます。
+        </p>
+        <p>
+            機能開発と並行して、「AIと人間がどのように協業すれば、手戻りを最小限にし、最高の品質と速度を達成できるか」という方法論を探求し、その軌跡をこのドキュメントに記録していきます。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>2. CDDフェーズ1：対話と計画 (Conversation & Planning)</h2>
+        <p>
+            人間が「何を」「なぜ」作りたいかを定義し、AIが技術的な実現プランを提示。対話を通じて、開発の羅針盤となる「計画」に合意するフェーズ。
+        </p>
+        <div class="phase-card phase-1">
+            <div class="prompt-box">
+                <h3>👤 人間の問い (Human's Prompt)</h3>
+                <p>「プロフィール更新機能で所属の変更機能を実装させたいです。adminユーザだけの機能で、adminユーザの所属以下で変更が可能ってのが良いね。それで更新方法として、所属部署は組織図から選択するってのはどうかな？」
+                </p>
+            </div>
+            <div class="response-box">
+                <h3>🤖 AIの応答 (Context Confirmation)</h3>
+                <p>
+                    （CDDベストプラクティス集 テクニック4：コンテキスト確認応答の実践）<br>
+                    人間から関連ファイル群（技術的コンテキスト）の提供を受けた後、AIは意味的コンテキストのズレを防ぐために、以下の通り理解を要約し、承認を求めました。
+                </p>
+                <ul>
+                    <li><strong>目的:</strong> 管理者が、管理下にあるユーザーの所属部署を、組織図から視覚的に選択して変更できる機能を実装する。</li>
+                    <li><strong>アプローチ:</strong> 大規模な機能であるため、「バックエンドAPIの強化」と「フロントエンドUIの実装」の2フェーズに分けて進める。</li>
+                    <li><strong>影響範囲:</strong> バックエンドのユーザー更新APIと権限チェックロジック、フロントエンドのユーザー編集ページに改修が必要。</li>
+                </ul>
+            </div>
+            <div class="response-box" style="margin-top: 20px;">
+                <h3>🗣️ 対話による深化</h3>
+                <p>
+                    この確認応答をきっかけに、「コンテキスト」にはAIがファイルを認識する【技術的コンテキスト】と、目的を共有する【意味的コンテキスト】の2階層があるという、より深いレベルでの共通認識が生まれました。この発見は<code>CDDベストプラクティス集.html</code>に追記され、私たちの開発プロセスをさらに洗練させました。
+                </p>
+            </div>
+            <div class="prompt-box" style="margin-top: 20px; background-color: #eafaf1;">
+                <h3>🤝 合意形成 (Agreement)</h3>
+                <p>この対話を通じて、AIの理解が正しいことを確認。この内容に基づき、より詳細な実装計画書（このドキュメント）を作成する方針で合意しました。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>3. CDDフェーズ2：テスト駆動の実装計画</h2>
+        <p>合意した計画に基づき、「Red → Green → Refactor」のサイクルを回し、安全かつ確実に機能を構築していきます。</p>
+
+        <div class="step-card">
+            <h3>サイクル1：【完了】バックエンドAPIの権限強化</h3>
+            <p><strong>対象ファイル:</strong> <code>server/domains/identity/__tests__/users.routes.test.js</code></p>
+            <ol>
+                <li><strong>[RED] 失敗するテストの作成:</strong>
+                    「管理者が、自身の管理範囲外の部署にユーザーを異動させようとした場合、APIは<code>403 Forbidden</code>エラーを返す」というテストを作成。実行結果は期待通り<code>Expected: 403, Received: 200</code>となり、権限チェックが未実装であることを証明しました。
+                </li>
+                <li><strong>[GREEN] テストをパスさせる:</strong>
+                    <code>user.service.js</code>に権限チェックロジックを実装し、テストを成功させました。
+                </li>
+                <li><strong>[REFACTOR] リファクタリング:</strong>
+                    権限チェックロジックを、責務が明確なプライベートメソッド<code>_validateTenantMovePermission</code>に切り出し、保守性の高いクリーンなコードを達成しました。
+                </li>
+            </ol>
+        </div>
+
+        <div class="step-card">
+            <h3>サイクル2：【完了】フロントエンド：「部署を変更」ボタンの表示</h3>
+            <p><strong>対象ファイル:</strong> <code>client/src/features/admin/users/pages/AdminUserEditPage.test.jsx</code>
+            </p>
+            <ol>
+                <li><strong>[RED] 失敗するテストの作成:</strong> 「ページに『部署を変更』ボタンが表示される」というテストを追加し、「ボタンが見つからない」エラーで失敗させました。</li>
+                <li><strong>[GREEN] テストをパスさせる:</strong>
+                    <code>AdminUserEditPage.jsx</code>に<code>Button</code>コンポーネントを追加し、テストを成功させました。
+                </li>
+            </ol>
+        </div>
+
+        <div class="step-card">
+            <h3>サイクル3：【完了】フロントエンド：組織図モーダルの表示</h3>
+            <p><strong>対象ファイル:</strong> <code>client/src/features/admin/users/pages/AdminUserEditPage.test.jsx</code>
+            </p>
+            <ol>
+                <li><strong>[RED] 失敗するテストの作成:</strong> 「ボタンをクリックするとモーダルが開く」というテストを追加。モーダルタイトルが見つからず失敗しました。</li>
+                <li><strong>[GREEN] テストをパスさせる:</strong>
+                    <code>AdminUserEditPage.jsx</code>に<code>Modal</code>コンポーネントと表示状態を管理する<code>useState</code>を実装しました。
+                </li>
+                <li><strong>[REFACTOR] リファクタリング:</strong>
+                    テストが<code>react-bootstrap</code>の内部実装（<code>div</code>タグ）に依存して失敗したため、クエリを<code>findByRole('heading')</code>から、より柔軟な<code>findByText</code>に修正し、堅牢性を高めました。
+                </li>
+            </ol>
+        </div>
+
+        <div class="step-card">
+            <h3>サイクル4：【完了】フロントエンド：モーダル内への組織図コンポーネント表示</h3>
+            <p><strong>対象ファイル:</strong> <code>client/src/features/admin/users/pages/AdminUserEditPage.test.jsx</code>
+            </p>
+            <ol>
+                <li><strong>[RED] 失敗するテストの作成:</strong>
+                    「モーダル内に組織図コンポーネントが表示される」というテストを追加。組織図データを取得するAPIのモックが不足していたため、<code>TypeError: treeData.map is not a function</code>でコンポーネントがクラッシュし、テストは失敗しました。
+                </li>
+                <li><strong>[GREEN] テストをパスさせる:</strong>
+                    <code>TenantNode.jsx</code>を新規作成し、<code>AdminUserEditPage.jsx</code>に組織図データを取得するロジックを追加。テストコードでは、テスト間のモック汚染を防ぐために<code>mockResolvedValueOnce</code>を適切に使用し、複数のAPI呼び出しを正しくシミュレートすることで、すべてのテストを成功させました。
+                </li>
+            </ol>
+        </div>
+
+        <div class="step-card">
+            <h3>サイクル5：【完了】フロントエンド：組織図上の部署選択機能</h3>
+            <ol>
+                <li><strong>[RED] 失敗するテストの作成:</strong>
+                    「組織図の部署名をクリックすると、その部署が選択状態になり『更新』ボタンが表示される」というテストを追加。コンポーネントがクリックイベントを処理するロジックを持っていなかったため、<code>TypeError: onNodeClick is not a function</code>でテストは失敗しました。
+                </li>
+                <li><strong>[GREEN] テストをパスさせる:</strong>
+                    <code>AdminUserEditPage</code>に選択された部署IDを管理するstateと、クリックを処理するハンドラを追加。<code>TenantNode</code>がpropsを受け取って選択状態を反映するように修正し、テストを成功させました。
+                </li>
+                <li><strong>[REFACTOR] リファクタリング:</strong>
+                    <code>TenantNode</code>のインラインスタイルを専用のCSSファイルに分離し、コンポーネントの関心を分離させました。
+                </li>
+            </ol>
+        </div>
+
+        <div class="step-card">
+            <h3>サイクル6：【完了】フロントエンド：部署更新APIの連携</h3>
+            <ol>
+                <li><strong>[RED] 失敗するテストの作成:</strong>
+                    「更新ボタンをクリックすると、APIが呼び出され、画面の所属部署名が更新される」というテストを追加。API呼び出しロジックが未実装のため、テストは失敗しました。
+                </li>
+                <li><strong>[GREEN] テストをパスさせる:</strong>
+                    <code>handleUpdateDepartment</code>ハンドラを実装し、<code>axios.put</code>でAPIを呼び出し、成功レスポンスでstateを更新するようにしました。
+                </li>
+                <li><strong>[REFACTOR] リファクタリング:</strong>
+                    テストがHTML構造に依存しすぎて脆くなっていたため（<code>&lt;strong&gt;</code>タグによるテキストの分断）、テスト対象の要素に<code>data-testid</code>属性を付与し、より堅牢で意図の明確なテストに改善しました。
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>4. CDDフェーズ3：レビューと記録</h2>
+        <p>これにて「所属部署変更機能」の実装は完了です。バックエンドの権限チェックからフロントエンドのインタラクティブなUIまで、TDDサイクルを通じて安全かつ確実に機能を構築することができました。</p>
+        <p>今回の開発で得られた知見（テストの独立性、堅牢なクエリの選択など）は、今後の開発における貴重な財産となります。</p>
+    </div>
+
+</body>
+
+</html>
+```
+
+---
+
+計画書の準備は整いました。
+この計画書に従い、まずは**フェーズ1：バックエンドAPI強化**から着手しましょう。
+
+準備がよろしければ、ステップ2の「TDDによる権限チェックのテスト」の最初のステップ、**[RED] 失敗するテストの作成**から具体的にサポートします。
+
+<!--
+[PROMPT_SUGGESTION]はい、計画書を確認しました。バックエンドの「失敗するテスト」作成をお願いします。[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]バックエンドの権限チェックロジックについて、もう少し詳しく教えてください。[/PROMPT_SUGGESTION]
+-->

@@ -272,3 +272,56 @@ describe('PUT /api/users/profile - User Profile Update', () => {
     expect(res.body).toHaveProperty('message', 'このメールアドレスは既に使用されています。');
   });
 });
+
+describe('PUT /api/users/:id - User Update by Admin', () => {
+  let topTenant, subTenantA, subTenantB;
+  let adminUser, targetUser;
+  let adminToken;
+
+  beforeEach(async () => {
+    // 1. テスト用の組織構造を作成
+    topTenant = await new Tenant({ name: '本社' }).save();
+    subTenantA = await new Tenant({ name: '営業部', parent: topTenant._id }).save();
+    subTenantB = await new Tenant({ name: '開発部', parent: topTenant._id }).save();
+
+    // 2. テスト用のユーザーを作成
+    // 営業部長（管理者）
+    adminUser = await new User({
+      username: '営業部長',
+      email: 'admin-a@example.com',
+      password: 'password123',
+      tenantId: subTenantA._id, // 営業部に所属
+      roles: ['admin', 'user'],
+    }).save();
+
+    // 異動対象の営業部員
+    targetUser = await new User({
+      username: '営業部員',
+      email: 'user-a@example.com',
+      password: 'password123',
+      tenantId: subTenantA._id, // 営業部に所属
+      roles: ['user'],
+    }).save();
+
+    // 3. 管理者用のトークンを生成
+    adminToken = generateToken(adminUser._id);
+  });
+
+  it('should return 403 Forbidden when an admin tries to move a user to a tenant they do not manage', async () => {
+    // 営業部長が、権限のない「開発部」に営業部員を異動させようとする
+    const res = await request(app)
+      .put(`/api/users/${targetUser._id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        tenantId: subTenantB._id, // 権限外の部署ID
+      });
+
+    // 403エラーが返ってくることを期待
+    expect(res.statusCode).toEqual(403);
+    expect(res.body).toHaveProperty('message', '指定された部署にユーザーを移動する権限がありません。');
+
+    // データベースの値が変更されていないことも確認
+    const userInDb = await User.findById(targetUser._id);
+    expect(userInDb.tenantId.toString()).toBe(subTenantA._id.toString());
+  });
+});

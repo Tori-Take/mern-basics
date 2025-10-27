@@ -37,21 +37,6 @@ function UserDashboardPage() {
           </div>
         </div>
 
-        {/* --- 管理者専用：管理者ダッシュボードへのカード --- */}
-        {user && user.roles && user.roles.includes('admin') && (
-          <div className="col-md-6 col-lg-4">
-            <div className="card h-100 shadow-sm border-danger">
-              <div className="card-body text-center d-flex flex-column">
-                <i className="bi bi-shield-lock-fill fs-1 text-danger mb-3"></i>
-                <h5 className="card-title">管理者ダッシュボード</h5>
-                <p className="card-text">ユーザーと役割の管理を行います。</p>
-                <Link to="/admin/dashboard" className="btn btn-danger mt-auto">
-                  管理する
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

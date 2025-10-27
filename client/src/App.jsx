@@ -14,9 +14,10 @@ import UserManagementPage from './features/admin/users/pages/UserManagementPage'
 import ForceResetPasswordPage from './features/auth/pages/ForceResetPasswordPage';
 import UserCreatePage from './features/admin/users/pages/UserCreatePage';
 import RoleManagementPage from './features/admin/roles/pages/RoleManagementPage'; 
-import UserEditPage from './features/admin/users/pages/UserEditPage';
 import TenantManagementPage from './features/admin/tenants/pages/TenantManagementPage';
 import TenantDetailPage from './features/admin/tenants/pages/TenantDetailPage';
+import AdminUserListPage from './features/admin/users/pages/AdminUserListPage'; // ★ 新しくインポート
+import AdminUserEditPage from './features/admin/users/pages/AdminUserEditPage'; // ★ 新しくインポート
 import ProfilePage from './features/profile/pages/ProfilePage'; // ★ 新しく追加
 import AdminRoute from './features/auth/AdminRoute.jsx'; // ★ パスを修正
 import SuperuserRoute from './features/auth/SuperuserRoute'; // ★ 新しく追加
@@ -57,8 +58,8 @@ function AppContent() {
           {/* === Admin Routes (for admin users only) === */}
           <Route element={<AdminRoute />}>
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-            <Route path="/admin/users" element={<UserManagementPage />} />
-            <Route path="/admin/users/:id" element={<UserEditPage />} />
+            <Route path="/admin/users" element={<AdminUserListPage />} />
+            <Route path="/admin/users/:id" element={<AdminUserEditPage />} />
             <Route path="/admin/users/new" element={<UserCreatePage />} />
             <Route path="/admin/roles" element={<RoleManagementPage />} />
             {/* ★★★ 修正: 具体的なパスを先に定義する ★★★ */}

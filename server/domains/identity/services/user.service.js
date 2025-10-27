@@ -278,6 +278,10 @@ class UserService {
 
     const { username, email, roles, status, tenantId } = updateData;
 
+    // --- ★★★ ここからが新しい権限チェックロジック ★★★ ---
+    // 新しい所属部署(tenantId)がリクエストに含まれている場合、その部署への異動権限を検証する
+    await this._validateTenantMovePermission(user, tenantId, accessibleTenantIds);
+
     if (email && email !== user.email) {
       if (await this.userRepository.findByEmail(email)) {
         const error = new Error('このメールアドレスは既に使用されています。');
@@ -301,6 +305,25 @@ class UserService {
     if (roles) user.roles = roles;
 
     return this.userRepository.save(user);
+  }
+
+  /**
+   * @private
+   * ユーザーの所属部署変更に関する権限を検証します。
+   * @param {User} user - 異動対象のユーザーオブジェクト。
+   * @param {string} targetTenantId - 異動先の部署ID。
+   * @param {string[]} accessibleTenantIds - 操作者がアクセス可能な部署IDのリスト。
+   * @throws {Error} 権限がない場合に403エラーをスローします。
+   */
+  async _validateTenantMovePermission(user, targetTenantId, accessibleTenantIds) {
+    if (targetTenantId && targetTenantId.toString() !== user.tenantId.toString()) {
+      const isAllowedToMove = accessibleTenantIds.some(id => id.toString() === targetTenantId.toString());
+      if (!isAllowedToMove) {
+        const error = new Error('指定された部署にユーザーを移動する権限がありません。');
+        error.statusCode = 403;
+        throw error;
+      }
+    }
   }
 
   /**
