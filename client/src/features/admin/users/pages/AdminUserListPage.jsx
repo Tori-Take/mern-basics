@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useLocation } from 'react-router-dom';
 import { Table, Button, Spinner, Alert, Card } from 'react-bootstrap';
+import './AdminUserListPage.css';
 
 function AdminUserListPage() {
   const [users, setUsers] = useState([]);
@@ -48,7 +49,7 @@ function AdminUserListPage() {
             <Spinner animation="border" /> <span>読み込み中...</span>
           </div>
         ) : (
-          <Table striped bordered hover responsive>
+          <Table striped bordered hover responsive="md" className="user-list-table">
             <thead>
               <tr>
                 <th>ユーザー名</th>
@@ -70,7 +71,7 @@ function AdminUserListPage() {
                     </span>
                   </td>
                   <td>
-                    <Link to={`/admin/users/${user._id}`} className="btn btn-outline-primary btn-sm">
+                    <Link to={`/admin/users/${user._id}`} className="btn btn-outline-primary btn-sm action-btn">
                       編集
                     </Link>
                   </td>

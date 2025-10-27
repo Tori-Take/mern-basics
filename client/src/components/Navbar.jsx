@@ -13,7 +13,7 @@ function Navbar() {
   };
 
   return (
-    <BootstrapNavbar bg="primary" variant="dark" expand="lg" className="mb-4">
+    <BootstrapNavbar bg="primary" variant="dark" expand="lg" sticky="top">
       <BootstrapNavbar.Brand as={Link} to="/">TODO App</BootstrapNavbar.Brand>
       <BootstrapNavbar.Toggle aria-controls="responsive-navbar-nav" />
       <BootstrapNavbar.Collapse id="responsive-navbar-nav">

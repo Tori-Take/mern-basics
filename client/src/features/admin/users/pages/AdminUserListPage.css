@@ -8,3 +8,13 @@
   text-decoration: underline;
   color: #0d6efd; /* Bootstrap's primary blue color */
 }
+
+/* ユーザー管理テーブルのヘッダーテキストを改行させない */
+.user-list-table th {
+  white-space: nowrap;
+}
+
+/* ユーザー管理テーブルの操作ボタンのテキストを改行させない */
+.user-list-table .action-btn {
+  white-space: nowrap;
+}
