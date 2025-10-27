@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 const SystemDashboardPage = () => {
   return (
     <div>
-      <h1 className="text-center mb-4">システム管理ダッシュボード</h1>
+      <h1 className="text-center mb-4">システム管理ポータル</h1>
       <p className="text-center text-muted mb-5">
         システム全体の管理機能にアクセスします。これらの操作はシステム全体に影響を与えるため、慎重に行ってください。
       </p>

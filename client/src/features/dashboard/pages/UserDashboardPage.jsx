@@ -18,7 +18,7 @@ function UserDashboardPage() {
   return (
     <div>
       <div className="text-center mb-5">
-        <h1>ようこそ、{user.name || user.username}さん</h1>
+        <h1>アプリポータル</h1>
         <p className="lead text-muted">利用したいアプリケーションを選択してください。</p>
       </div>
 

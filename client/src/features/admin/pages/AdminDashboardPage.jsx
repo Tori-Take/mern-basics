@@ -7,7 +7,7 @@ function AdminDashboardPage() {
 
   return (
     <div>
-      <h1 className="text-center my-4">管理者ダッシュボード</h1>
+      <h1 className="text-center my-4">管理者ポータル</h1>
       <p className="text-center text-muted mb-5">各種管理機能にアクセスします。</p>
 
       <div className="row justify-content-center g-4">

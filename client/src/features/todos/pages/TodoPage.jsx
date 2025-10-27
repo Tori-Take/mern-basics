@@ -133,19 +133,22 @@ function TodoPage() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center my-4">
-        <h2 className="mb-0">TODOリスト</h2>
-        <div>
-        <Button
-          variant="outline-secondary"
-          className="me-2"
-          onClick={() => setIsFilterSortModalOpen(true)}
-        >
-          絞り込み・並び替え
-        </Button>
-        <Button variant="primary" type="button" onClick={() => setIsCreateModalOpen(true)}>
-          ＋ 新規TODOを追加
-        </Button>
+      {/* 画面幅に応じてレイアウトを調整 */}
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center my-4">
+        <h2 className="mb-3 mb-md-0">TODOリスト</h2> {/* スマホで下余白、PCで余白なし */}
+        {/* ボタンをスマホでは縦に、PCでは横に並べる */}
+        <div className="d-grid gap-2 d-md-block">
+          <Button
+            variant="outline-secondary"
+            className="me-md-2" // PCでのみ右マージン
+            onClick={() => setIsFilterSortModalOpen(true)}
+            size="sm" // ボタンを小さくする
+          >
+            絞り込み・並び替え
+          </Button>
+          <Button variant="primary" type="button" onClick={() => setIsCreateModalOpen(true)} size="sm">
+            ＋ 新規TODOを追加
+          </Button>
         </div>
       </div>
 

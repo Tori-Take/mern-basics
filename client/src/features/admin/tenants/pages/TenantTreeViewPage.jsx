@@ -67,7 +67,7 @@ const TenantTreeViewPage = () => {
         {isSuperuserView ? (
           <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/system/dashboard" }}>システム管理</Breadcrumb.Item>
         ) : (
-          <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/admin/dashboard" }}>管理者ダッシュボード</Breadcrumb.Item>
+          <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/admin/dashboard" }}>管理者ポータル</Breadcrumb.Item>
         )}
         <Breadcrumb.Item linkAs={Link} linkProps={{ to: getBackLink() }}>
           {isSuperuserView ? '組織管理' : '組織・部署管理'}
