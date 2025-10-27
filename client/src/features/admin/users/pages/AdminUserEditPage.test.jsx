@@ -43,10 +43,10 @@ describe('AdminUserEditPage', () => {
       email: 'taro@example.com',
       roles: ['user'],
     };
-    // このテストはユーザー情報取得のAPI呼び出しのみをトリガーするため、
-    // ★ 修正: 2回のAPI呼び出しをモックする
+    // ★ 修正: 3回のAPI呼び出しを順番にモックする
     axios.get.mockResolvedValueOnce({ data: mockUser }); // 1. ユーザー情報
-    axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全テナント情報 (空でOK)
+    axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全ロール情報
+    axios.get.mockResolvedValueOnce({ data: [] });       // 3. 全テナント情報
 
     // 2. コンポーネントをレンダリング
     // useParamsからIDを取得できるよう、実際のルートと同じパスでラップする
@@ -58,12 +58,9 @@ describe('AdminUserEditPage', () => {
       </MemoryRouter>
     );
 
-    // 3. 検証: APIが呼ばれ、その結果が画面に表示されるまで待つ
-    expect(await screen.findByRole('heading', { name: /Taro Yamada/i })).toBeInTheDocument();
-    // ★ 新しい検証: メールアドレスが表示されていることを確認
-    expect(screen.getByText('taro@example.com')).toBeInTheDocument();
-
-    expect(axios.get).toHaveBeenCalledWith(`/api/users/${userId}`);
+    // 3. 検証: ユーザー名が表示されるまで待つ
+    expect(await screen.findByDisplayValue('Taro Yamada')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('taro@example.com')).toBeInTheDocument();
   });
 
   it('should display a "Change Department" button', async () => {
@@ -75,9 +72,9 @@ describe('AdminUserEditPage', () => {
       email: 'taro@example.com',
       roles: ['user'],
     };
-    // ★ 修正: 2回のAPI呼び出しをモックする
     axios.get.mockResolvedValueOnce({ data: mockUser }); // 1. ユーザー情報
-    axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全テナント情報 (空でOK)
+    axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全ロール情報
+    axios.get.mockResolvedValueOnce({ data: [] });       // 3. 全テナント情報
 
     // 2. コンポーネントをレンダリング
     render(
@@ -89,8 +86,8 @@ describe('AdminUserEditPage', () => {
     );
 
     // 3. 検証: ユーザー情報が表示された後で、ボタンが存在することを確認
-    expect(await screen.findByRole('heading', { name: /Taro Yamada/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /部署を変更/i })).toBeInTheDocument();
+    await screen.findByDisplayValue('Taro Yamada');
+    expect(screen.getByRole('button', { name: '変更' })).toBeInTheDocument();
   });
 
   it('should open a modal when "Change Department" button is clicked', async () => {
@@ -103,11 +100,11 @@ describe('AdminUserEditPage', () => {
       email: 'taro@example.com',
       roles: ['user'],
     };
-    // ★ 修正: 3回のAPI呼び出しをモックする
-    axios.get
-      .mockResolvedValueOnce({ data: mockUser }) // 最初の呼び出し (/api/users/:id)
-      .mockResolvedValueOnce({ data: [] })       // 2番目の呼び出し (/api/tenants)
-      .mockResolvedValueOnce({ data: [{ _id: 'root-1', name: 'Root' }] }); // 2番目の呼び出し (/api/tenants/tree) はテストデータを返す
+    // ★ 修正: ページ表示(3回) + モーダル(1回) = 4回のAPI呼び出しをモック
+    axios.get.mockResolvedValueOnce({ data: mockUser }); // 1. ユーザー情報
+    axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全ロール情報
+    axios.get.mockResolvedValueOnce({ data: [] });       // 3. 全テナント情報
+    axios.get.mockResolvedValueOnce({ data: [{ _id: 'root-1', name: 'Root' }] }); // 4. 組織図データ
 
     // 2. コンポーネントをレンダリング
     render(
@@ -119,11 +116,10 @@ describe('AdminUserEditPage', () => {
     );
 
     // 3. ボタンをクリック
-    const changeDeptButton = await screen.findByRole('button', { name: /部署を変更/i });
+    const changeDeptButton = await screen.findByRole('button', { name: '変更' });
     await user.click(changeDeptButton);
 
     // 4. 検証: モーダルのタイトルが表示されることを確認
-    // findByRole('heading', ...) から findByText(...) に変更し、役割に依存しないようにする
     expect(await screen.findByText(/部署の変更/i)).toBeInTheDocument();
   });
 
@@ -137,11 +133,11 @@ describe('AdminUserEditPage', () => {
       email: 'taro@example.com',
       roles: ['user'],
     };
-    // ★ 修正: 3回のAPI呼び出しをモックする
-    axios.get
-      .mockResolvedValueOnce({ data: mockUser }) // 最初の呼び出し (/api/users/:id)
-      .mockResolvedValueOnce({ data: [] })       // 2番目の呼び出し (/api/tenants)
-      .mockResolvedValueOnce({ data: [{ _id: 'root-1', name: 'Root' }] }); // 2番目の呼び出し (/api/tenants/tree) はテストデータを返す
+    // ★ 修正: ページ表示(3回) + モーダル(1回) = 4回のAPI呼び出しをモック
+    axios.get.mockResolvedValueOnce({ data: mockUser }); // 1. ユーザー情報
+    axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全ロール情報
+    axios.get.mockResolvedValueOnce({ data: [] });       // 3. 全テナント情報
+    axios.get.mockResolvedValueOnce({ data: [{ _id: 'root-1', name: 'Root' }] }); // 4. 組織図データ
 
     // 2. コンポーネントをレンダリング
     render(
@@ -153,7 +149,7 @@ describe('AdminUserEditPage', () => {
     );
 
     // 3. ボタンをクリックしてモーダルを開く
-    const changeDeptButton = await screen.findByRole('button', { name: /部署を変更/i });
+    const changeDeptButton = await screen.findByRole('button', { name: '変更' });
     await user.click(changeDeptButton);
 
     // 4. 検証: モックされた組織図コンポーネントのテキストが表示されることを確認
@@ -164,7 +160,7 @@ describe('AdminUserEditPage', () => {
     const user = userEvent.setup();
     // 1. モックの準備
     const userId = 'user-123';
-    const mockUser = { _id: userId, username: 'Taro Yamada', email: 'taro@example.com' };
+    const mockUser = { _id: userId, username: 'Taro Yamada', email: 'taro@example.com', roles: [] };
     const mockTreeData = [
       {
         _id: 'tenant-root',
@@ -176,10 +172,11 @@ describe('AdminUserEditPage', () => {
       },
     ];
 
-    axios.get
-      .mockResolvedValueOnce({ data: mockUser })      // 1. ユーザー情報
-      .mockResolvedValueOnce({ data: [] })            // 2. 全テナント情報
-      .mockResolvedValueOnce({ data: mockTreeData }); // 3. 組織図データ
+    // ★ 修正: ページ表示(3回) + モーダル(1回) = 4回のAPI呼び出しをモック
+    axios.get.mockResolvedValueOnce({ data: mockUser });     // 1. ユーザー情報
+    axios.get.mockResolvedValueOnce({ data: [] });           // 2. 全ロール情報
+    axios.get.mockResolvedValueOnce({ data: [] });           // 3. 全テナント情報
+    axios.get.mockResolvedValueOnce({ data: mockTreeData }); // 4. 組織図データ
 
     // ★★★ 修正: TenantNodeのモックを、クリックイベントをテストできるよう拡張 ★★★
     // これまでの単純なdivを返すモックから、実際のクリック操作をシミュレートできるものに変更します。
@@ -199,20 +196,20 @@ describe('AdminUserEditPage', () => {
 
     // 2. レンダリングと操作
     render(<MemoryRouter initialEntries={[`/admin/users/${userId}`]}><Routes><Route path="/admin/users/:id" element={<AdminUserEditPage />} /></Routes></MemoryRouter>);
-    await user.click(await screen.findByRole('button', { name: /部署を変更/i }));
+    await user.click(await screen.findByRole('button', { name: '変更' }));
     const salesDepartmentNode = await screen.findByText('営業部');
     await user.click(salesDepartmentNode);
 
     // 3. 検証
     expect(salesDepartmentNode).toHaveClass('selected'); // 選択した部署に 'selected' クラスが付与されるか
-    expect(await screen.findByRole('button', { name: '更新' })).toBeInTheDocument(); // モーダル内に「更新」ボタンが表示されるか
+    expect(await screen.findByRole('button', { name: '選択' })).toBeInTheDocument(); // モーダル内に「選択」ボタンが表示されるか
   });
 
   it('should call the API to update user department and close the modal on successful update', async () => {
     const user = userEvent.setup();
     // 1. モックの準備
     const userId = 'user-123';
-    const mockUser = { _id: userId, username: 'Taro Yamada', email: 'taro@example.com', tenantId: 'tenant-root' };
+    const mockUser = { _id: userId, username: 'Taro Yamada', email: 'taro@example.com', tenantId: 'tenant-root', roles: [] };
     const mockTreeData = [
       {
         _id: 'tenant-root',
@@ -225,10 +222,11 @@ describe('AdminUserEditPage', () => {
     ];
     const selectedTenantId = 'tenant-sales';
 
-    axios.get
-      .mockResolvedValueOnce({ data: mockUser })      // 1. ユーザー情報取得
-      .mockResolvedValueOnce({ data: [{ _id: 'tenant-sales', name: '営業部' }] }) // 2. 全テナント情報
-      .mockResolvedValueOnce({ data: mockTreeData }); // 3. 組織図データ取得
+    // ★ 修正: ページ表示(3回) + モーダル(1回) = 4回のAPI呼び出しをモック
+    axios.get.mockResolvedValueOnce({ data: mockUser }); // 1. ユーザー情報
+    axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全ロール情報
+    axios.get.mockResolvedValueOnce({ data: [{ _id: 'tenant-sales', name: '営業部' }] }); // 3. 全テナント情報
+    axios.get.mockResolvedValueOnce({ data: mockTreeData }); // 4. 組織図データ
     
     // ★ 新しくaxios.putをモックする
     axios.put.mockResolvedValueOnce({ data: { ...mockUser, tenantId: selectedTenantId } }); // 更新成功時のレスポンス
@@ -250,16 +248,17 @@ describe('AdminUserEditPage', () => {
 
     // 2. レンダリングと操作
     render(<MemoryRouter initialEntries={[`/admin/users/${userId}`]}><Routes><Route path="/admin/users/:id" element={<AdminUserEditPage />} /></Routes></MemoryRouter>);
-    await user.click(await screen.findByRole('button', { name: /部署を変更/i })); // モーダルを開く
+    await user.click(await screen.findByRole('button', { name: '変更' })); // モーダルを開く
     await user.click(await screen.findByText('営業部')); // 部署を選択
-    await user.click(await screen.findByRole('button', { name: '更新' })); // 更新ボタンをクリック
+    await user.click(await screen.findByRole('button', { name: '選択' })); // 選択ボタンをクリック
 
     // 3. 検証
-    // 3.1: APIが正しい引数で呼び出されたことを確認
-    expect(axios.put).toHaveBeenCalledWith(`/api/users/${userId}`, { tenantId: selectedTenantId });
+    // 3.1: 部署名がフォームのテキストボックスに反映されることを確認
+    const departmentInput = await screen.findByDisplayValue('営業部');
+    expect(departmentInput).toBeInTheDocument();
 
-    // 3.2: API成功後、画面の所属部署名が更新されることを確認
-    // findBy... を使うことで、非同期な再レンダリングが終わるまで待機する
-    expect(await screen.findByTestId('department-display')).toHaveTextContent('所属部署: 営業部');
+    // 3.2: 更新ボタンをクリックしてAPIが呼ばれることを確認
+    await user.click(screen.getByRole('button', { name: '更新' }));
+    expect(axios.put).toHaveBeenCalledWith(`/api/users/${userId}`, expect.objectContaining({ tenantId: selectedTenantId }));
   });
 });

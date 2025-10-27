@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { Table, Button, Spinner, Alert, Card } from 'react-bootstrap';
 
@@ -31,34 +30,9 @@ function AdminUserListPage() {
     }
 
     fetchUsers();
-  }, []); // 空の依存配列で、マウント時に一度だけ実行
   }, [location.state]);
 
   return (
-    <div>
-      <h1>ユーザー管理</h1>
-
-      {loading ? (
-        <p>読み込み中...</p>
-      ) : error ? (
-        <p style={{ color: 'red' }}>{error}</p>
-      ) : (
-        <table border="1" style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ padding: '8px' }}>ユーザー名</th>
-              <th style={{ padding: '8px' }}>メールアドレス</th>
-              <th style={{ padding: '8px' }}>役割</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user._id}>
-                <td style={{ padding: '8px' }}>
-                  <Link to={`/admin/users/${user._id}`}>{user.username}</Link>
-                </td>
-                <td style={{ padding: '8px' }}>{user.email}</td>
-                <td style={{ padding: '8px' }}>{user.roles.join(', ')}</td>
     <Card className="shadow-sm">
       <Card.Header as="h1" className="d-flex justify-content-between align-items-center">
         <span>ユーザー管理</span>
@@ -83,11 +57,6 @@ function AdminUserListPage() {
                 <th>ステータス</th>
                 <th>操作</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
             </thead>
             <tbody>
               {users.map(user => (
