@@ -25,6 +25,7 @@ import SystemTenantManagementPage from './features/system/pages/SystemTenantMana
 import SystemOrganizationDetailPage from './features/system/pages/SystemOrganizationDetailPage'; // ★ 新しく追加
 import TenantTreeViewPage from './features/admin/tenants/pages/TenantTreeViewPage'; // ★ 新しく追加
 
+import PermissionRoute from './components/routes/PermissionRoute'; // ★ 新しくインポート
 // AppContentコンポーネントを新しく定義
 function AppContent() {
   const { loading } = useAuth();
@@ -45,13 +46,17 @@ function AppContent() {
           {/* === Public Routes === */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/unauthorized" element={<h1>アクセス権がありません</h1>} /> {/* ★ 権限なしページを追加 */}
 
           {/* === Private Routes (for all logged-in users) === */}
           <Route path="/" element={<PrivateRoute />}>
             <Route path="/" element={<UserDashboardPage />} />
             <Route path="/force-reset-password" element={<ForceResetPasswordPage />} />
-            <Route path="/todos" element={<TodoPage />} />
             <Route path="/profile" element={<ProfilePage />} /> {/* ★ 新しく追加 */}
+            {/* ▼▼▼ ここからがPermissionRouteによる保護 ▼▼▼ */}
+            <Route element={<PermissionRoute permission="CAN_USE_TODO" />}>
+              <Route path="/todos" element={<TodoPage />} />
+            </Route>
           </Route>
 
           {/* === Admin Routes (for admin users only) === */}

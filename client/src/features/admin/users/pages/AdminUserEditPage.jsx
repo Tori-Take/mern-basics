@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Spinner, Button, Modal, Card, Form, Alert } from 'react-bootstrap';
+import { Spinner, Button, Modal, Card, Form, Alert, InputGroup } from 'react-bootstrap';
 import TenantNode from '../../../admin/tenants/components/TenantNode'; // ★ インポートを追加
 import '../../../admin/tenants/components/TenantNode.css'; // ★ スタイルシートをインポート
 
@@ -23,6 +23,7 @@ function AdminUserEditPage() {
   const [treeData, setTreeData] = useState([]); // 組織図データ
   const [treeLoading, setTreeLoading] = useState(false); // 組織図のローディング状態
   const [selectedTenantId, setSelectedTenantId] = useState(null); // ★ 選択された部署IDを管理するstate
+  const [allApplications, setAllApplications] = useState([]); // ★ 利用可能な全アプリケーションを保持
   const [permissionsString, setPermissionsString] = useState(''); // ★ permissionsを文字列として扱うstate
 
   // パスワードリセットと削除モーダル用のState
@@ -34,15 +35,17 @@ function AdminUserEditPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [userRes, rolesRes, tenantsRes] = await Promise.all([
+        const [userRes, rolesRes, tenantsRes, appsRes] = await Promise.all([
           axios.get(`/api/users/${id}`),
           axios.get('/api/roles'),
           axios.get('/api/tenants'),
+          axios.get('/api/applications'), // ★ アプリケーション一覧を取得
         ]);
 
         setFormData(userRes.data);
         setAllRoles(rolesRes.data);
         setAllTenants(tenantsRes.data);
+        setAllApplications(appsRes.data.data); // ★ 取得したデータをstateに保存
         setPermissionsString((userRes.data.permissions || []).join(', ')); // ★ 初期値を設定
       } catch (err) {
         setError(err.response?.data?.message || 'データの取得に失敗しました。');
@@ -97,9 +100,16 @@ function AdminUserEditPage() {
     });
   };
 
-  // ★ permissionsの配列を文字列に、文字列を配列に変換するハンドラ
-  const handlePermissionsChange = (e) => {
-    setPermissionsString(e.target.value); // ★ 文字列としてそのまま更新
+  // ★ チェックボックスの変更をハンドルする関数
+  const handlePermissionChange = (e) => {
+    const { value, checked } = e.target;
+    setFormData(prev => {
+      const currentPermissions = prev.permissions || [];
+      const newPermissions = checked
+        ? [...currentPermissions, value]
+        : currentPermissions.filter(p => p !== value);
+      return { ...prev, permissions: newPermissions };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -108,9 +118,7 @@ function AdminUserEditPage() {
     setError('');
     setSuccess('');
     try {
-      // ★ 送信直前に文字列を配列に変換する
-      const permissionsArray = permissionsString.split(',').map(p => p.trim()).filter(p => p);
-      await axios.put(`/api/users/${id}`, { ...formData, permissions: permissionsArray });
+      await axios.put(`/api/users/${id}`, formData); // ★ formDataをそのまま送信
       setSuccess('ユーザー情報が正常に更新されました。');
       setTimeout(() => navigate('/admin/users'), 2000);
     } catch (err) {
@@ -169,10 +177,10 @@ function AdminUserEditPage() {
 
           <Form.Group className="mb-3">
             <Form.Label>所属部署</Form.Label>
-            <div className="d-flex align-items-center">
-              <Form.Control type="text" value={tenantName} readOnly className="me-2" />
-              <Button variant="outline-primary" onClick={handleOpenModal}>変更</Button>
-            </div>
+            <InputGroup>
+              <Form.Control type="text" value={tenantName} readOnly />
+              <Button variant="outline-secondary" onClick={handleOpenModal}>変更</Button>
+            </InputGroup>
           </Form.Group>
 
           <Form.Group className="mb-3">
@@ -190,16 +198,15 @@ function AdminUserEditPage() {
 
           {/* 【TDD Step3: GREEN】 permissions編集用のUIを追加 */}
           <Form.Group className="mb-4" controlId="permissions">
-            <Form.Label>権限 (Permissions)</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={2}
-              name="permissions"
-              value={permissionsString}
-              onChange={handlePermissionsChange}
-              placeholder="例: CAN_USE_TODO,CAN_USE_SCHEDULE"
-            />
-            <Form.Text className="text-muted">権限をカンマ区切りで入力してください。</Form.Text>
+            <Form.Label>利用可能アプリ</Form.Label>
+            {/* ★ テキストエリアをチェックボックスに置き換え */}
+            <div className="permissions-checkbox-group">
+              {allApplications.length > 0 ? allApplications.map(app => (
+                <Form.Check type="checkbox" id={`perm-${app.permissionKey}`} key={app.permissionKey} label={`${app.name} (${app.permissionKey})`} value={app.permissionKey} checked={formData.permissions?.includes(app.permissionKey) || false} onChange={handlePermissionChange} />
+              )) : (
+                <p className="text-muted">利用可能なアプリケーションがありません。</p>
+              )}
+            </div>
           </Form.Group>
 
           <div className="d-flex justify-content-between">

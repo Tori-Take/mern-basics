@@ -2,13 +2,7 @@
  * @file admin.js
  * @description 管理者(admin)権限を検証するミドルウェア
  */
-const admin = (req, res, next) => {
-  // 'auth'ミドルウェアがセットしたreq.userオブジェクトを検証
-  if (req.user && req.user.roles.includes('admin')) {
-    next();
-  } else {
-    res.status(403).json({ message: '管理者権限が必要です。' });
-  }
-};
+const { authorize } = require('./authorize');
 
-module.exports = admin;
+// 汎用的なauthorizeミドルウェアを使い、'admin'ロールを要求する
+module.exports = authorize('admin');

@@ -92,7 +92,7 @@ describe('Superuser System Routes', () => {
 
       // 権限がないため403エラーになることを確認
       expect(res.statusCode).toBe(403);
-      expect(res.body.message).toContain('Superuser権限が必要');
+      expect(res.body.message).toContain('この操作を実行する権限がありません。');
     });
       it('should return 401 Unauthorized for a non-authenticated user', async () => {
       // トークンなしでAPIをコール

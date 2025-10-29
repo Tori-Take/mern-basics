@@ -41,7 +41,10 @@ export function AuthProvider({ children }) {
         ...prev,
         isAuthenticated: true,
         loading: false,
-        user: res.data,
+        user: {
+          ...res.data,
+          permissions: res.data.permissions || [], // ★ permissionsが常に配列であることを保証
+        },
         forceReset: res.data.forcePasswordReset,
       }));
     } catch (err) {
@@ -77,7 +80,10 @@ export function AuthProvider({ children }) {
           token: res.data.token,
           isAuthenticated: true,
           loading: false,
-          user: res.data.user,
+          user: {
+            ...res.data.user,
+            permissions: res.data.user.permissions || [], // ★ permissionsが常に配列であることを保証
+          },
           forceReset: false,
         }));
         return { forceReset: false }; // 結果を直接返す

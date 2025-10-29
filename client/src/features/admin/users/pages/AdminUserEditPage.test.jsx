@@ -47,6 +47,7 @@ describe('AdminUserEditPage', () => {
     axios.get.mockResolvedValueOnce({ data: mockUser }); // 1. ユーザー情報
     axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全ロール情報
     axios.get.mockResolvedValueOnce({ data: [] });       // 3. 全テナント情報
+    axios.get.mockResolvedValueOnce({ data: { data: [] } }); // 4. 全アプリケーション情報
 
     // 2. コンポーネントをレンダリング
     // useParamsからIDを取得できるよう、実際のルートと同じパスでラップする
@@ -75,6 +76,7 @@ describe('AdminUserEditPage', () => {
     axios.get.mockResolvedValueOnce({ data: mockUser }); // 1. ユーザー情報
     axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全ロール情報
     axios.get.mockResolvedValueOnce({ data: [] });       // 3. 全テナント情報
+    axios.get.mockResolvedValueOnce({ data: { data: [] } }); // 4. 全アプリケーション情報
 
     // 2. コンポーネントをレンダリング
     render(
@@ -104,6 +106,7 @@ describe('AdminUserEditPage', () => {
     axios.get.mockResolvedValueOnce({ data: mockUser }); // 1. ユーザー情報
     axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全ロール情報
     axios.get.mockResolvedValueOnce({ data: [] });       // 3. 全テナント情報
+    axios.get.mockResolvedValueOnce({ data: { data: [] } }); // 4. 全アプリケーション情報
     axios.get.mockResolvedValueOnce({ data: [{ _id: 'root-1', name: 'Root' }] }); // 4. 組織図データ
 
     // 2. コンポーネントをレンダリング
@@ -137,6 +140,7 @@ describe('AdminUserEditPage', () => {
     axios.get.mockResolvedValueOnce({ data: mockUser }); // 1. ユーザー情報
     axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全ロール情報
     axios.get.mockResolvedValueOnce({ data: [] });       // 3. 全テナント情報
+    axios.get.mockResolvedValueOnce({ data: { data: [] } }); // 4. 全アプリケーション情報
     axios.get.mockResolvedValueOnce({ data: [{ _id: 'root-1', name: 'Root' }] }); // 4. 組織図データ
 
     // 2. コンポーネントをレンダリング
@@ -176,6 +180,7 @@ describe('AdminUserEditPage', () => {
     axios.get.mockResolvedValueOnce({ data: mockUser });     // 1. ユーザー情報
     axios.get.mockResolvedValueOnce({ data: [] });           // 2. 全ロール情報
     axios.get.mockResolvedValueOnce({ data: [] });           // 3. 全テナント情報
+    axios.get.mockResolvedValueOnce({ data: { data: [] } }); // 4. 全アプリケーション情報
     axios.get.mockResolvedValueOnce({ data: mockTreeData }); // 4. 組織図データ
 
     // ★★★ 修正: TenantNodeのモックを、クリックイベントをテストできるよう拡張 ★★★
@@ -226,6 +231,7 @@ describe('AdminUserEditPage', () => {
     axios.get.mockResolvedValueOnce({ data: mockUser }); // 1. ユーザー情報
     axios.get.mockResolvedValueOnce({ data: [] });       // 2. 全ロール情報
     axios.get.mockResolvedValueOnce({ data: [{ _id: 'tenant-sales', name: '営業部' }] }); // 3. 全テナント情報
+    axios.get.mockResolvedValueOnce({ data: { data: [] } }); // 4. 全アプリケーション情報
     axios.get.mockResolvedValueOnce({ data: mockTreeData }); // 4. 組織図データ
     
     // ★ 新しくaxios.putをモックする
@@ -262,8 +268,8 @@ describe('AdminUserEditPage', () => {
     expect(axios.put).toHaveBeenCalledWith(`/api/users/${userId}`, expect.objectContaining({ tenantId: selectedTenantId }));
   });
 
-  // 【TDD Step3: RED】
-  it('should display and allow updating user permissions', async () => {
+  // ★ 修正: テストケースをチェックボックスUIに合わせて修正
+  it('should display and allow updating user permissions via checkboxes', async () => {
     const user = userEvent.setup();
     const userId = 'user-perm-123';
     const mockUser = {
@@ -272,31 +278,36 @@ describe('AdminUserEditPage', () => {
       email: 'perm@example.com',
       roles: ['user'],
       tenantId: 'tenant-1',
-      permissions: ['CAN_USE_TODO'], // 初期権限
+      permissions: ['CAN_USE_TODO'], // 初期権限はTODOのみ
     };
+    const mockApplications = [
+      { _id: 'app1', name: 'TODOリスト', permissionKey: 'CAN_USE_TODO' },
+      { _id: 'app2', name: 'スケジュール管理', permissionKey: 'CAN_USE_SCHEDULE' },
+    ]; // ★ 修正: オブジェクトの閉じ括弧 `}` を配列の閉じ括弧 `]` に修正
 
     // 1. モックの準備
     axios.get.mockResolvedValueOnce({ data: mockUser }); // ユーザー情報
     axios.get.mockResolvedValueOnce({ data: [] });       // 全ロール情報
     axios.get.mockResolvedValueOnce({ data: [] });       // 全テナント情報
+    axios.get.mockResolvedValueOnce({ data: { data: mockApplications } }); // ★ 全アプリケーション情報
     axios.put.mockResolvedValue({ data: {} }); // 更新APIのモック
 
     // 2. レンダリング
     render(<MemoryRouter initialEntries={[`/admin/users/${userId}`]}><Routes><Route path="/admin/users/:id" element={<AdminUserEditPage />} /></Routes></MemoryRouter>);
 
-    // 3. 検証: permissionsのテキストエリアが表示され、初期値が正しいか
-    const permissionsTextarea = await screen.findByLabelText(/権限 \(Permissions\)/i);
-    expect(permissionsTextarea).toBeInTheDocument();
-    expect(permissionsTextarea).toHaveValue('CAN_USE_TODO');
+    // 3. 検証: チェックボックスが表示され、初期状態が正しいか
+    const todoCheckbox = await screen.findByLabelText(/TODOリスト/);
+    const scheduleCheckbox = await screen.findByLabelText(/スケジュール管理/);
+    expect(todoCheckbox).toBeChecked();
+    expect(scheduleCheckbox).not.toBeChecked();
 
-    // 4. 操作: テキストエリアを編集し、更新ボタンをクリック
-    await user.clear(permissionsTextarea);
-    await user.type(permissionsTextarea, 'CAN_USE_TODO,CAN_USE_SCHEDULE');
+    // 4. 操作: 「スケジュール管理」のチェックボックスをクリックし、更新ボタンをクリック
+    await user.click(scheduleCheckbox);
     await user.click(screen.getByRole('button', { name: /更新/i }));
 
     // 5. 検証: 更新APIが正しいpermissionsデータと共に呼ばれたか
     expect(axios.put).toHaveBeenCalledWith(`/api/users/${userId}`, expect.objectContaining({
-      permissions: ['CAN_USE_TODO', 'CAN_USE_SCHEDULE'], // この部分は変更なし
+      permissions: ['CAN_USE_TODO', 'CAN_USE_SCHEDULE'], // 両方の権限が含まれていること
     }));
   });
 });
