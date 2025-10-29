@@ -1,17 +1,18 @@
 // c:\client\src\features\admin\users\pages\AdminUserListPage.test.jsx
 
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import AdminUserListPage from './AdminUserListPage';
-import axios from 'axios';
+import axios from 'axios'; // ★ userApiServiceからaxiosに戻す
+import { AuthProvider } from '../../../../providers/AuthProvider';
+import { within } from '@testing-library/react'; // ★ withinをインポート
+import userEvent from '@testing-library/user-event';
 
-// axiosをモックする
-vi.mock('axios');
+vi.mock('axios'); // ★ axiosをモックする
 
 // useAuthフックをモックする
-vi.mock('../../../../providers/AuthProvider', async (importOriginal) => {
+vi.mock('../../../../contexts/AuthContext', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
@@ -23,79 +24,76 @@ vi.mock('../../../../providers/AuthProvider', async (importOriginal) => {
 });
 
 describe('AdminUserListPage', () => {
-  // 各テストの前にモックの状態をリセット
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('should render the page title and handle loading state', async () => {
-    // For this simple test, we just need axios to resolve so the component can finish loading.
-    axios.get.mockResolvedValue({ data: [] });
+    axios.get.mockResolvedValue({ data: [] }); // ★ axiosのモックに戻す
 
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <AdminUserListPage />
-      </BrowserRouter>
+      </MemoryRouter>
     );
 
-    // 1. Assert that the main title is always present.
     expect(screen.getByRole('heading', { name: /ユーザー管理/i })).toBeInTheDocument();
-
-    // 2. Assert that the loading text is initially visible.
     expect(screen.getByText('読み込み中...')).toBeInTheDocument();
 
-    // 3. Wait for the loading to complete and the loading text to disappear.
-    //    This ensures the test waits for the useEffect's state updates to finish.
     await waitFor(() => {
       expect(screen.queryByText('読み込み中...')).not.toBeInTheDocument();
     });
   });
 
   it('should fetch users on component mount and display them in a table', async () => {
-    // 1. モックの準備: axios.getが呼ばれたら、テスト用のユーザーデータを返すように設定
     const mockUsers = [
-      { _id: '1', username: 'Taro Yamada', email: 'taro@example.com', roles: ['user'] },
-      { _id: '2', username: 'Hanako Suzuki', email: 'hanako@example.com', roles: ['admin', 'user'] },
+      { _id: '1', username: 'Taro Yamada', email: 'taro@example.com', roles: ['user'], status: 'active' },
+      { _id: '2', username: 'Hanako Suzuki', email: 'hanako@example.com', roles: ['admin', 'user'], status: 'active' },
     ];
-    axios.get.mockResolvedValue({ data: mockUsers });
+    axios.get.mockResolvedValue({ data: mockUsers }); // ★ axiosのモックに戻す
 
-    // 2. コンポーネントをレンダリング
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <AdminUserListPage />
-      </BrowserRouter>
+      </MemoryRouter>
     );
 
-    // 3. 検証: APIが呼び出され、その結果が画面に表示されるまで待つ
-    // findBy... クエリは要素が表示されるまで自動的に待機するため、act警告を解消できる
     expect(await screen.findByText('Taro Yamada')).toBeInTheDocument();
     expect(screen.getByText('Hanako Suzuki')).toBeInTheDocument();
 
-    // 念のため、APIが正しく呼ばれたことも確認
     await waitFor(() => {
-      expect(axios.get).toHaveBeenCalledWith('/api/users');
+      expect(axios.get).toHaveBeenCalledWith('/api/users'); // ★ axiosの呼び出しを検証
     });
   });
 
   it('should navigate to the user edit page when a user link is clicked', async () => {
-    const user = userEvent.setup();
-    // 1. モックの準備
     const mockUsers = [
-      { _id: 'user-123', username: 'Taro Yamada', email: 'taro@example.com', roles: ['user'] },
+      { _id: 'user-123', username: 'Taro Yamada', email: 'taro@example.com', roles: ['user'], status: 'active' },
     ];
-    axios.get.mockResolvedValue({ data: mockUsers });
+    axios.get.mockResolvedValue({ data: mockUsers }); // ★ axiosのモックに戻す
 
-    // 2. コンポーネントをレンダリング
     render(
-      <BrowserRouter>
-        <AdminUserListPage />
-      </BrowserRouter>
+      <MemoryRouter initialEntries={['/admin/users']}>
+        <Routes>
+          <Route path="/admin/users" element={<AdminUserListPage />} />
+          <Route path="/admin/users/:id" element={<div>Edit User Page for user-123</div>} />
+        </Routes>
+      </MemoryRouter>
     );
 
-    // 3. "Taro Yamada" のリンクが表示されるまで待つ
-    const userLink = await screen.findByRole('link', { name: /Taro Yamada/i });
+    // 1. "Taro Yamada" を含む行を探す
+    const userRow = await screen.findByRole('row', { name: /Taro Yamada/i });
 
-    // 4. 検証: リンクが正しい遷移先を持っているか
-    expect(userLink).toHaveAttribute('href', '/admin/users/user-123');
+    // 2. その行の中から「編集」リンクを探す
+    const editLink = within(userRow).getByRole('link', { name: '編集' });
+
+    // 3. 検証: リンクが正しい遷移先を持っているか
+    expect(editLink).toHaveAttribute('href', '/admin/users/user-123');
+
+    // 4. リンクをクリック
+    await userEvent.click(editLink);
+
+    // 5. 検証: ページが遷移したか
+    expect(await screen.findByText('Edit User Page for user-123')).toBeInTheDocument();
   });
 });

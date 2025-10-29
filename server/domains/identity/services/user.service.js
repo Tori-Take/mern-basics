@@ -276,7 +276,7 @@ class UserService {
       throw error;
     }
 
-    const { username, email, roles, status, tenantId } = updateData;
+    const { username, email, roles, status, tenantId, permissions } = updateData;
 
     // --- ★★★ ここからが新しい権限チェックロジック ★★★ ---
     // 新しい所属部署(tenantId)がリクエストに含まれている場合、その部署への異動権限を検証する
@@ -303,6 +303,7 @@ class UserService {
     if (status) user.status = status;
     if (tenantId) user.tenantId = tenantId;
     if (roles) user.roles = roles;
+    if (permissions) user.permissions = permissions; // ★ permissionsを更新するロジックを追加
 
     return this.userRepository.save(user);
   }

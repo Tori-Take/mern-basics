@@ -261,4 +261,42 @@ describe('AdminUserEditPage', () => {
     await user.click(screen.getByRole('button', { name: '更新' }));
     expect(axios.put).toHaveBeenCalledWith(`/api/users/${userId}`, expect.objectContaining({ tenantId: selectedTenantId }));
   });
+
+  // 【TDD Step3: RED】
+  it('should display and allow updating user permissions', async () => {
+    const user = userEvent.setup();
+    const userId = 'user-perm-123';
+    const mockUser = {
+      _id: userId,
+      username: 'Permission User',
+      email: 'perm@example.com',
+      roles: ['user'],
+      tenantId: 'tenant-1',
+      permissions: ['CAN_USE_TODO'], // 初期権限
+    };
+
+    // 1. モックの準備
+    axios.get.mockResolvedValueOnce({ data: mockUser }); // ユーザー情報
+    axios.get.mockResolvedValueOnce({ data: [] });       // 全ロール情報
+    axios.get.mockResolvedValueOnce({ data: [] });       // 全テナント情報
+    axios.put.mockResolvedValue({ data: {} }); // 更新APIのモック
+
+    // 2. レンダリング
+    render(<MemoryRouter initialEntries={[`/admin/users/${userId}`]}><Routes><Route path="/admin/users/:id" element={<AdminUserEditPage />} /></Routes></MemoryRouter>);
+
+    // 3. 検証: permissionsのテキストエリアが表示され、初期値が正しいか
+    const permissionsTextarea = await screen.findByLabelText(/権限 \(Permissions\)/i);
+    expect(permissionsTextarea).toBeInTheDocument();
+    expect(permissionsTextarea).toHaveValue('CAN_USE_TODO');
+
+    // 4. 操作: テキストエリアを編集し、更新ボタンをクリック
+    await user.clear(permissionsTextarea);
+    await user.type(permissionsTextarea, 'CAN_USE_TODO,CAN_USE_SCHEDULE');
+    await user.click(screen.getByRole('button', { name: /更新/i }));
+
+    // 5. 検証: 更新APIが正しいpermissionsデータと共に呼ばれたか
+    expect(axios.put).toHaveBeenCalledWith(`/api/users/${userId}`, expect.objectContaining({
+      permissions: ['CAN_USE_TODO', 'CAN_USE_SCHEDULE'], // この部分は変更なし
+    }));
+  });
 });

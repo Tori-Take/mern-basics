@@ -160,7 +160,12 @@ class UserController {
    */
   static async updateUser(req, res) {
     try {
-      const updatedUser = await userService.updateUserByAdmin(req.params.id, req.body, req.user.tenantId?._id);
+      // ★ 修正: permissionsフィールドも更新対象に含める
+      const updatedUser = await userService.updateUserByAdmin(
+        req.params.id,
+        req.body, // username, email, roles, status, tenantId, permissions を含む
+        req.user.tenantId?._id
+      );
       res.json(updatedUser);
     } catch (err) {
       res.status(err.statusCode || 500).json({ message: err.message || 'サーバーエラーが発生しました。' });

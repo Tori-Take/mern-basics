@@ -184,6 +184,45 @@
         </div>
     </div>
 
+    <div class="card" style="border-left: 5px solid #27ae60; background-color: #eafaf1;">
+        <h2 style="border-bottom-color: #27ae60;">今後の開発計画：より洗練されたUIへ</h2>
+        <p>
+            現在、私たちはTDDサイクルを通じて、ユーザーの権限（<code>permissions</code>）をテキストエリアで編集する基本的な機能を実装し、その動作をテストで保証しました。
+            これは素晴らしい第一歩ですが、最終的な目標は「画面イメージ2」で描いたような、より直感的で使いやすいチェックボックス形式のUIです。
+        </p>
+        <p>
+            この理想のUIを実現するため、次回の開発では以下のステップをTDDで進めていきます。
+        </p>
+        <div class="step-card" style="border-left-color: #2980b9; background-color: #eaf2f8;">
+            <h3 style="border-bottom-color: #2980b9;">ステップ1：バックエンド - 「アプリケーション」マスターの構築</h3>
+            <p>
+                チェックボックスを動的に生成するためには、「システムにどのようなアプリケーション（権限）が存在するのか」というマスターデータが必要になります。
+            </p>
+            <ol>
+                <li><strong><code>Application</code>モデルの作成:</strong> <code>name</code>, <code>description</code>,
+                    <code>permissionKey</code>を持つ新しいモデルをTDDで実装します。
+                </li>
+                <li><strong>専用APIの構築:</strong>
+                    アプリケーションの一覧を取得する<code>GET /api/applications</code>や、新規作成する<code>POST /api/applications</code>といったAPIを実装します。
+                </li>
+            </ol>
+        </div>
+        <div class="step-card" style="border-left-color: #2980b9; background-color: #eaf2f8; margin-top: 15px;">
+            <h3 style="border-bottom-color: #2980b9;">ステップ2：フロントエンド - 権限設定UIの改善</h3>
+            <p>
+                バックエンドの準備が整ったら、ユーザー編集画面をリファクタリングします。
+            </p>
+            <ol>
+                <li><strong>API連携:</strong> ページ読み込み時に<code>GET /api/applications</code>を呼び出し、利用可能な全アプリケーションの情報を取得します。
+                </li>
+                <li><strong>UIの置換:</strong> 現在のテキストエリアを、取得したアプリケーション情報から動的に生成されるチェックボックス群に置き換えます。</li>
+                <li><strong>ロジックの更新:</strong>
+                    チェックボックスのON/OFF操作に応じて、<strong>画面の状態（state）として保持している</strong>ユーザーの<code>permissions</code>配列を更新し、<strong>最終的に「更新」ボタンが押されたらAPIを呼び出す</strong>ロジックを実装します。
+                </li>
+            </ol>
+        </div>
+    </div>
+
     <div class="container">
         <h2>画面イメージ1：管理者向け「アプリケーション管理」画面</h2>
         <p>システムに存在するアプリケーションを一覧で管理します。ここで登録したアプリが、ユーザーの権限設定画面に表示されるようになります。</p>

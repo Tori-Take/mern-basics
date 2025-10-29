@@ -34,6 +34,11 @@ const userSchema = new Schema({
     type: [String],
     default: ['user'], // デフォルトで'user'ロールを付与
   },
+  // このユーザーに直接割り当てられた権限（アプリの利用権など）を保持する配列
+  permissions: {
+    type: [String],
+    default: [],
+  },
   // アカウントの状態
   status: {
     type: String,

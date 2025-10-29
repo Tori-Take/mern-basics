@@ -23,6 +23,7 @@ function AdminUserEditPage() {
   const [treeData, setTreeData] = useState([]); // 組織図データ
   const [treeLoading, setTreeLoading] = useState(false); // 組織図のローディング状態
   const [selectedTenantId, setSelectedTenantId] = useState(null); // ★ 選択された部署IDを管理するstate
+  const [permissionsString, setPermissionsString] = useState(''); // ★ permissionsを文字列として扱うstate
 
   // パスワードリセットと削除モーダル用のState
   const [showResetModal, setShowResetModal] = useState(false);
@@ -42,6 +43,7 @@ function AdminUserEditPage() {
         setFormData(userRes.data);
         setAllRoles(rolesRes.data);
         setAllTenants(tenantsRes.data);
+        setPermissionsString((userRes.data.permissions || []).join(', ')); // ★ 初期値を設定
       } catch (err) {
         setError(err.response?.data?.message || 'データの取得に失敗しました。');
       } finally {
@@ -95,13 +97,20 @@ function AdminUserEditPage() {
     });
   };
 
+  // ★ permissionsの配列を文字列に、文字列を配列に変換するハンドラ
+  const handlePermissionsChange = (e) => {
+    setPermissionsString(e.target.value); // ★ 文字列としてそのまま更新
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
     setSuccess('');
     try {
-      await axios.put(`/api/users/${id}`, formData);
+      // ★ 送信直前に文字列を配列に変換する
+      const permissionsArray = permissionsString.split(',').map(p => p.trim()).filter(p => p);
+      await axios.put(`/api/users/${id}`, { ...formData, permissions: permissionsArray });
       setSuccess('ユーザー情報が正常に更新されました。');
       setTimeout(() => navigate('/admin/users'), 2000);
     } catch (err) {
@@ -177,6 +186,20 @@ function AdminUserEditPage() {
 
           <Form.Group className="mb-4">
             <Form.Check type="switch" id="status" name="status" label="アカウントを有効にする" checked={formData?.status === 'active'} onChange={handleInputChange} />
+          </Form.Group>
+
+          {/* 【TDD Step3: GREEN】 permissions編集用のUIを追加 */}
+          <Form.Group className="mb-4" controlId="permissions">
+            <Form.Label>権限 (Permissions)</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              name="permissions"
+              value={permissionsString}
+              onChange={handlePermissionsChange}
+              placeholder="例: CAN_USE_TODO,CAN_USE_SCHEDULE"
+            />
+            <Form.Text className="text-muted">権限をカンマ区切りで入力してください。</Form.Text>
           </Form.Group>
 
           <div className="d-flex justify-content-between">

@@ -53,6 +53,13 @@ describe('User Authentication Routes', () => {
       const user = await User.findOne({ email: 'admin@test.com' });
       expect(user).not.toBeNull(); // ユーザーが作成されたか
       expect(user.tenantId).toEqual(tenant._id); // ユーザーが正しいテナントに紐づいているか
+
+      // 【TDD Step1: RED】
+      // 新しく作成されたユーザーは、permissionsプロパティを空の配列として持つべき
+      // このテストは、user.model.jsを修正するまで失敗するはず
+      expect(user.permissions).toBeDefined();
+      expect(Array.isArray(user.permissions)).toBe(true);
+      expect(user.permissions.length).toBe(0);
     });
 
     // 異常系: メールアドレスが重複している場合、ステータスコード400を返すこと
@@ -323,5 +330,27 @@ describe('PUT /api/users/:id - User Update by Admin', () => {
     // データベースの値が変更されていないことも確認
     const userInDb = await User.findById(targetUser._id);
     expect(userInDb.tenantId.toString()).toBe(subTenantA._id.toString());
+  });
+
+  // 【TDD Step2: RED】
+  it('should allow an admin to update a user\'s permissions', async () => {
+    // 1. テストデータ: このユーザーに新しく付与したい権限のリスト
+    const newPermissions = ['CAN_USE_TODO', 'CAN_USE_SCHEDULE'];
+
+    // 2. APIリクエストを実行
+    const res = await request(app)
+      .put(`/api/users/${targetUser._id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        permissions: newPermissions,
+      });
+
+    // 3. レスポンスを検証
+    expect(res.statusCode).toEqual(200);
+    expect(res.body.permissions).toEqual(expect.arrayContaining(newPermissions));
+
+    // 4. データベースの状態を検証
+    const updatedUser = await User.findById(targetUser._id);
+    expect(updatedUser.permissions).toEqual(expect.arrayContaining(newPermissions));
   });
 });
