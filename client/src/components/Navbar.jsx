@@ -28,13 +28,13 @@ function Navbar() {
               {/* Superuserの場合: 管理機能をドロップダウンにまとめる */}
               {user?.roles?.includes('superuser') && (
                 <NavDropdown title={<><i className="bi bi-gear-wide-connected"></i> 管理メニュー</>} id="admin-menu-dropdown" align="end">
-                  <NavDropdown.Item as={Link} to="/system/dashboard" className="fw-bold">システム管理</NavDropdown.Item>
-                  <NavDropdown.Item as={Link} to="/admin/dashboard">ユーザー管理</NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/system/dashboard" className="fw-bold">システム管理者ポータル</NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/admin/dashboard">管理者ポータル</NavDropdown.Item>
                 </NavDropdown>
               )}
               {/* SuperuserではないAdminの場合 */}
               {user?.roles?.includes('admin') && !user?.roles?.includes('superuser') && (
-                <Nav.Link as={Link} to="/admin/dashboard">ユーザー管理</Nav.Link>
+                <Nav.Link as={Link} to="/admin/dashboard">管理者ポータル</Nav.Link>
               )}
               {/* ユーザーメニュー */}
               <NavDropdown title={<><i className="bi bi-person-circle"></i> {user?.username || 'ゲスト'}</>} id="user-menu-dropdown" align="end">

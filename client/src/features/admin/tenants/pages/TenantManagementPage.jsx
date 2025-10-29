@@ -37,7 +37,7 @@ function TenantManagementPage() {
   return (
     <>
       <Breadcrumb>
-        <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/admin/dashboard" }}>管理者ダッシュボード</Breadcrumb.Item>
+        <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/admin/dashboard" }}>管理者ポータル</Breadcrumb.Item>
         <Breadcrumb.Item active>組織・部署管理</Breadcrumb.Item>
       </Breadcrumb>
 
