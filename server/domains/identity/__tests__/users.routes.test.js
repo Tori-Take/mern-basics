@@ -53,6 +53,7 @@ describe('User Authentication Routes', () => {
       const user = await User.findOne({ email: 'admin@test.com' });
       expect(user).not.toBeNull(); // ユーザーが作成されたか
       expect(user.tenantId).toEqual(tenant._id); // ユーザーが正しいテナントに紐づいているか
+      expect(user.roles).toContain('tenant-superuser'); // ★ 作成されたオーナーはtenant-superuserロールを持つ
 
       // 【TDD Step1: RED】
       // 新しく作成されたユーザーは、permissionsプロパティを空の配列として持つべき

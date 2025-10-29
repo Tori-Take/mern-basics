@@ -24,8 +24,8 @@ function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* 役割管理カード (最上位管理者のみ表示) */}
-        {user?.isTopLevelAdmin && (
+        {/* 役割管理カード (superuserまたはtenant-superuserのみ表示) */}
+        {(user?.roles?.includes('superuser') || user?.roles?.includes('tenant-superuser')) && (
           <div className="col-md-6 col-lg-4">
             <div className="card h-100 shadow-sm">
               <div className="card-body text-center d-flex flex-column">

@@ -96,7 +96,7 @@ class UserService {
       username,
       email,
       password: hashedPassword,
-      roles: ['user', 'admin'],
+      roles: ['user', 'admin', 'tenant-superuser'], // ★ tenant-superuserロールを追加
     });
 
     return { message: 'ユーザー登録が成功しました。' };
