@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Spinner, Button, Modal, Card, Form, Alert, InputGroup } from 'react-bootstrap';
 import TenantNode from '../../../admin/tenants/components/TenantNode'; // ★ インポートを追加
+import { useAuth } from '../../../../providers/AuthProvider'; // ★ ログインユーザー情報を取得するためにインポート
 import '../../../admin/tenants/components/TenantNode.css'; // ★ スタイルシートをインポート
 
 function AdminUserEditPage() {
@@ -15,6 +16,7 @@ function AdminUserEditPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user: currentUser } = useAuth(); // ★ ログインユーザーの情報を取得
 
   // 状態管理用のstate
   const [allTenants, setAllTenants] = useState([]); // ★ 全テナント情報を保持
@@ -186,9 +188,26 @@ function AdminUserEditPage() {
           <Form.Group className="mb-3">
             <Form.Label>役割 (ロール)</Form.Label>
             <div>
-              {allRoles.map(role => (
-                <Form.Check inline key={role._id} type="checkbox" id={`role-${role.name}`} label={role.name} value={role.name} checked={formData?.roles.includes(role.name) || false} onChange={handleRoleChange} disabled={role.name === 'user'} />
-              ))}
+              {allRoles.map(role => {
+                // --- ▼▼▼ UI改善ロジック ▼▼▼ ---
+                // tenant-superuserロールのチェックボックスに対する表示制御
+                if (role.name === 'tenant-superuser') {
+                  // ログインユーザーがsuperuserかtenant-superuserでなければ表示しない
+                  if (!currentUser?.roles.includes('superuser') && !currentUser?.roles.includes('tenant-superuser')) {
+                    return null; // このチェックボックスを描画しない
+                  }
+                }
+                // --- ▲▲▲ UI改善ロジックここまで ▲▲▲ ---
+
+                return (
+                  <Form.Check
+                    inline key={role._id}
+                    type="checkbox" id={`role-${role.name}`}
+                    label={role.name} value={role.name}
+                    checked={formData?.roles.includes(role.name) || false}
+                    onChange={handleRoleChange} disabled={role.name === 'user'} />
+                );
+              })}
             </div>
           </Form.Group>
 

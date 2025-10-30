@@ -6,17 +6,18 @@ const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');
 
 // 保護された必須ロールのリスト
-const PROTECTED_ROLES = ['user', 'admin'];
+const PROTECTED_ROLES = ['user', 'admin', 'tenant-superuser'];
 
 // 最上位管理者のみアクセスを許可するミドルウェア
 const topLevelAdminOnly = async (req, res, next) => {
   try {
-    const userTenant = await Tenant.findById(req.user.tenantId);
-    // ユーザーのテナントが存在し、かつ親(parent)がいない場合のみ許可
-    if (userTenant && userTenant.parent === null) {
+    // ★ 修正: superuser または tenant-superuser であれば許可
+    const hasPermission = req.user.roles.includes('superuser') || req.user.roles.includes('tenant-superuser');
+
+    if (hasPermission) {
       next();
     } else {
-      res.status(403).json({ message: 'この操作は最上位の管理者のみ許可されています。' });
+      res.status(403).json({ message: 'この操作を実行する権限がありません。' });
     }
   } catch (error) {
     res.status(500).send('サーバーエラーが発生しました。');
@@ -88,14 +89,16 @@ router.put('/:id', [admin, topLevelAdminOnly], async (req, res) => {
       return res.status(404).json({ message: 'ロールが見つかりません。' });
     }
 
+    // ★ 修正: 保護されたロールは一切の変更を禁止する
+    if (PROTECTED_ROLES.includes(role.name)) {
+      return res.status(400).json({ message: `基本ロール「${role.name}」は変更できません。` });
+    }
+
     // 更新内容を適用
     if (name) role.name = name;
     if (description) role.description = description;
 
     const updatedRole = await role.save();
-    if (PROTECTED_ROLES.includes(role.name)) {
-      return res.status(400).json({ message: `保護されたロール '${role.name}' の名前は変更できません。` });
-    }
     res.json(updatedRole);
   } catch (err) {
     if (err.code === 11000) {

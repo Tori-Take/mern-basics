@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>tenant-superuser導入 完了報告書</title>
+    <!-- ★ タイトルを更新 -->
+    <title>tenant-superuser 権限強化 完了報告書</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -30,13 +31,6 @@
             border-bottom-width: 5px;
             font-size: 3em;
             color: #1a5276;
-        }
-
-        h2 {
-            font-size: 2.2em;
-            border-left: 8px solid #3498db;
-            background-color: #ecf5fb;
-            padding: 10px 15px;
         }
 
         code {
@@ -80,16 +74,33 @@
             border-radius: 10px;
             border: 3px dashed #2ecc71;
         }
+
+        /* ★ 新しいスタイルを追加 */
+        .section-title {
+            font-size: 2.2em;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding: 10px 15px;
+        }
+
+        .debug-story {
+            background-color: #fff7e6;
+            border-left: 5px solid #ff9800;
+            padding: 25px;
+            margin-top: 30px;
+            border-radius: 8px;
+        }
     </style>
 </head>
 
 <body>
 
-    <h1><code>tenant-superuser</code>導入 完了報告書</h1>
+    <!-- ★ タイトルを更新 -->
+    <h1><code>tenant-superuser</code> 権限強化 完了報告書</h1>
     <p style="text-align: center; font-size: 1.2em; color: #566573;">より現実に即した、柔軟な権限アーキテクチャへの進化</p>
 
     <div class="card">
-        <h2>1. 開発の背景と目的</h2>
+        <h2 class="section-title">1. 開発の背景と目的</h2>
         <p>
             システム全体の管理者である <code>superuser</code> の導入後、「特定の組織内でのみ強力な権限を持つ、組織内の最上位管理者」という概念が失われている、という鋭い指摘がありました。
         </p>
@@ -115,8 +126,8 @@
     </div>
 
     <div class="card">
-        <h2>2. 実装された機能と改善点</h2>
-        <h3>バックエンド：ロール付与の自動化</h3>
+        <h2 class="section-title">2. 実装された機能と改善点</h2>
+        <h3>フェーズ1：<code>tenant-superuser</code>ロールの導入</h3>
         <ol>
             <li><strong>新規登録ロジックの更新:</strong>
                 <ul>
@@ -132,23 +143,81 @@
                 </ul>
             </li>
         </ol>
+    </div>
 
-        <h3>フロントエンド：表示ロジックの更新</h3>
-        <ol>
-            <li><strong>管理者ポータルの表示制御:</strong>
-                <ul>
-                    <li><code>AdminDashboardPage.jsx</code> の「役割管理」カードの表示条件を更新。</li>
-                    <li><code>(user?.roles?.includes('superuser') || user?.roles?.includes('tenant-superuser'))</code>
-                        という条件に変更し、システム全体の管理者、またはテナント内の最上位管理者のいずれかであれば、カードが表示されるようにしました。</li>
-                </ul>
+    <!-- ★★★ ここからが今回の追記分 ★★★ -->
+    <div class="card">
+        <h2 class="section-title">3. フェーズ2：権限システムのセキュリティ強化</h2>
+        <p>
+            <code>tenant-superuser</code>という強力な権限を導入した後、その権限自体を誰が管理するのか、またその役割自体をどう保護するのか、という新たな課題に取り組みました。
+        </p>
+
+        <h3>権限割り当ての厳格化</h3>
+        <ul>
+            <li><strong>バックエンドでの制御:</strong>
+                <code>user.service.js</code>を修正し、<code>tenant-superuser</code>ロールを他のユーザーに割り当てられるのは、<code>superuser</code>または<code>tenant-superuser</code>自身のみに限定しました。
             </li>
-        </ol>
+            <li><strong>UI/UXの改善:</strong>
+                <code>AdminUserEditPage.jsx</code>を修正し、権限のないユーザーには<code>tenant-superuser</code>のチェックボックス自体が表示されないようにしました。これにより、ユーザーを混乱させない直感的なUIが実現しました。
+            </li>
+        </ul>
+        <div class="debug-story">
+            <h4>デバッグの物語：見えざる壁との戦い</h4>
+            <p>
+                バックエンドの修正後、「一般adminでも権限を変更できてしまう」という不可解な現象に直面しました。<code>console.log</code>を仕掛けてもログが出力されず、問題はバックエンドの奥深くではなく、リクエストがコントローラーに到達する以前の「見えざる壁」にあることが示唆されました。
+            </p>
+            <p>
+                原因の特定は困難を極めましたが、最終的に<code>users.controllers.js</code>内に、古いロジックを持つ同名のメソッドが重複して定義されていたことが判明。JavaScriptの「後から定義したものが有効になる」という仕様により、私たちの修正は常に上書きされていたのです。この重複コードを削除した瞬間、すべてのセキュリティチェックが正常に機能し始めました。
+            </p>
+        </div>
+
+        <h3>基本ロールの完全な保護</h3>
+        <ul>
+            <li><strong>バックエンドでの保護:</strong>
+                <code>roles.routes.js</code>の保護リスト<code>PROTECTED_ROLES</code>に<code>tenant-superuser</code>を追加し、APIレベルでの編集・削除を完全にブロックしました。
+            </li>
+            <li><strong>フロントエンドでの保護:</strong>
+                共通の定数ファイル<code>client/src/lib/constants.js</code>を新設し、保護リストをフロントエンド全体で共有する仕組みを構築。<code>RoleManagementPage.jsx</code>では、このリストを元に「保護」タグの表示と、「編集」「削除」ボタンの無効化（グレーアウト）を実装しました。
+            </li>
+        </ul>
+    </div>
+    <!-- ★★★ 追記ここまで ★★★ -->
+
+    <div class="card">
+        <h2 class="section-title">4. 最終的な成果</h2>
+        <p>
+            一連の開発を通じて、私たちのアプリケーションの権限システムは、以下の特徴を持つ、堅牢かつ柔軟なアーキテクチャへと進化しました。
+        </p>
+        <ul>
+            <li><strong>階層的な権限構造:</strong>
+                システム全体の<code>superuser</code>、組織内の<code>tenant-superuser</code>、そして一般の<code>admin</code>という、明確な3段階の管理者権限。
+            </li>
+            <li><strong>自己完結した権限移譲:</strong> 組織内の権限移譲（<code>tenant-superuser</code>の任命）は、組織内で完結。</li>
+            <li><strong>鉄壁のセキュリティ:</strong> バックエンドでの厳格なチェックと、それを反映したフロントエンドの直感的なUI。</li>
+        </ul>
     </div>
 
     <div class="final-message">
         権限システムの完成度、さらに向上！<br>
-        あなたの鋭い洞察が、アプリケーションをより実践的で、より堅牢なものへと導きました。
+        あなたの鋭い洞察と粘り強いテストが、アプリケーションをより実践的で、より堅牢なものへと導きました。
     </div>
+
+</body>
+
+</html>
+<ul>
+    <li><code>AdminDashboardPage.jsx</code> の「役割管理」カードの表示条件を更新。</li>
+    <li><code>(user?.roles?.includes('superuser') || user?.roles?.includes('tenant-superuser'))</code>
+        という条件に変更し、システム全体の管理者、またはテナント内の最上位管理者のいずれかであれば、カードが表示されるようにしました。</li>
+</ul>
+</li>
+</ol>
+</div>
+
+<div class="final-message">
+    権限システムの完成度、さらに向上！<br>
+    あなたの鋭い洞察が、アプリケーションをより実践的で、より堅牢なものへと導きました。
+</div>
 
 </body>
 

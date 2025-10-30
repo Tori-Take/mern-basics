@@ -118,6 +118,7 @@ function RoleManagementPage() {
                   <button
                     className="btn btn-outline-secondary btn-sm me-2"
                     onClick={() => handleOpenModal(role)}
+                    disabled={isProtected(role.name)}
                   >
                     編集
                   </button>

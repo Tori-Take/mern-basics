@@ -164,7 +164,7 @@ class UserController {
       const updatedUser = await userService.updateUserByAdmin(
         req.params.id,
         req.body, // username, email, roles, status, tenantId, permissions を含む
-        req.user.tenantId?._id
+        req.user // ★ 修正後：管理者自身の完全なユーザーオブジェクトを渡す
       );
       res.json(updatedUser);
     } catch (err) {

@@ -265,11 +265,14 @@ class UserService {
    * @param {string} userIdToUpdate - 更新対象のユーザーID。
    * @param {object} updateData - 更新データ。
    * @param {string} adminTenantId - 管理者のテナントID。
+   * @param {User} adminUser - 操作を実行している管理者ユーザーのオブジェクト。
    * @returns {Promise<User>} 更新されたユーザーオブジェクト。
    */
-  async updateUserByAdmin(userIdToUpdate, updateData, adminTenantId) {
-    const accessibleTenantIds = await getAccessibleTenantIds(adminTenantId);
-    const user = await this.userRepository.findFullAccessibleUserById(userIdToUpdate, accessibleTenantIds);
+  async updateUserByAdmin(userIdToUpdate, updateData, adminUser) {
+    // ★ adminUserオブジェクトから直接IDを取得
+    const accessibleTenantIds = await getAccessibleTenantIds(adminUser.tenantId?._id);
+    const user = await this.userRepository.findFullAccessibleUserById(userIdToUpdate, accessibleTenantIds); // ★ 更新対象のユーザー
+
     if (!user) {
       const error = new Error('ユーザーが見つからないか、更新する権限がありません。');
       error.statusCode = 404;
@@ -277,6 +280,22 @@ class UserService {
     }
 
     const { username, email, roles, status, tenantId, permissions } = updateData;
+
+    // --- ★★★ ここからが新しいセキュリティロジック ★★★ ---
+    // tenant-superuserロールの変更を検知
+    if (roles) {
+      const isTenantSuperuserChanged = user.roles.includes('tenant-superuser') !== roles.includes('tenant-superuser');
+
+      // ★★★ ここからが新しい権限チェック ★★★
+      // もしtenant-superuserロールが変更され、かつ操作者が'superuser'でも'tenant-superuser'でもなければエラー
+      const hasPermission = adminUser.roles.includes('superuser') || adminUser.roles.includes('tenant-superuser');
+
+      if (isTenantSuperuserChanged && !hasPermission) {
+        const error = new Error('tenant-superuserロールを変更する権限がありません。');
+        error.statusCode = 403;
+        throw error;
+      }
+    }
 
     // --- ★★★ ここからが新しい権限チェックロジック ★★★ ---
     // 新しい所属部署(tenantId)がリクエストに含まれている場合、その部署への異動権限を検証する
