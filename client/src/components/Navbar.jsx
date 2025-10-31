@@ -14,13 +14,12 @@ function Navbar() {
 
   return (
     <BootstrapNavbar bg="primary" variant="dark" expand="lg" sticky="top">
-      <BootstrapNavbar.Brand as={Link} to="/">TODO App</BootstrapNavbar.Brand>
+      <BootstrapNavbar.Brand as={Link} to="/">ToriTake App</BootstrapNavbar.Brand>
       <BootstrapNavbar.Toggle aria-controls="responsive-navbar-nav" />
       <BootstrapNavbar.Collapse id="responsive-navbar-nav">
         <Nav className="me-auto">
           {/* ログイン中ユーザー共通のリンク */}
-          {isAuthenticated && <Nav.Link as={Link} to="/">ポータル</Nav.Link>}
-          {isAuthenticated && <Nav.Link as={Link} to="/todos">Todos</Nav.Link>}
+          {isAuthenticated && <Nav.Link as={Link} to="/">アプリポータル</Nav.Link>}
         </Nav>
         <Nav>
           {isAuthenticated ? (

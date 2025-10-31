@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const { getAccessibleTenantIds } = require('../../core/services/permissionService');
 const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');
 const UserController = require('./users.controllers');
+const User = require('./user.model');
 
 /**
  * @route   POST /api/users/register
@@ -45,7 +47,21 @@ router.get('/assignable', auth, UserController.getAssignableUsers);
 // @route   GET /api/users
 // @desc    全ユーザーのリストを取得する (管理者のみ)
 // @access  Private/Admin
-router.get('/', [auth, admin], UserController.getAllUsers);
+router.get('/', [auth, admin], async (req, res) => {
+  try {
+    let query = {};
+    // superuserでなければ、アクセス可能なテナントに所属するユーザーのみを返す
+    if (!req.user.roles.includes('superuser')) {
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+      query = { tenantId: { $in: accessibleTenantIds } };
+    }
+    const users = await User.find(query).select('-password').sort({ createdAt: 'desc' });
+    res.json(users);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
 
 // @route   GET /api/users/:id
 // @desc    特定のユーザー情報を取得する (管理者のみ)

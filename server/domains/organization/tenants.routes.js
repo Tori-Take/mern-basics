@@ -53,6 +53,19 @@ router.get('/', [auth, admin], async (req, res) => {
 });
 
 /**
+ * @route   GET /api/tenants/all
+ * @desc    （CSV出力用）アクセス可能な全テナントをフラットなリストで取得
+ * @access  Private (Admin)
+ */
+router.get('/all', [auth, admin], async (req, res) => {
+  try {
+    const tenants = await Tenant.find({}).select('name _id');
+    res.json(tenants);
+  } catch (err) {
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+/**
  * @route   GET /api/tenants/tree
  * @desc    自身のテナント階層をツリー構造で取得する
  * @access  Private (Admin)
