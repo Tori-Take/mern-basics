@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../../providers/AuthProvider';
-import { Badge } from 'react-bootstrap';
+import { Badge, Form, InputGroup } from 'react-bootstrap'; // ★ Form, InputGroupを追加
 
 const INITIAL_STATE = {
   text: '',
   priority: '中',
   dueDate: '',
-  scheduledDate: '',
   tags: '',
   requester: [], // ★ 配列に変更
+  // ★ 修正: 開始・終了の日時を追加
+  startDate: '',
+  startTime: '',
+  endDate: '',
+  endTime: '',
+  isAllDay: false, // ★ 追加: 終日フラグ
 };
 
 function TodoCreateModal({ show, onClose, onAdd }) {
@@ -53,7 +58,9 @@ function TodoCreateModal({ show, onClose, onAdd }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // ★ 修正: チェックボックスの変更に対応
+    const newValue = type === 'checkbox' ? checked : value;
+    setFormData(prev => ({ ...prev, [name]: newValue }));
   };
 
   // ★ 依頼先ユーザーをクリックしたときの処理
@@ -78,6 +85,10 @@ function TodoCreateModal({ show, onClose, onAdd }) {
     const submissionData = {
       ...formData,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+      // ★ 修正: 日付と時刻を結合して送信データを作成
+      startDateTime: formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}` : null,
+      endDateTime: formData.endDate && formData.endTime ? `${formData.endDate}T${formData.endTime}` : null,
+      isAllDay: formData.isAllDay, // ★ 追加: 終日フラグを送信
     };
     onAdd(submissionData);
   };
@@ -96,43 +107,49 @@ function TodoCreateModal({ show, onClose, onAdd }) {
               <button type="button" className="btn-close" onClick={onClose}></button>
             </div>
             <div className="modal-body">
-              <div className="mb-3">
-                <label htmlFor="text" className="form-label">内容<span className="text-danger">*</span></label>
-                <textarea
-                  id="text"
-                  name="text"
-                  className="form-control"
-                  value={formData.text}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
+              <Form.Group className="mb-3">
+                <Form.Label htmlFor="text">内容<span className="text-danger">*</span></Form.Label>
+                <Form.Control as="textarea" id="text" name="text" value={formData.text} onChange={handleChange} required />
+              </Form.Group>
               <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="priority" className="form-label">優先度</label>
-                  <select id="priority" name="priority" className="form-select" value={formData.priority} onChange={handleChange}>
+                <Form.Group as="div" className="col-md-6 mb-3">
+                  <Form.Label htmlFor="priority">優先度</Form.Label>
+                  <Form.Select id="priority" name="priority" value={formData.priority} onChange={handleChange}>
                     <option value="高">高</option>
                     <option value="中">中</option>
                     <option value="低">低</option>
-                  </select>
-                </div>
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="tags" className="form-label">タグ (カンマ区切り)</label>
-                  <input type="text" id="tags" name="tags" className="form-control" value={formData.tags} onChange={handleChange} />
-                </div>
+                  </Form.Select>
+                </Form.Group>
+                <Form.Group as="div" className="col-md-6 mb-3">
+                  <Form.Label htmlFor="tags">タグ (カンマ区切り)</Form.Label>
+                  <Form.Control type="text" id="tags" name="tags" value={formData.tags} onChange={handleChange} />
+                </Form.Group>
               </div>
               <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="dueDate" className="form-label">期日</label>
-                  <div className="input-group">
-                    <input type="date" id="dueDate" name="dueDate" className="form-control" value={formData.dueDate} onChange={handleChange} />
-                  </div>
-                </div>
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="scheduledDate" className="form-label">予定日</label>
-                  <input type="date" id="scheduledDate" name="scheduledDate" className="form-control" value={formData.scheduledDate} onChange={handleChange} />
-                </div>
+                <Form.Group as="div" className="col-md-6 mb-3">
+                  <Form.Label htmlFor="dueDate">期日</Form.Label>
+                  <Form.Control type="date" id="dueDate" name="dueDate" value={formData.dueDate} onChange={handleChange} />
+                </Form.Group>
               </div>
+              {/* ★★★ ここからが新しい日時入力UI ★★★ */}
+              <Form.Group className="mb-3">
+                <Form.Check
+                  type="switch"
+                  id="isAllDay-create"
+                  name="isAllDay"
+                  label="終日"
+                  checked={formData.isAllDay}
+                  onChange={handleChange}
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>開始日時</Form.Label>
+                <InputGroup><Form.Control type="date" name="startDate" value={formData.startDate} onChange={handleChange} /><Form.Control type="time" name="startTime" value={formData.startTime} onChange={handleChange} disabled={formData.isAllDay} /></InputGroup>
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>終了日時</Form.Label>
+                <InputGroup><Form.Control type="date" name="endDate" value={formData.endDate} onChange={handleChange} /><Form.Control type="time" name="endTime" value={formData.endTime} onChange={handleChange} disabled={formData.isAllDay} /></InputGroup>
+              </Form.Group>
               {/* --- 依頼先選択UI --- */}
               <div className="mb-3">
                 <label className="form-label">依頼先 (複数選択可)</label>

@@ -121,7 +121,7 @@ class UserController {
    */
   static async getAssignableUsers(req, res) {
     try {
-      const users = await userService.getAssignableUsers(req.user.tenantId?._id);
+      const users = await userService.getAssignableUsers(req.user);
       res.json(users);
     } catch (err) {
       res.status(err.statusCode || 500).json({ message: err.message || 'サーバーエラーが発生しました。' });

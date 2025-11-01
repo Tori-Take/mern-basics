@@ -225,11 +225,11 @@ class UserService {
 
   /**
    * タスク割り当て可能なユーザーリストを取得します。
-   * @param {string} tenantId - リクエスト元ユーザーのテナントID。
+   * @param {object} operator - リクエスト元ユーザーのオブジェクト。
    * @returns {Promise<User[]>} ユーザーの配列。
    */
-  async getAssignableUsers(tenantId) {
-    const accessibleTenantIds = await getAccessibleTenantIds(tenantId);
+  async getAssignableUsers(operator) {
+    const accessibleTenantIds = await getAccessibleTenantIds(operator);
     return this.userRepository.findAssignable(accessibleTenantIds);
   }
 

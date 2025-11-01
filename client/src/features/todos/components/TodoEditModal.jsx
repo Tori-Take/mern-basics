@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../providers/AuthProvider'; // ★ useAuthフックをインポート
 import axios from 'axios';
-import { Badge } from 'react-bootstrap';
+import { Badge, Form, InputGroup } from 'react-bootstrap'; // ★ Form, InputGroupを追加
+import { format, parseISO } from 'date-fns'; // ★ date-fnsからヘルパーをインポート
 
 // 日付文字列を 'YYYY-MM-DD' 形式にフォーマットするヘルパー関数
 const formatDateForInput = (dateString) => {
   if (!dateString) return '';
   try {
     // タイムゾーンの問題を避けるため、ISO文字列から日付部分のみを切り出す
-    return new Date(dateString).toISOString().split('T')[0];
+    return format(parseISO(dateString), 'yyyy-MM-dd');
   } catch (e) {
     return '';
   }
@@ -27,10 +28,14 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
       setFormData({
         text: todo.text || '',
         priority: todo.priority || '中',
-        dueDate: formatDateForInput(todo.dueDate),
-        scheduledDate: formatDateForInput(todo.scheduledDate),
+        dueDate: todo.dueDate ? format(parseISO(todo.dueDate), 'yyyy-MM-dd') : '',
         tags: (todo.tags || []).join(', '), // 配列をカンマ区切りの文字列に変換
         requester: (todo.requester || []).map(r => r._id), // ★ IDの配列を取得
+        startDate: todo.startDateTime ? format(parseISO(todo.startDateTime), 'yyyy-MM-dd') : '',
+        startTime: todo.startDateTime ? format(parseISO(todo.startDateTime), 'HH:mm') : '',
+        endDate: todo.endDateTime ? format(parseISO(todo.endDateTime), 'yyyy-MM-dd') : '',
+        endTime: todo.endDateTime ? format(parseISO(todo.endDateTime), 'HH:mm') : '',
+        isAllDay: todo.isAllDay || false, // ★ 追加: 終日フラグをセット
       });
       setSelectedTenant(''); // 部署選択をリセット
 
@@ -60,8 +65,10 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
   }, [todo, show]); // showも依存配列に追加
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    // ★ 修正: チェックボックスの変更に対応
+    const newValue = type === 'checkbox' ? checked : value;
+    setFormData(prev => ({ ...prev, [name]: newValue }));
   };
 
   // ★ 依頼先ユーザーをクリックしたときの処理
@@ -86,6 +93,9 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
     const submissionData = {
       ...formData,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+      startDateTime: formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}` : null,
+      endDateTime: formData.endDate && formData.endTime ? `${formData.endDate}T${formData.endTime}` : null,
+      isAllDay: formData.isAllDay, // ★ 追加: 終日フラグを送信
     };
     // creatorフィールドは送信データに含めない
     // delete submissionData.creator;
@@ -116,34 +126,49 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
             </div>
             <div className="modal-body">
               {/* フォームの中身はTodoCreateModalとほぼ同じ */}
-              <div className="mb-3">
+              <Form.Group className="mb-3">
                 <label htmlFor="text-edit" className="form-label">内容<span className="text-danger">*</span></label>
-                <textarea id="text-edit" name="text" className="form-control" value={formData.text} onChange={handleChange} required readOnly={!canEdit} />
-              </div>
+                <Form.Control as="textarea" id="text-edit" name="text" value={formData.text} onChange={handleChange} required readOnly={!canEdit} />
+              </Form.Group>
               <div className="row">
-                <div className="col-md-6 mb-3">
+                <Form.Group as="div" className="col-md-6 mb-3">
                   <label htmlFor="priority-edit" className="form-label">優先度</label>
-                  <select id="priority-edit" name="priority" className="form-select" value={formData.priority} onChange={handleChange} disabled={!canEdit}>
+                  <Form.Select id="priority-edit" name="priority" value={formData.priority} onChange={handleChange} disabled={!canEdit}>
                     <option value="高">高</option>
                     <option value="中">中</option>
                     <option value="低">低</option>
-                  </select>
-                </div>
-                <div className="col-md-6 mb-3">
+                  </Form.Select>
+                </Form.Group>
+                <Form.Group as="div" className="col-md-6 mb-3">
                   <label htmlFor="tags-edit" className="form-label">タグ (カンマ区切り)</label>
-                  <input type="text" id="tags-edit" name="tags" className="form-control" value={formData.tags} onChange={handleChange} readOnly={!canEdit} />
-                </div>
+                  <Form.Control type="text" id="tags-edit" name="tags" value={formData.tags} onChange={handleChange} readOnly={!canEdit} />
+                </Form.Group>
               </div>
               <div className="row">
-                <div className="col-md-6 mb-3">
+                <Form.Group as="div" className="col-md-6 mb-3">
                   <label htmlFor="dueDate-edit" className="form-label">期日</label>
-                  <input type="date" id="dueDate-edit" name="dueDate" className="form-control" value={formData.dueDate} onChange={handleChange} readOnly={!canEdit} />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="scheduledDate-edit" className="form-label">予定日</label>
-                  <input type="date" id="scheduledDate-edit" name="scheduledDate" className="form-control" value={formData.scheduledDate} onChange={handleChange} readOnly={!canEdit} />
-                </div>
+                  <Form.Control type="date" id="dueDate-edit" name="dueDate" value={formData.dueDate} onChange={handleChange} readOnly={!canEdit} />
+                </Form.Group>
               </div>
+              <Form.Group className="mb-3">
+                <Form.Check
+                  type="switch"
+                  id="isAllDay-edit"
+                  name="isAllDay"
+                  label="終日"
+                  checked={formData.isAllDay}
+                  onChange={handleChange}
+                  disabled={!canEdit}
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>開始日時</Form.Label>
+                <InputGroup><Form.Control type="date" name="startDate" value={formData.startDate} onChange={handleChange} disabled={!canEdit} /><Form.Control type="time" name="startTime" value={formData.startTime} onChange={handleChange} disabled={!canEdit || formData.isAllDay} /></InputGroup>
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>終了日時</Form.Label>
+                <InputGroup><Form.Control type="date" name="endDate" value={formData.endDate} onChange={handleChange} disabled={!canEdit} /><Form.Control type="time" name="endTime" value={formData.endTime} onChange={handleChange} disabled={!canEdit || formData.isAllDay} /></InputGroup>
+              </Form.Group>
               {/* --- 依頼先選択UI --- */}
               <div className="mb-3">
                 <label className="form-label">依頼先 (複数選択可)</label>

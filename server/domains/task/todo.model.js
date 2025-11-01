@@ -38,10 +38,20 @@ const todoSchema = new Schema({
     type: Date,
     default: null,
   },
-  // 予定日
-  scheduledDate: {
+  // ★ 修正: 開始日時 (旧 scheduledDate)
+  startDateTime: {
     type: Date,
     default: null,
+  },
+  // ★ 追加: 終了日時
+  endDateTime: {
+    type: Date,
+    default: null,
+  },
+  // ★ 追加: 終日イベントかどうかを示すフラグ
+  isAllDay: {
+    type: Boolean,
+    default: false,
   },
   // タグ（複数設定可能）
   tags: {

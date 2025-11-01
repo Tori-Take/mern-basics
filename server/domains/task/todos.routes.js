@@ -56,7 +56,7 @@ router.get('/', async (req, res) => {
  * @access  Private
  */
 router.post('/', async (req, res) => {
-  const { text, priority, dueDate, scheduledDate, tags, requester, creator } = req.body;
+  const { text, priority, dueDate, startDateTime, endDateTime, tags, requester, creator } = req.body;
 
   try {
     const newTodo = new Todo({
