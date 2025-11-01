@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
     // ユーザーが管理者ロールを持っているかチェック
     if (req.user.roles.includes('admin')) {
       // 管理者の場合、配下の全テナントIDを取得
-      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id); // No change needed here, it was correct
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user);
       // アクセス可能なテナントに所属するTODOを全て取得
       todos = await Todo.find({ tenantId: { $in: accessibleTenantIds } })
         .populate('tenantId', 'name')
@@ -99,7 +99,7 @@ router.patch('/:id', async (req, res) => {
     const isRequester = todo.requester.some(id => id.equals(req.user.id)); // ★ 自分が依頼先に含まれているか
     let isAdminAllowed = false;
     if (req.user.roles.includes('admin')) {
-      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id); // No change needed here, it was correct
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user);
       isAdminAllowed = accessibleTenantIds.some(id => id.equals(todo.tenantId));
     }
 
@@ -152,7 +152,7 @@ router.put('/:id', async (req, res) => {
     const isCreator = todo.user.toString() === req.user.id;
     let isAdminAllowed = false;
     if (req.user.roles.includes('admin')) {
-      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id); // No change needed here, it was correct
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user);
       isAdminAllowed = accessibleTenantIds.some(id => id.equals(todo.tenantId));
     }
 
@@ -195,7 +195,7 @@ router.delete('/:id', async (req, res) => {
     const isCreator = todo.user.toString() === req.user.id;
     let isAdminAllowed = false;
     if (req.user.roles.includes('admin')) {
-      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id); // No change needed here, it was correct
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user);
       isAdminAllowed = accessibleTenantIds.some(id => id.equals(todo.tenantId));
     }
 
