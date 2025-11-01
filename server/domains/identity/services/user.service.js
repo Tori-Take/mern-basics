@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const Tenant = require('../../organization/tenant.model');
 const Role = require('../../organization/role.model');
 const generateToken = require('../../../core/utils/generateToken');
+const tenantService = require('../../organization/services/tenant.service'); // ★ tenant.serviceをインポート
 const { getAccessibleTenantIds } = require('../../../core/services/permissionService');
 
 /**
@@ -229,8 +230,18 @@ class UserService {
    * @returns {Promise<User[]>} ユーザーの配列。
    */
   async getAssignableUsers(operator) {
-    const accessibleTenantIds = await getAccessibleTenantIds(operator);
-    return this.userRepository.findAssignable(accessibleTenantIds);
+    // 1. 操作者の組織のルートを見つける
+    const rootTenantId = await tenantService.findOrganizationRoot(operator.tenantId);
+    if (!rootTenantId) return [];
+
+    // 2. ルート配下の全テナントIDを取得する
+    const hierarchyTenants = await tenantService.getTenantHierarchy(rootTenantId);
+    const allTenantIdsInOrg = [rootTenantId, ...hierarchyTenants.map(t => t._id)];
+
+    // 3. ユーザーを取得し、tenantIdをpopulateする
+    const users = await this.userRepository.findAssignable(allTenantIdsInOrg);
+    // Userモデルの静的populateメソッドを使い、取得済みの配列に対してpopulateを実行する
+    return await User.populate(users, { path: 'tenantId', select: 'name' });
   }
 
   /**

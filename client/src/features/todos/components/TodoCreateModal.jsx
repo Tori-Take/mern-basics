@@ -33,11 +33,17 @@ function TodoCreateModal({ show, onClose, onAdd }) {
       // 依頼可能なユーザーリストを取得
       const fetchAssignableUsers = async () => {
         try {
+          console.log('[DEBUG] CreateModal: Fetching assignable users...'); // ★ログ1
           const res = await axios.get('/api/users/assignable');
+          console.log('[DEBUG] CreateModal: API response data:', res.data); // ★ログ2
           const filteredUsers = res.data.filter(u => u._id !== currentUser._id); // ★ 自分自身を除外
           setAssignableUsers(filteredUsers);
           // ユーザーを部署ごとにグループ化
           const grouped = res.data.reduce((acc, user) => {
+            // ★ログ3: 各ユーザーのtenantIdを確認
+            if (!user.tenantId) {
+              console.warn('[DEBUG] CreateModal: User has no tenantId!', user);
+            }
             const tenantId = user.tenantId._id;
             if (!acc[tenantId]) {
               acc[tenantId] = { name: user.tenantId.name, users: [] };

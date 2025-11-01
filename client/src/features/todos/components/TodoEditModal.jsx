@@ -42,10 +42,16 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
       // 依頼可能なユーザーリストを取得
       const fetchAssignableUsers = async () => {
         try {
+          console.log('[DEBUG] EditModal: Fetching assignable users...'); // ★ログ1
           const res = await axios.get('/api/users/assignable');
+          console.log('[DEBUG] EditModal: API response data:', res.data); // ★ログ2
           setAssignableUsers(res.data);
           // ユーザーを部署ごとにグループ化
           const grouped = res.data.reduce((acc, user) => {
+            // ★ログ3: 各ユーザーのtenantIdを確認
+            if (!user.tenantId) {
+              console.warn('[DEBUG] EditModal: User has no tenantId!', user);
+            }
             const tenantId = user.tenantId._id;
             if (!acc[tenantId]) {
               acc[tenantId] = { name: user.tenantId.name, users: [] };
