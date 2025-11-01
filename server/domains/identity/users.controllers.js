@@ -3,6 +3,7 @@ const Tenant = require('../organization/tenant.model');
 const bcrypt = require('bcryptjs');
 const Role = require('../organization/role.model');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const { getAccessibleTenantIds } = require('../../core/services/permissionService');
 const UserRepository = require('./repositories/user.repository');
 const UserService = require('./services/user.service');
@@ -235,5 +236,141 @@ class UserController {
       res.status(err.statusCode || 500).json({ message: err.message || 'サーバーエラーが発生しました。' });
     }  }
 }
+
+/**
+ * CSVからユーザーを一括登録・更新する
+ */
+UserController.bulkImportUsers = async (req, res) => {
+  // ★★★ デバッグ用コンソールログを追加 ★★★
+  console.log('--- [DEBUG] Bulk Import API Called ---');
+  console.log('Request Body:', JSON.stringify(req.body, null, 2));
+  // ★★★ ここまで ★★★
+
+  const { users: csvData } = req.body;
+  const operator = req.user;
+
+  if (!Array.isArray(csvData) || csvData.length === 0) {
+    return res.status(400).json({ message: 'アップロードデータが空か、形式が正しくありません。' });
+  }
+
+  const results = {
+    successCount: 0,
+    errorCount: 0,
+    errors: [],
+  };
+
+  try {
+    // --- 前処理：検証用のデータを一括取得 ---
+    const accessibleTenantIds = await getAccessibleTenantIds(operator.tenantId);
+
+    // 1. アクセス可能なテナントをMap形式で取得 (名前 -> ID)
+    const accessibleTenants = await Tenant.find({ _id: { $in: accessibleTenantIds } });
+    const tenantNameMap = new Map(accessibleTenants.map(t => [t.name, t._id]));
+
+    // 2. 利用可能なロールをSet形式で取得 (名前)
+    const PROTECTED_ROLES = ['user', 'admin', 'tenant-superuser'];
+    const customRoles = await Role.find({ tenantId: operator.tenantId });
+    const validRoleSet = new Set([...PROTECTED_ROLES, ...customRoles.map(r => r.name)]);
+
+    // --- 各行の処理 ---
+    for (const [index, row] of csvData.entries()) {
+      const rowNum = index + 2; // CSVの行番号 (ヘッダー分+1)
+      let validationErrors = [];
+
+      // --- 行ごとの検証（門番） ---
+      const { _id, username, email, password, tenantName, roles: rolesStr, status } = row;
+
+      // 1. 必須項目のチェック
+      if (!username) validationErrors.push('ユーザー名は必須です。');
+      if (!email) validationErrors.push('メールアドレスは必須です。');
+      if (!_id && !password) validationErrors.push('新規登録の場合、passwordは必須です。');
+
+      // 2. 所属部署の検証
+      let targetTenantId = null;
+      if (!tenantName) {
+        validationErrors.push('所属部署は必須です。');
+      } else if (!tenantNameMap.has(tenantName)) {
+        validationErrors.push(`所属部署「${tenantName}」は存在しないか、アクセス権がありません。`);
+      } else {
+        targetTenantId = tenantNameMap.get(tenantName);
+      }
+
+      // 3. 役割の検証
+      const roles = rolesStr ? rolesStr.split(',').map(r => r.trim()).filter(Boolean) : [];
+      if (roles.length === 0) {
+        validationErrors.push('役割は必須です。');
+      } else {
+        for (const role of roles) {
+          if (!validRoleSet.has(role)) {
+            validationErrors.push(`役割「${role}」は存在しないか、利用できません。`);
+          }
+        }
+      }
+      
+      // 4. ステータスの検証
+      if (status && !['active', 'inactive'].includes(status)) {
+        validationErrors.push(`ステータスは 'active' または 'inactive' である必要があります。`);
+      }
+
+      // 5. 更新の場合、対象ユーザーへのアクセス権をチェック
+      if (_id) {
+          const userToUpdate = await User.findById(_id);
+          if (!userToUpdate) {
+              validationErrors.push(`ID「${_id}」のユーザーが見つかりません。`);
+          } else if (!accessibleTenantIds.some(id => id.equals(userToUpdate.tenantId))) {
+              validationErrors.push(`ID「${_id}」のユーザーを更新する権限がありません。`);
+          }
+      }
+
+      // --- 検証結果に応じた処理 ---
+      if (validationErrors.length > 0) {
+        results.errorCount++;
+        results.errors.push({ row: rowNum, messages: validationErrors });
+        continue; // 次の行へ
+      }
+
+      // --- 処理の分岐 ---
+      try {
+        if (_id) {
+          // 更新処理
+          const userToUpdate = await User.findById(_id);
+          userToUpdate.username = username;
+          userToUpdate.email = email;
+          userToUpdate.tenantId = targetTenantId;
+          userToUpdate.roles = roles;
+          if (status) userToUpdate.status = status;
+          if (password) {
+            const salt = await bcrypt.genSalt(10);
+            userToUpdate.password = await bcrypt.hash(password, salt);
+          }
+          await userToUpdate.save();
+        } else {
+          // 新規作成処理
+          await User.create({ username, email, password, tenantId: targetTenantId, roles, status: status || 'active' });
+        }
+        results.successCount++;
+      } catch (dbError) {
+        results.errorCount++;
+        // ★★★ エラーメッセージを分かりやすく変換 ★★★
+        let userFriendlyMessage = dbError.message;
+        if (dbError.code === 11000) {
+          // MongoDBの重複キーエラーの場合
+          if (dbError.keyPattern?.email) {
+            userFriendlyMessage = `メールアドレス「${email}」は既に使用されています。`;
+          } else if (dbError.keyPattern?.username) {
+            userFriendlyMessage = `ユーザー名「${username}」は既に使用されています。`;
+          } else {
+            userFriendlyMessage = '一意であるべき項目が重複しています。';
+          }
+        }
+        results.errors.push({ row: rowNum, messages: [userFriendlyMessage] });
+      }
+    }
+    res.status(200).json(results);
+  } catch (err) {
+    console.error('Bulk import error:', err);
+    res.status(500).json({ message: 'サーバー内部で予期せぬエラーが発生しました。' });
+  }
+};
 
 module.exports = UserController;

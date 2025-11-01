@@ -6,6 +6,19 @@ const admin = require('../../core/middleware/admin');
 const UserController = require('./users.controllers');
 const User = require('./user.model');
 
+// ★ CSVインポート用の権限ミドルウェア
+const canBulkImport = (req, res, next) => {
+  const { roles } = req.user;
+  if (roles.includes('superuser') || roles.includes('tenant-superuser')) {
+    return next();
+  }
+  return res.status(403).json({ message: 'この操作を実行する権限がありません。' });
+};
+
+// @route   POST /api/users/bulk-import
+// @desc    CSVからユーザーを一括登録・更新する
+// @access  Private (Superuser or TenantSuperuser)
+router.post('/bulk-import', [auth, canBulkImport], UserController.bulkImportUsers);
 /**
  * @route   POST /api/users/register
  * @desc    新しいテナントと、そのテナントの最初の管理者ユーザーを登録する
