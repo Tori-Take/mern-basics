@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通知機能 実装計画書</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+            color: #1a5276;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding: 10px 15px;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+
+        /* ★★★ コードブロック用のスタイルを新設 ★★★ */
+        pre {
+            background-color: #283747;
+            color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+            color: inherit;
+            /* 親要素の色を継承 */
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .phase-card {
+            margin-top: 25px;
+            padding: 25px;
+            border-radius: 8px;
+        }
+
+        .phase-1 {
+            border-left: 5px solid #f39c12;
+            background-color: #fef9e7;
+        }
+
+        .phase-2 {
+            border-left: 5px solid #3498db;
+            background-color: #ecf5fb;
+        }
+
+        .phase-3 {
+            border-left: 5px solid #27ae60;
+            background-color: #eafaf1;
+        }
+
+        .phase-card h3 {
+            color: #b7791f;
+            border-bottom-color: #f39c12;
+        }
+
+        .phase-2 h3 {
+            color: #1f618d;
+            border-bottom-color: #3498db;
+        }
+
+        .phase-3 h3 {
+            color: #1e8449;
+            border-bottom-color: #27ae60;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>通知機能 実装計画書</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">ユーザーエンゲージメントを最大化する、段階的実装アプローチ</p>
+
+    <div class="card">
+        <h2>1. 開発の背景と目的</h2>
+        <p>
+            TODOアプリの利用者から、「自分にタスクが割り当てられた際に、何らかの形で通知を受け取りたい」という、非常に価値のある要望が寄せられました。
+            この要望に応えることは、ユーザーが重要なタスクを見逃すのを防ぎ、アプリケーションの利用満足度とエンゲージメント（継続的な利用）を劇的に向上させることに直結します。
+        </p>
+        <p>
+            本開発では、この「通知機能」を、現在のWeb技術で実現可能な最高の形で、かつ段階的に実装することを目指します。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>2. 技術的実現性と戦略</h2>
+        <p>
+            「ウェブアプリではスマートフォンへのプッシュ通知は困難」という懸念は、数年前までは事実でした。しかし、近年のWebブラウザは、ネイティブアプリと遜色ない体験を提供するための強力なAPIを標準でサポートしています。
+        </p>
+        <ul>
+            <li><strong>Web Push API & Service Worker:</strong> ブラウザを閉じていても、サーバーから直接プッシュ通知を送信・受信する技術。</li>
+            <li><strong>Badging API:</strong> アプリアイコンに未読件数などのバッジを表示する技術。</li>
+            <li><strong>WebSocket:</strong> アプリを開いている間のリアルタイム通信を実現する技術。</li>
+        </ul>
+        <p>
+            これらの技術を最大限に活用しつつ、リスクを最小限に抑え、ユーザーに素早く価値を届けるため、本機能を以下の3フェーズに分けて開発を進める戦略を採ります。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>3. 段階的実装計画 (Phased Implementation)</h2>
+
+        <div class="phase-card phase-1">
+            <h3>フェーズ1：【MVP】アプリ内通知センターの実装</h3>
+            <p><strong>目標:</strong> まずは、ユーザーの要望に最も早く応える形で、アプリ内で通知を確認できる基本的な仕組みを構築します。</p>
+            <ul>
+                <li><strong>バックエンド:</strong>
+                    <ol>
+                        <li><strong><code>Notification</code>モデルの新規作成:</strong>
+                            <br><code>server/domains/notifications/notification.model.js</code> を新設します。
+                            <pre><code>const notificationSchema = new Schema({
+  recipient: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // 通知の宛先ユーザー
+  sender: { type: Schema.Types.ObjectId, ref: 'User' }, // 通知の送り主 (システム通知の場合はnull)
+  type: { type: String, enum: ['TASK_ASSIGNED'], required: true }, // 通知の種類
+  message: { type: String, required: true }, // 通知メッセージ
+  link: { type: String }, // クリック時の遷移先URL (例: /todos)
+  isRead: { type: Boolean, default: false }, // 既読フラグ
+}, { timestamps: true });</code></pre>
+                        </li>
+                        <li><strong>通知生成ロジックの追加:</strong>
+                            <br><code>server/domains/task/todos.routes.js</code>内の、TODO作成(<code>POST /</code>)と更新(<code>PUT /:id</code>)の処理を修正。<code>requester</code>が変更された際に、新しい依頼先ユーザーへの通知データを生成し、DBに保存します。
+                        </li>
+                        <li><strong>通知APIの新規作成:</strong>
+                            <br><code>server/domains/notifications/notifications.routes.js</code> を新設します。
+                            <ul>
+                                <li><code>GET /api/notifications</code>: ログインユーザーの通知一覧（未読が上）を取得。</li>
+                                <li><code>GET /api/notifications/unread-count</code>: 未読通知の件数を取得。</li>
+                                <li><code>PATCH /api/notifications/:id/read</code>: 特定の通知を既読にする。</li>
+                                <li><code>POST /api/notifications/read-all</code>: 全ての通知を既読にする。</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </li>
+                <li><strong>フロントエンド:</strong>
+                    <ol>
+                        <li><strong>通知センターコンポーネントの作成:</strong>
+                            <br><code>client/src/components/NotificationCenter.jsx</code>
+                            を新設。ナビゲーションバーに配置する「ベル」アイコンと、クリック時に表示される通知一覧ドロップダウンを実装します。
+                        </li>
+                        <li><strong>未読件数の取得と表示:</strong>
+                            <br><code>AuthProvider</code>または<code>Navbar</code>コンポーネントを修正。ログイン後、定期的に<code>GET /api/notifications/unread-count</code>を呼び出し、未読件数があればベルアイコンにバッジを表示します。
+                        </li>
+                        <li><strong>通知一覧の表示と操作:</strong>
+                            <br>ベルアイコンをクリックすると<code>GET /api/notifications</code>を呼び出して一覧を表示。各通知をクリックすると<code>PATCH /api/notifications/:id/read</code>を呼び出して既読にし、<code>link</code>プロパティのURLに画面遷移させます。
+                        </li>
+                    </ol>
+                </li>
+            </ul>
+        </div>
+
+        <div class="phase-card phase-2">
+            <h3>フェーズ2：リアルタイム通知の実装</h3>
+            <p><strong>目標:</strong> アプリ利用中の体験を向上させ、よりインタラクティブな通知を実現します。</p>
+            <ul>
+                <li><strong>バックエンド:</strong>
+                    <ol>
+                        <li><code>Socket.IO</code>ライブラリを導入し、WebSocketサーバーを起動します。</li>
+                        <li>ユーザーがログインしたら、そのユーザー専用の「部屋」に接続させます。</li>
+                        <li>通知データが作成された際、宛先ユーザーの「部屋」にリアルタイムで通知イベントを送信します。</li>
+                    </ol>
+                </li>
+                <li><strong>フロントエンド:</strong>
+                    <ol>
+                        <li><code>Socket.IO</code>クライアントを導入し、サーバーに接続します。</li>
+                        <li>サーバーから通知イベントを受け取ったら、画面右下などにトースト通知（ポップアップ）を表示します。</li>
+                        <li>同時に、フェーズ1で実装したベルアイコンの未読件数をリアルタイムで更新します。</li>
+                    </ol>
+                </li>
+            </ul>
+        </div>
+
+        <div class="phase-card phase-3">
+            <h3>フェーズ3：Webプッシュ通知の実装</h3>
+            <p><strong>目標:</strong> アプリを閉じていても通知が届く、ネイティブアプリと同等の体験を完成させます。</p>
+            <ul>
+                <li><strong>バックエンド:</strong>
+                    <ol>
+                        <li><code>web-push</code>などのライブラリを導入し、VAPIDキー（通知サーバーの身分証明書）を生成します。</li>
+                        <li>ユーザーからのプッシュ購読情報（Push Subscription）をDBに保存するためのAPIを実装します。</li>
+                        <li>通知イベントが発生した際、購読情報を使ってWeb Push API経由でプッシュ通知を送信します。</li>
+                    </ol>
+                </li>
+                <li><strong>フロントエンド:</strong>
+                    <ol>
+                        <li>Service Worker用のファイル（<code>service-worker.js</code>）を作成し、プッシュ通知を受け取った際の動作を定義します。</li>
+                        <li>ユーザーに「通知を許可しますか？」という許可ダイアログを表示し、許可されたらプッシュ購読情報を取得してサーバーに送信します。</li>
+                        <li>（任意）Badging APIを使い、アプリアイコンに未読件数を表示します。</li>
+                    </ol>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</body>
+
+</html>
