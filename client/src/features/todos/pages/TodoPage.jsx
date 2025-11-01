@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'; // ★ useCallbackをインポート
 import axios from 'axios'; // axiosをインポート
 import { format } from 'date-fns'; // ★ date-fnsからformatをインポート
+import { ja } from 'date-fns/locale'; // ★ 日本語ロケールをインポート
 import { useAuth } from '../../../providers/AuthProvider';
 import TodoCreateModal from '../components/TodoCreateModal';
 import TodoEditModal from '../components/TodoEditModal';
@@ -184,7 +185,7 @@ function TodoPage() {
                       <span className="me-3"><i className="bi bi-person-check"></i> 依頼先: {todo.requester.map(r => r.username).join(', ')}</span>
                     )}
                     {todo.dueDate && (
-                      <span className="me-3"><i className="bi bi-calendar-check"></i> 期日: {new Date(todo.dueDate).toLocaleDateString()}</span>
+                      <span className="me-3"><i className="bi bi-calendar-check"></i> 期日: {format(new Date(todo.dueDate), 'yyyy/MM/dd (E)', { locale: ja })}</span>
                     )}
                     {/* ★ 修正: 開始日時と終了日時を表示 */}
                     {todo.startDateTime && (
@@ -193,7 +194,7 @@ function TodoPage() {
                     {todo.endDateTime && (
                       <span className="me-3"><i className="bi bi-stop-circle"></i> 終了: {todo.isAllDay ? format(new Date(todo.endDateTime), 'yyyy/MM/dd') : format(new Date(todo.endDateTime), 'yyyy/MM/dd HH:mm')}</span>
                     )}
-                    <span className="me-3"><i className="bi bi-clock"></i> 作成日: {new Date(todo.createdAt).toLocaleDateString()}</span>
+                    <span className="me-3"><i className="bi bi-clock"></i> 作成日: {format(new Date(todo.createdAt), 'yyyy/MM/dd')}</span>
                   </div>
                 </div>
                 <div>
@@ -232,7 +233,7 @@ function TodoPage() {
                         <span className="me-3"><i className="bi bi-person-check"></i> 依頼先: {todo.requester.map(r => r.username).join(', ')}</span>
                       )}
                       {todo.dueDate && (
-                        <span className="me-3"><i className="bi bi-calendar-check"></i> 期日: {new Date(todo.dueDate).toLocaleDateString()}</span>
+                        <span className="me-3"><i className="bi bi-calendar-check"></i> 期日: {format(new Date(todo.dueDate), 'yyyy/MM/dd (E)', { locale: ja })}</span>
                       )}
                       {/* ★ 修正: 開始日時と終了日時を表示 */}
                       {todo.startDateTime && (
@@ -241,9 +242,9 @@ function TodoPage() {
                       {todo.endDateTime && (
                         <span className="me-3"><i className="bi bi-stop-circle"></i> 終了: {todo.isAllDay ? format(new Date(todo.endDateTime), 'yyyy/MM/dd') : format(new Date(todo.endDateTime), 'yyyy/MM/dd HH:mm')}</span>
                       )}
-                      <span className="me-3"><i className="bi bi-clock"></i> 作成: {new Date(todo.createdAt).toLocaleDateString()}</span>
+                      <span className="me-3"><i className="bi bi-clock"></i> 作成: {format(new Date(todo.createdAt), 'yyyy/MM/dd')}</span>
                       {todo.completedBy && (
-                        <span className="me-3 text-success"><i className="bi bi-check-circle-fill"></i> 完了: {todo.completedBy.username} ({new Date(todo.completedAt).toLocaleDateString()})</span>
+                        <span className="me-3 text-success"><i className="bi bi-check-circle-fill"></i> 完了: {todo.completedBy.username} ({format(new Date(todo.completedAt), 'yyyy/MM/dd')})</span>
                       )}
                     </div>
                   </div>

@@ -1,19 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../providers/AuthProvider'; // ★ useAuthフックをインポート
 import axios from 'axios';
-import { Badge, Form, InputGroup } from 'react-bootstrap'; // ★ Form, InputGroupを追加
-import { format, parseISO } from 'date-fns'; // ★ date-fnsからヘルパーをインポート
-
-// 日付文字列を 'YYYY-MM-DD' 形式にフォーマットするヘルパー関数
-const formatDateForInput = (dateString) => {
-  if (!dateString) return '';
-  try {
-    // タイムゾーンの問題を避けるため、ISO文字列から日付部分のみを切り出す
-    return format(parseISO(dateString), 'yyyy-MM-dd');
-  } catch (e) {
-    return '';
-  }
-};
+import { Badge, Form, InputGroup } from 'react-bootstrap';
+import { format, parseISO } from 'date-fns';
+import { ja } from 'date-fns/locale';
+import DatePicker from 'react-datepicker'; // ★★★ react-datepickerをインポート ★★★
+import 'react-datepicker/dist/react-datepicker.css'; // ★★★ スタイルシートをインポート ★★★
 
 function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
   const { user } = useAuth(); // ★ ログイン中のユーザー情報を取得
@@ -28,12 +20,12 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
       setFormData({
         text: todo.text || '',
         priority: todo.priority || '中',
-        dueDate: todo.dueDate ? format(parseISO(todo.dueDate), 'yyyy-MM-dd') : '',
+        dueDate: todo.dueDate ? todo.dueDate.split('T')[0] : null, // ★ nullを許容
         tags: (todo.tags || []).join(', '), // 配列をカンマ区切りの文字列に変換
         requester: (todo.requester || []).map(r => r._id), // ★ IDの配列を取得
-        startDate: todo.startDateTime ? format(parseISO(todo.startDateTime), 'yyyy-MM-dd') : '',
+        startDate: todo.startDateTime ? todo.startDateTime.split('T')[0] : '',
         startTime: todo.startDateTime ? format(parseISO(todo.startDateTime), 'HH:mm') : '',
-        endDate: todo.endDateTime ? format(parseISO(todo.endDateTime), 'yyyy-MM-dd') : '',
+        endDate: todo.endDateTime ? todo.endDateTime.split('T')[0] : '',
         endTime: todo.endDateTime ? format(parseISO(todo.endDateTime), 'HH:mm') : '',
         isAllDay: todo.isAllDay || false, // ★ 追加: 終日フラグをセット
       });
@@ -153,7 +145,17 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
               <div className="row">
                 <Form.Group as="div" className="col-md-6 mb-3">
                   <label htmlFor="dueDate-edit" className="form-label">期日</label>
-                  <Form.Control type="date" id="dueDate-edit" name="dueDate" value={formData.dueDate} onChange={handleChange} readOnly={!canEdit} />
+                  {/* ★★★ DatePickerコンポーネントに置換 ★★★ */}
+                  <DatePicker
+                    selected={formData.dueDate ? new Date(formData.dueDate) : null}
+                    onChange={(date) => setFormData(prev => ({ ...prev, dueDate: date ? format(date, 'yyyy-MM-dd') : null }))}
+                    className="form-control"
+                    dateFormat="yyyy/MM/dd (E)"
+                    locale={ja}
+                    placeholderText="日付を選択"
+                    isClearable
+                    disabled={!canEdit}
+                  />
                 </Form.Group>
               </div>
               <Form.Group className="mb-3">
@@ -169,11 +171,35 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>開始日時</Form.Label>
-                <InputGroup><Form.Control type="date" name="startDate" value={formData.startDate} onChange={handleChange} disabled={!canEdit} /><Form.Control type="time" name="startTime" value={formData.startTime} onChange={handleChange} disabled={!canEdit || formData.isAllDay} /></InputGroup>
+                <DatePicker
+                  selected={formData.startDate ? new Date(`${formData.startDate}T${formData.startTime || '00:00'}`) : null}
+                  onChange={(date) => setFormData(prev => ({ ...prev, startDate: date ? format(date, 'yyyy-MM-dd') : '', startTime: date ? format(date, 'HH:mm') : '' }))}
+                  className="form-control"
+                  dateFormat="yyyy/MM/dd (E) HH:mm"
+                  locale={ja}
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  placeholderText="日時を選択"
+                  isClearable
+                  disabled={!canEdit || formData.isAllDay}
+                />
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>終了日時</Form.Label>
-                <InputGroup><Form.Control type="date" name="endDate" value={formData.endDate} onChange={handleChange} disabled={!canEdit} /><Form.Control type="time" name="endTime" value={formData.endTime} onChange={handleChange} disabled={!canEdit || formData.isAllDay} /></InputGroup>
+                <DatePicker
+                  selected={formData.endDate ? new Date(`${formData.endDate}T${formData.endTime || '00:00'}`) : null}
+                  onChange={(date) => setFormData(prev => ({ ...prev, endDate: date ? format(date, 'yyyy-MM-dd') : '', endTime: date ? format(date, 'HH:mm') : '' }))}
+                  className="form-control"
+                  dateFormat="yyyy/MM/dd (E) HH:mm"
+                  locale={ja}
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  placeholderText="日時を選択"
+                  isClearable
+                  disabled={!canEdit || formData.isAllDay}
+                />
               </Form.Group>
               {/* --- 依頼先選択UI --- */}
               <div className="mb-3">

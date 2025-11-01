@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../../providers/AuthProvider';
+import { format, parseISO } from 'date-fns'; // ★ date-fnsを追加
+import { ja } from 'date-fns/locale'; // ★ 日本語ロケールを追加
+import DatePicker from 'react-datepicker'; // ★★★ react-datepickerをインポート ★★★
+import 'react-datepicker/dist/react-datepicker.css'; // ★★★ スタイルシートをインポート ★★★
 import { Badge, Form, InputGroup } from 'react-bootstrap'; // ★ Form, InputGroupを追加
 
 const INITIAL_STATE = {
@@ -134,7 +138,16 @@ function TodoCreateModal({ show, onClose, onAdd }) {
               <div className="row">
                 <Form.Group as="div" className="col-md-6 mb-3">
                   <Form.Label htmlFor="dueDate">期日</Form.Label>
-                  <Form.Control type="date" id="dueDate" name="dueDate" value={formData.dueDate} onChange={handleChange} />
+                  {/* ★★★ DatePickerコンポーネントに置換 ★★★ */}
+                  <DatePicker
+                    selected={formData.dueDate ? new Date(formData.dueDate) : null}
+                    onChange={(date) => setFormData(prev => ({ ...prev, dueDate: date ? format(date, 'yyyy-MM-dd') : '' }))}
+                    className="form-control"
+                    dateFormat="yyyy/MM/dd (E)"
+                    locale={ja}
+                    placeholderText="日付を選択"
+                    isClearable
+                  />
                 </Form.Group>
               </div>
               {/* ★★★ ここからが新しい日時入力UI ★★★ */}
@@ -150,11 +163,35 @@ function TodoCreateModal({ show, onClose, onAdd }) {
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>開始日時</Form.Label>
-                <InputGroup><Form.Control type="date" name="startDate" value={formData.startDate} onChange={handleChange} /><Form.Control type="time" name="startTime" value={formData.startTime} onChange={handleChange} disabled={formData.isAllDay} /></InputGroup>
+                <DatePicker
+                  selected={formData.startDate ? new Date(`${formData.startDate}T${formData.startTime || '00:00'}`) : null}
+                  onChange={(date) => setFormData(prev => ({ ...prev, startDate: date ? format(date, 'yyyy-MM-dd') : '', startTime: date ? format(date, 'HH:mm') : '' }))}
+                  className="form-control"
+                  dateFormat="yyyy/MM/dd (E) HH:mm"
+                  locale={ja}
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  placeholderText="日時を選択"
+                  isClearable
+                  disabled={formData.isAllDay}
+                />
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>終了日時</Form.Label>
-                <InputGroup><Form.Control type="date" name="endDate" value={formData.endDate} onChange={handleChange} /><Form.Control type="time" name="endTime" value={formData.endTime} onChange={handleChange} disabled={formData.isAllDay} /></InputGroup>
+                <DatePicker
+                  selected={formData.endDate ? new Date(`${formData.endDate}T${formData.endTime || '00:00'}`) : null}
+                  onChange={(date) => setFormData(prev => ({ ...prev, endDate: date ? format(date, 'yyyy-MM-dd') : '' , endTime: date ? format(date, 'HH:mm') : '' }))}
+                  className="form-control"
+                  dateFormat="yyyy/MM/dd (E) HH:mm"
+                  locale={ja}
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  placeholderText="日時を選択"
+                  isClearable
+                  disabled={formData.isAllDay}
+                />
               </Form.Group>
               {/* --- 依頼先選択UI --- */}
               <div className="mb-3">
