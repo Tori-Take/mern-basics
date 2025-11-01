@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Table, Spinner, Alert, Breadcrumb, Form, Modal } from 'react-bootstrap';
 import { systemApiService } from '../systemApiService';
 import axios from 'axios';
 
 function SystemOrganizationDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate(); // ★ ページ遷移用にインポート
   const [departments, setDepartments] = useState([]);
   const [allApplications, setAllApplications] = useState([]);
   const [rootTenant, setRootTenant] = useState(null); // ★ 権限設定対象のテナント
@@ -14,6 +15,7 @@ function SystemOrganizationDetailPage() {
   const [success, setSuccess] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false); // ★ 警告モーダル用のstate
+  const [showDeleteModal, setShowDeleteModal] = useState(false); // ★ 組織削除モーダル用のstate
 
   const loadData = useCallback(async () => {
     try {
@@ -76,6 +78,20 @@ function SystemOrganizationDetailPage() {
     }
   };
 
+  // ★★★ 組織削除の処理を追加 ★★★
+  const handleDeleteTenant = async () => {
+    try {
+      setIsSaving(true); // 削除中もボタンを無効化
+      const response = await systemApiService.deleteTenant(id);
+      // 削除成功後、一覧ページにメッセージを渡して遷移
+      navigate('/system/tenants', { state: { message: response.message } });
+    } catch (err) {
+      setError(err.response?.data?.message || '組織の削除に失敗しました。');
+      setShowDeleteModal(false); // エラー時はモーダルを閉じる
+      setIsSaving(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-center"><Spinner animation="border" /> <span>部署情報を読み込み中...</span></div>;
   }
@@ -95,10 +111,14 @@ function SystemOrganizationDetailPage() {
 
       <Card className="shadow-sm">
         <Card.Header as="h2" className="d-flex justify-content-between align-items-center">
-          <span><i className="bi bi-list-ul me-2"></i>組織・部署管理</span>
+          <span><i className="bi bi-list-ul me-2"></i>組織・部署管理: {rootTenant?.name}</span>
           <div>
             <Button as={Link} to={`/system/tenants/${id}/tree`} variant="outline-secondary" className="me-2">
               <i className="bi bi-diagram-3 me-1"></i> 組織図で表示
+            </Button>
+            {/* ★ 組織削除ボタンを追加 */}
+            <Button variant="outline-danger" onClick={() => setShowDeleteModal(true)}>
+              <i className="bi bi-trash3 me-1"></i> この組織を削除
             </Button>
           </div>
         </Card.Header>
@@ -178,6 +198,24 @@ function SystemOrganizationDetailPage() {
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowConfirmModal(false)} disabled={isSaving}>キャンセル</Button>
           <Button variant="danger" onClick={handleSaveChanges} disabled={isSaving}>変更を保存して実行</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* ★★★ 組織削除確認モーダル ★★★ */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>組織の削除</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="danger">
+            <Alert.Heading><i className="bi bi-exclamation-triangle-fill me-2"></i>本当に削除しますか？</Alert.Heading>
+            <p>組織「<strong>{rootTenant?.name}</strong>」を削除すると、この組織に所属する全ての部署、ユーザー、および関連するデータが完全に削除されます。</p>
+            <p className="mb-0"><strong>この操作は元に戻すことができません。</strong></p>
+          </Alert>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)} disabled={isSaving}>キャンセル</Button>
+          <Button variant="danger" onClick={handleDeleteTenant} disabled={isSaving}>削除実行</Button>
         </Modal.Footer>
       </Modal>
     </>

@@ -154,12 +154,20 @@ router.post('/', [auth, admin], async (req, res) => {
   }
 
   try {
-    // ★ parentIdが指定されていればそれを使い、なければログインユーザーのテナントを親とする
-    const parentTenantId = parentId || req.user.tenantId;
+    // ★★★ Superuserによるトップレベル組織作成のロジック ★★★
+    let parentTenantId = parentId;
+    if (!parentId) {
+      // parentIdが指定されていない場合
+      if (!req.user.roles.includes('superuser')) {
+        // Superuserでなければ、自分の所属部署を親として設定する
+        parentTenantId = req.user.tenantId;
+      }
+      // Superuserの場合は、parentTenantIdはnullのままとなり、トップレベル組織が作成される
+    }
 
     const newTenant = new Tenant({
       name: name.trim(),
-      parent: parentTenantId,
+      parent: parentTenantId, // parentIdがなければnullが設定される
     });
 
     const tenant = await newTenant.save();

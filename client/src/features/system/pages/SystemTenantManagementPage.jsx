@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { systemApiService } from '../systemApiService';
-import { Table, Button, Spinner, Alert, Card, Breadcrumb } from 'react-bootstrap';
+import { Table, Button, Spinner, Alert, Card, Breadcrumb, Modal, Form } from 'react-bootstrap';
+import axios from 'axios'; // ★ API呼び出し用にインポート
 
 const SystemTenantManagementPage = () => {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  // ★ モーダル用のstateを追加
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newTenantName, setNewTenantName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [modalError, setModalError] = useState('');
 
   const fetchTenants = useCallback(async () => {
     try {
@@ -27,18 +33,25 @@ const SystemTenantManagementPage = () => {
     fetchTenants();
   }, [fetchTenants]);
 
-  const handleDelete = async (tenantId, tenantName) => {
-    if (window.confirm(`本当に組織「${tenantName}」を削除しますか？\nこの操作は元に戻せません。関連する全てのユーザーとデータが完全に削除されます。`)) {
-      try {
-        setLoading(true); // 操作開始
-        const response = await systemApiService.deleteTenant(tenantId);
-        setSuccess(response.message);
-        // 削除成功後、リストを再読み込み
-        await fetchTenants();
-      } catch (err) {
-        setError(err.response?.data?.message || '組織の削除に失敗しました。');
-        setLoading(false); // エラー時はローディングを解除
-      }
+  // ★ 新規組織作成の処理
+  const handleCreateTenant = async () => {
+    if (!newTenantName.trim()) {
+      setModalError('組織名を入力してください。');
+      return;
+    }
+    setIsCreating(true);
+    setModalError('');
+    try {
+      // parentIdを指定せずにPOSTリクエストを送る
+      await axios.post('/api/tenants', { name: newTenantName });
+      setSuccess(`新しい組織「${newTenantName}」が作成されました。`);
+      setShowCreateModal(false);
+      setNewTenantName('');
+      await fetchTenants(); // リストを再読み込み
+    } catch (err) {
+      setModalError(err.response?.data?.message || '組織の作成に失敗しました。');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -50,8 +63,11 @@ const SystemTenantManagementPage = () => {
       </Breadcrumb>
 
       <Card className="shadow-sm">
-        <Card.Header as="h2">
+        <Card.Header as="h2" className="d-flex justify-content-between align-items-center">
           <span><i className="bi bi-diagram-3 me-2"></i>組織管理</span>
+          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+            <i className="bi bi-plus-circle me-2"></i>新規組織作成
+          </Button>
         </Card.Header>
         <Card.Body>
           {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
@@ -72,13 +88,12 @@ const SystemTenantManagementPage = () => {
               <tbody>
                 {tenants.map((tenant) => (
                   <tr key={tenant._id}>
-                    <td>
-                      <Link to={`/system/tenants/${tenant._id}/departments`}>{tenant.name}</Link>
-                    </td>
+                    <td>{tenant.name}</td>
                     <td className="text-center">{tenant.userCount}</td>
                     <td className="text-center">
-                      <Button variant="outline-danger" size="sm" onClick={() => handleDelete(tenant._id, tenant.name)} disabled={loading}>
-                        {loading ? <Spinner as="span" animation="border" size="sm" /> : '削除'}
+                      {/* ★ 編集ボタンに変更 */}
+                      <Button as={Link} to={`/system/tenants/${tenant._id}/departments`} variant="outline-primary" size="sm">
+                        <i className="bi bi-pencil-square me-1"></i>編集
                       </Button>
                     </td>
                   </tr>
@@ -88,6 +103,32 @@ const SystemTenantManagementPage = () => {
           )}
         </Card.Body>
       </Card>
+
+      {/* ★★★ 新規組織作成モーダル ★★★ */}
+      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>新規組織作成</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {modalError && <Alert variant="danger">{modalError}</Alert>}
+          <Form.Group>
+            <Form.Label>新しい組織名</Form.Label>
+            <Form.Control
+              type="text"
+              value={newTenantName}
+              onChange={(e) => setNewTenantName(e.target.value)}
+              placeholder="例: 株式会社B"
+              autoFocus
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCreateModal(false)} disabled={isCreating}>キャンセル</Button>
+          <Button variant="primary" onClick={handleCreateTenant} disabled={isCreating}>
+            {isCreating ? <><Spinner as="span" size="sm" /> 作成中...</> : '作成'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };
