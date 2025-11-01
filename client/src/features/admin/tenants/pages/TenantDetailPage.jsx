@@ -10,13 +10,11 @@ function TenantDetailPage() {
   const [tenant, setTenant] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   // モーダル関連のState
   const [showModal, setShowModal] = useState(false);
   const [modalContext, setModalContext] = useState({ mode: '', title: '', label: '', buttonText: '' });
   const [inputValue, setInputValue] = useState('');
   const [modalError, setModalError] = useState('');
-
   // 削除確認モーダル用のState
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 

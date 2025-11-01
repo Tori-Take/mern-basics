@@ -147,7 +147,7 @@ class UserController {
    */
   static async getUserById(req, res) {
     try {
-      const user = await userService.getAccessibleUserById(req.params.id, req.user.tenantId?._id);
+      const user = await userService.getAccessibleUserById(req.params.id, req.user);
       res.json(user);
     } catch (err) {
       // ObjectIdエラーなども含めてサービス層でハンドリングされる
@@ -242,6 +242,11 @@ class UserController {
  * CSVからユーザーを一括登録・更新する
  */
 UserController.bulkImportUsers = async (req, res) => {
+  // ★★★ デバッグ用コンソールログを追加 ★★★
+  console.log('--- [DEBUG] Bulk Import API Called ---');
+  console.log('Request Body:', JSON.stringify(req.body, null, 2));
+  // ★★★ ここまで ★★★
+
   const { users: csvData } = req.body;
   const operator = req.user;
 
@@ -257,10 +262,26 @@ UserController.bulkImportUsers = async (req, res) => {
 
   try {
     // --- 前処理：検証用のデータを一括取得 ---
-    const accessibleTenantIds = await getAccessibleTenantIds(operator.tenantId);
+    const accessibleTenantIds = await getAccessibleTenantIds(operator);
 
     // 1. アクセス可能なテナントをMap形式で取得 (名前 -> ID)
-    const accessibleTenants = await Tenant.find({ _id: { $in: accessibleTenantIds } });
+    // ★★★ 権限継承ロジックをここでも適用 ★★★
+    const accessibleTenantsRaw = await Tenant.find({ _id: { $in: accessibleTenantIds } }).select('name _id parent availablePermissions').lean();
+    const tenantMapForInheritance = new Map(accessibleTenantsRaw.map(t => [t._id.toString(), t]));
+
+    const getInheritedPermissions = (tenantId) => {
+      const tenant = tenantMapForInheritance.get(tenantId.toString());
+      if (!tenant) return [];
+      const parentPermissions = tenant.parent ? getInheritedPermissions(tenant.parent) : [];
+      return [...new Set([...parentPermissions, ...(tenant.availablePermissions || [])])];
+    };
+
+    const accessibleTenants = accessibleTenantsRaw.map(tenant => {
+      tenant.availablePermissions = getInheritedPermissions(tenant._id);
+      return tenant;
+    });
+    // ★★★ ここまで ★★★
+
     const tenantNameMap = new Map(accessibleTenants.map(t => [t.name, t._id]));
 
     // 2. 利用可能なロールをSet形式で取得 (名前)
@@ -278,8 +299,10 @@ UserController.bulkImportUsers = async (req, res) => {
       let validationErrors = [];
 
       // --- 行ごとの検証（門番） ---
-      // ★ 修正: 重複していた行を削除
+      // ★ 修正: CSVの行データから各変数を宣言する行を復活させる
       const { _id, username, email, password, tenantName, roles: rolesStr, permissions: permissionsStr, status } = row;
+
+      // ★ 修正: 重複していた行を削除
 
       // 1. 必須項目のチェック
       if (!username) validationErrors.push('ユーザー名は必須です。');
@@ -288,12 +311,18 @@ UserController.bulkImportUsers = async (req, res) => {
 
       // 2. 所属部署の検証
       let targetTenantId = null;
+      let targetTenantAvailablePermissions = []; // ★ 権限検証用に部署の利用可能権限を保持
       if (!tenantName) {
         validationErrors.push('所属部署は必須です。');
       } else if (!tenantNameMap.has(tenantName)) {
         validationErrors.push(`所属部署「${tenantName}」は存在しないか、アクセス権がありません。`);
       } else {
         targetTenantId = tenantNameMap.get(tenantName);
+        // ★ 部署の利用可能権限を取得
+        const targetTenant = accessibleTenants.find(t => t._id.equals(targetTenantId));
+        if (targetTenant) {
+          targetTenantAvailablePermissions = targetTenant.availablePermissions || [];
+        }
       }
 
       // 3. 役割の検証
@@ -321,7 +350,12 @@ UserController.bulkImportUsers = async (req, res) => {
         }
       }
 
-      // 6. 更新の場合、対象ユーザーへのアクセス権をチェック
+      // ★ 6. 付与しようとしている権限が、所属部署で許可されているか検証
+      if (!operator.roles.includes('superuser') && !permissions.every(p => targetTenantAvailablePermissions.includes(p))) {
+        validationErrors.push('所属部署で許可されていない権限を付与しようとしています。');
+      }
+
+      // 7. 更新の場合、対象ユーザーへのアクセス権をチェック
       if (_id) {
           const userToUpdate = await User.findById(_id);
           if (!userToUpdate) {
@@ -347,7 +381,7 @@ UserController.bulkImportUsers = async (req, res) => {
           userToUpdate.email = email;
           userToUpdate.tenantId = targetTenantId;
           userToUpdate.roles = roles;
-          userToUpdate.permissions = permissions;
+      userToUpdate.permissions = permissions;
           if (status) userToUpdate.status = status;
           if (password) {
             const salt = await bcrypt.genSalt(10);
@@ -373,7 +407,7 @@ UserController.bulkImportUsers = async (req, res) => {
             userFriendlyMessage = '一意であるべき項目が重複しています。';
           }
         }
-        results.errors.push({ row: rowNum, messages: [userFriendlyMessage] }); // ★ 修正: 重複していた行を削除
+        results.errors.push({ row: rowNum, messages: [userFriendlyMessage] });
       }
     }
     res.status(200).json(results);

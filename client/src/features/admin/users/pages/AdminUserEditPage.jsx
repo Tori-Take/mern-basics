@@ -22,6 +22,7 @@ function AdminUserEditPage() {
   const [allTenants, setAllTenants] = useState([]); // ★ 全テナント情報を保持
   const [allRoles, setAllRoles] = useState([]);
   const [showModal, setShowModal] = useState(false); // モーダルの表示状態
+  const [tenantAvailablePermissions, setTenantAvailablePermissions] = useState([]); // ★ テナントで利用可能な権限
   const [treeData, setTreeData] = useState([]); // 組織図データ
   const [treeLoading, setTreeLoading] = useState(false); // 組織図のローディング状態
   const [selectedTenantId, setSelectedTenantId] = useState(null); // ★ 選択された部署IDを管理するstate
@@ -37,20 +38,42 @@ function AdminUserEditPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
+        console.log('--- [DEBUG] Fetching data for user edit page ---'); // ★ログ1: 処理開始
         const [userRes, rolesRes, tenantsRes, appsRes] = await Promise.all([
           axios.get(`/api/users/${id}`),
           axios.get('/api/roles'),
-          axios.get('/api/tenants'),
+          axios.get('/api/tenants/all'), // ★ 全テナント情報を取得するAPIに変更
           axios.get('/api/applications'), // ★ アプリケーション一覧を取得
         ]);
+
+        // ★ログ2: 取得したデータの中身を確認
+        console.log('[DEBUG] 1. Fetched User Data:', userRes.data);
+        console.log('[DEBUG] 2. Fetched All Tenants Data:', tenantsRes.data);
+        console.log('[DEBUG] 3. Fetched All Applications Data:', appsRes.data.data);
 
         setFormData(userRes.data);
         setAllRoles(rolesRes.data);
         setAllTenants(tenantsRes.data);
         setAllApplications(appsRes.data.data); // ★ 取得したデータをstateに保存
         setPermissionsString((userRes.data.permissions || []).join(', ')); // ★ 初期値を設定
+
+        // ★ ユーザーが所属するテナントの利用可能権限を取得
+        const userTenant = tenantsRes.data.find(t => t._id === userRes.data.tenantId);
+
+        // ★ログ4: テナント検索結果を確認
+        console.log('[DEBUG] 4. Found user\'s tenant from the list:', userTenant);
+
+        if (userTenant) {
+          setTenantAvailablePermissions(userTenant.availablePermissions || []);
+          // ★ログ5: 最終的にstateにセットされる権限リストを確認
+          console.log('[DEBUG] 5. Setting tenantAvailablePermissions to:', userTenant.availablePermissions || []);
+        } else {
+          console.warn('[DEBUG] 5. User\'s tenant could not be found in the tenants list. `tenantAvailablePermissions` will be empty.');
+        }
       } catch (err) {
-        setError(err.response?.data?.message || 'データの取得に失敗しました。');
+        // ★ログ4: エラー発生時の詳細な報告
+        console.error('--- [DEBUG] Error fetching data ---', err);
+        setError(err.response?.data?.message || `データの取得に失敗しました: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -220,9 +243,20 @@ function AdminUserEditPage() {
             <Form.Label>利用可能アプリ</Form.Label>
             {/* ★ テキストエリアをチェックボックスに置き換え */}
             <div className="permissions-checkbox-group">
-              {allApplications.length > 0 ? allApplications.map(app => (
-                <Form.Check type="checkbox" id={`perm-${app.permissionKey}`} key={app.permissionKey} label={`${app.name} (${app.permissionKey})`} value={app.permissionKey} checked={formData.permissions?.includes(app.permissionKey) || false} onChange={handlePermissionChange} />
-              )) : (
+              {allApplications.length > 0 ? allApplications.map(app => {
+                // ★ Superuserでない場合、テナントで許可された権限のみ表示
+                if (!currentUser.roles.includes('superuser') && !tenantAvailablePermissions.includes(app.permissionKey)) {
+                  return null;
+                }
+                return (
+                  <Form.Check
+                    type="checkbox"
+                    id={`perm-${app.permissionKey}`}
+                    key={app.permissionKey}
+                    label={`${app.name} (${app.permissionKey})`}
+                    value={app.permissionKey} checked={formData.permissions?.includes(app.permissionKey) || false} onChange={handlePermissionChange} />
+                );
+              }) : (
                 <p className="text-muted">利用可能なアプリケーションがありません。</p>
               )}
             </div>

@@ -1,28 +1,80 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Card, Button, Table, Spinner, Alert, Breadcrumb } from 'react-bootstrap';
+import { Card, Button, Table, Spinner, Alert, Breadcrumb, Form, Modal } from 'react-bootstrap';
 import { systemApiService } from '../systemApiService';
+import axios from 'axios';
 
 function SystemOrganizationDetailPage() {
   const { id } = useParams();
   const [departments, setDepartments] = useState([]);
+  const [allApplications, setAllApplications] = useState([]);
+  const [rootTenant, setRootTenant] = useState(null); // ★ 権限設定対象のテナント
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false); // ★ 警告モーダル用のstate
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      const [deptsRes, appsRes, tenantRes] = await Promise.all([
+        systemApiService.getDepartmentListById(id),
+        axios.get('/api/applications'),
+        axios.get(`/api/tenants/${id}`), // ★ 権限設定のためにルートテナント情報を取得
+      ]);
+
+      setDepartments(deptsRes);
+      setAllApplications(appsRes.data.data);
+      setRootTenant(tenantRes.data);
+
+    } catch (err) {
+      setError(err.response?.data?.message || 'データの取得に失敗しました。');
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
   useEffect(() => {
-    const loadDepartments = async () => {
-      try {
-        setLoading(true);
-        const data = await systemApiService.getDepartmentListById(id);
-        setDepartments(data);
-      } catch (err) {
-        setError(err.response?.data?.message || '部署情報の取得に失敗しました。');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadDepartments();
-  }, [id]);
+    loadData();
+  }, [loadData]);
+
+  const handlePermissionChange = (e) => {
+    const { value, checked } = e.target;
+    setRootTenant(prev => {
+      const currentPermissions = prev.availablePermissions || [];
+      const newPermissions = checked
+        ? [...currentPermissions, value]
+        : currentPermissions.filter(p => p !== value);
+      return { ...prev, availablePermissions: newPermissions };
+    });
+  };
+
+  // ★ 保存ボタンがクリックされたら、まず確認モーダルを表示
+  const handleSaveClick = () => {
+    setShowConfirmModal(true);
+  };
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await axios.put(`/api/tenants/${id}/permissions`, {
+        permissions: rootTenant.availablePermissions,
+      });
+      setRootTenant(res.data);
+      setSuccess('利用可能なアプリケーションが正常に更新されました。');
+    } catch (err) {
+      setError(err.response?.data?.message || '更新に失敗しました。');
+    } finally {
+      setIsSaving(false);
+      setShowConfirmModal(false); // ★ モーダルを閉じる
+    }
+  };
 
   if (loading) {
     return <div className="text-center"><Spinner animation="border" /> <span>部署情報を読み込み中...</span></div>;
@@ -52,6 +104,40 @@ function SystemOrganizationDetailPage() {
         </Card.Header>
         <Card.Body>
           {error && <Alert variant="danger">{error}</Alert>}
+          {success && <Alert variant="success" onClose={() => setSuccess('')} dismissible>{success}</Alert>}
+
+          {/* ★★★ 利用可能アプリケーション設定UI ★★★ */}
+          <Card className="mb-4 border-primary">
+            <Card.Header as="h3" className="fs-5 bg-primary text-white">利用可能アプリケーション設定</Card.Header>
+            <Card.Body>
+              <Form>
+                <Form.Group>
+                  <Form.Label>この組織（<strong>{rootTenant?.name}</strong>）で利用を許可するアプリケーションを選択してください。</Form.Label>
+                  <div className="permissions-checkbox-group mt-2">
+                    {allApplications.length > 0 ? allApplications.map(app => (
+                      <Form.Check
+                        type="checkbox"
+                        id={`perm-${app.permissionKey}`}
+                        key={app.permissionKey}
+                        label={`${app.name} (${app.permissionKey})`}
+                        value={app.permissionKey}
+                        checked={rootTenant?.availablePermissions?.includes(app.permissionKey) || false}
+                        onChange={handlePermissionChange}
+                      />
+                    )) : (
+                      <p className="text-muted">システムにアプリケーションが登録されていません。</p>
+                    )}
+                  </div>
+                </Form.Group>
+                <div className="text-end mt-3">
+                  <Button variant="primary" onClick={handleSaveClick} disabled={isSaving || !rootTenant}>
+                    {isSaving ? <><Spinner as="span" size="sm" /> 保存中...</> : '権限を保存'}
+                  </Button>
+                </div>
+              </Form>
+            </Card.Body>
+          </Card>
+
           <Table striped bordered hover responsive>
             <thead>
               <tr>
@@ -75,6 +161,25 @@ function SystemOrganizationDetailPage() {
           </Table>
         </Card.Body>
       </Card>
+
+      {/* ★★★ 権限変更確認モーダル ★★★ */}
+      <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>権限変更の確認</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="warning">
+            <Alert.Heading><i className="bi bi-exclamation-triangle-fill me-2"></i>警告</Alert.Heading>
+            <p>利用可能なアプリケーションの権限を変更すると、この組織および配下の全部署に所属するユーザーに影響があります。</p>
+            <p className="mb-0">もし権限を削除（チェックを外す）した場合、該当するユーザーからそのアプリケーションの利用権限が<strong>即座に剥奪されます。</strong></p>
+          </Alert>
+          <p>この操作を続行しますか？</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowConfirmModal(false)} disabled={isSaving}>キャンセル</Button>
+          <Button variant="danger" onClick={handleSaveChanges} disabled={isSaving}>変更を保存して実行</Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 }

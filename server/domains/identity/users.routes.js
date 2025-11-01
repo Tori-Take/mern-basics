@@ -65,7 +65,7 @@ router.get('/', [auth, admin], async (req, res) => {
     let query = {};
     // superuserでなければ、アクセス可能なテナントに所属するユーザーのみを返す
     if (!req.user.roles.includes('superuser')) {
-      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user);
       query = { tenantId: { $in: accessibleTenantIds } };
     }
     const users = await User.find(query).select('-password').sort({ createdAt: 'desc' });

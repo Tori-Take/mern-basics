@@ -26,7 +26,7 @@ router.get('/', [auth, admin], async (req, res) => {
     }
 
     // 3. ログインユーザーがアクセス可能なテナントIDリストを取得
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user);
 
     // 4. ツリー構造に変換（アクセス可能フラグを付与）
     const tenantTree = tenantService.buildTenantTree(allTenantsInHierarchy, accessibleTenantIds);
@@ -59,7 +59,31 @@ router.get('/', [auth, admin], async (req, res) => {
  */
 router.get('/all', [auth, admin], async (req, res) => {
   try {
-    const tenants = await Tenant.find({}).select('name _id');
+    // ★★★ 権限継承ロジックを実装 ★★★
+    // 1. 全てのテナントを必要な情報と共に取得
+    const allTenants = await Tenant.find({}).select('name _id parent availablePermissions').lean();
+
+    // 2. 親から子への権限継承を計算する
+    const tenantMap = new Map(allTenants.map(t => [t._id.toString(), t]));
+
+    const getInheritedPermissions = (tenantId) => {
+      const tenant = tenantMap.get(tenantId.toString());
+      if (!tenant) return [];
+
+      const parentPermissions = tenant.parent ? getInheritedPermissions(tenant.parent) : [];
+      // Setを使って重複を除去しつつ、親と自身の権限をマージする
+      return [...new Set([...parentPermissions, ...(tenant.availablePermissions || [])])];
+    };
+
+    // 3. 各テナントに、計算済みの最終的な権限リストを追加する
+    const tenants = allTenants.map(tenant => {
+      const finalPermissions = getInheritedPermissions(tenant._id);
+      // 元のオブジェクトにavailablePermissionsを上書きして返す
+      // lean()を使っているので、直接プロパティを変更できる
+      tenant.availablePermissions = finalPermissions;
+      return tenant;
+    });
+
     res.json(tenants);
   } catch (err) {
     res.status(500).send('サーバーエラーが発生しました。');
@@ -83,7 +107,8 @@ router.get('/:id', [auth, admin], async (req, res) => {
 
     // --- セキュリティ強化 ---
     // 1. ログイン管理者がアクセス可能なテナントIDリストを取得
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user);
+
     // 2. アクセスしようとしているテナントが、そのリストに含まれているか検証
     const isAllowed = accessibleTenantIds.some(id => id.equals(tenantId));
     if (!isAllowed) {
@@ -165,7 +190,7 @@ router.put('/:id', [auth, admin], async (req, res) => {
     const tenantIdToUpdate = req.params.id;
 
     // --- セキュリティ強化 ---
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user);
     const isAllowed = accessibleTenantIds.some(id => id.equals(tenantIdToUpdate));
     if (!isAllowed) {
       return res.status(403).json({ message: 'この部署を編集する権限がありません。' });
@@ -189,6 +214,57 @@ router.put('/:id', [auth, admin], async (req, res) => {
 });
 
 /**
+ * @route   PUT /api/tenants/:id/permissions
+ * @desc    テナントで利用可能なアプリケーション権限を更新する
+ * @access  Private (Superuser only)
+ */
+router.put('/:id/permissions', [auth, (req, res, next) => {
+  // Superuserのみを許可するインラインミドルウェア
+  if (!req.user.roles.includes('superuser')) {
+    return res.status(403).json({ message: 'この操作はスーパーユーザーのみ許可されています。' });
+  }
+  next();
+}], async (req, res) => {
+  try {
+    const { permissions } = req.body;
+    if (!Array.isArray(permissions)) {
+      return res.status(400).json({ message: '不正なリクエストです。permissionsは配列である必要があります。' });
+    }
+
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) {
+      return res.status(404).json({ message: 'テナントが見つかりません。' });
+    }
+
+    // 1. 更新前の権限リストを保持
+    const oldPermissions = [...tenant.availablePermissions];
+
+    // 2. テナントの権限を更新
+    tenant.availablePermissions = permissions;
+    await tenant.save();
+
+    // 3. 削除された権限を特定
+    const removedPermissions = oldPermissions.filter(p => !permissions.includes(p));
+
+    // 4. 削除された権限があれば、配下の全ユーザーから権限を剥奪
+    if (removedPermissions.length > 0) {
+      // 4a. このテナント配下の全テナントIDを取得
+      const subTenantIds = await tenantService.getTenantHierarchy(req.params.id);
+      const targetTenantIds = [tenant._id, ...subTenantIds.map(t => t._id)];
+
+      // 4b. 該当する全ユーザーのpermissions配列から、削除された権限を$pullで取り除く
+      await User.updateMany(
+        { tenantId: { $in: targetTenantIds } },
+        { $pull: { permissions: { $in: removedPermissions } } }
+      );
+    }
+    res.json(tenant); // 更新後のテナント情報を返す
+  } catch (err) {
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
+/**
  * @route   DELETE /api/tenants/:id
  * @desc    テナント（部署）を削除する
  * @access  Private (Admin)
@@ -198,7 +274,7 @@ router.delete('/:id', [auth, admin], async (req, res) => {
     const tenantIdToDelete = req.params.id;
 
     // --- セキュリティ強化 ---
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId?._id);
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user);
     const isAllowed = accessibleTenantIds.some(id => id.equals(tenantIdToDelete));
     if (!isAllowed) {
       return res.status(403).json({ message: 'この部署を削除する権限がありません。' });

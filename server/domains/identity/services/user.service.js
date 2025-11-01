@@ -246,11 +246,11 @@ class UserService {
   /**
    * 管理者がアクセス可能な特定のユーザーを取得します。
    * @param {string} userId - 取得対象のユーザーID。
-   * @param {string} adminTenantId - 管理者のテナントID。
+   * @param {object} adminUser - 操作を実行している管理者ユーザーのオブジェクト。
    * @returns {Promise<User>} ユーザーオブジェクト。
    */
-  async getAccessibleUserById(userId, adminTenantId) {
-    const accessibleTenantIds = await getAccessibleTenantIds(adminTenantId);
+  async getAccessibleUserById(userId, adminUser) {
+    const accessibleTenantIds = await getAccessibleTenantIds(adminUser);
     const user = await this.userRepository.findAccessibleUserById(userId, accessibleTenantIds);
     if (!user) {
       const error = new Error('ユーザーが見つからないか、アクセス権がありません。');
@@ -270,7 +270,7 @@ class UserService {
    */
   async updateUserByAdmin(userIdToUpdate, updateData, adminUser) {
     // ★ adminUserオブジェクトから直接IDを取得
-    const accessibleTenantIds = await getAccessibleTenantIds(adminUser.tenantId?._id);
+    const accessibleTenantIds = await getAccessibleTenantIds(adminUser);
     const user = await this.userRepository.findFullAccessibleUserById(userIdToUpdate, accessibleTenantIds); // ★ 更新対象のユーザー
 
     if (!user) {
@@ -297,6 +297,19 @@ class UserService {
       }
     }
 
+    // --- ★★★ 新しい権限チェックロジック ★★★ ---
+    // superuserでなければ、付与する権限がテナントに許可されているか検証
+    if (permissions && !adminUser.roles.includes('superuser')) {
+      // ユーザーが所属する(または異動する)テナントの情報を取得
+      const targetTenantId = tenantId || user.tenantId;
+      const tenant = await Tenant.findById(targetTenantId);
+      const availablePermissions = tenant?.availablePermissions || [];
+      if (!permissions.every(p => availablePermissions.includes(p))) {
+        const error = new Error('このテナントで許可されていない権限を付与することはできません。');
+        error.statusCode = 403;
+        throw error;
+      }
+    }
     // --- ★★★ ここからが新しい権限チェックロジック ★★★ ---
     // 新しい所属部署(tenantId)がリクエストに含まれている場合、その部署への異動権限を検証する
     await this._validateTenantMovePermission(user, tenantId, accessibleTenantIds);

@@ -15,7 +15,12 @@ const tenantSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Tenant', // 自分自身（'Tenant'モデル）を参照するのがポイント
     default: null, // 親がいない場合（最上位の組織）はnull
-  }
+  },
+  // ★ このテナントで利用可能なアプリケーション権限キーのリスト
+  availablePermissions: {
+    type: [String],
+    default: [],
+  },
 }, { timestamps: true });
 
 const Tenant = mongoose.model('Tenant', tenantSchema);
