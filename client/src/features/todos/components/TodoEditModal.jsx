@@ -202,7 +202,20 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
                 <div className="mt-2">
                   {formData.requester?.map(userId => {
                     const user = assignableUsers.find(u => u._id === userId);
-                    return user ? <Badge key={userId} pill bg="primary" className="me-1 fw-normal">{user.username}</Badge> : null;
+                    // ★★★ 修正: Badgeをクリック可能にし、削除機能を追加 ★★★
+                    return user ? (
+                      <Badge
+                        key={userId}
+                        pill
+                        bg="primary"
+                        className="me-1 fw-normal"
+                        onClick={() => canEdit && handleRequesterClick(userId)}
+                        style={{ cursor: canEdit ? 'pointer' : 'default' }}
+                      >
+                        {user.username}
+                        {canEdit && <span className="ms-1">&times;</span>}
+                      </Badge>
+                    ) : null;
                   })}
                 </div>
               </div>

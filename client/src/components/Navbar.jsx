@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../providers/AuthProvider';
 import { Navbar as BootstrapNavbar, Nav, NavDropdown } from 'react-bootstrap';
+import NotificationCenter from './NotificationCenter'; // ★ 1. 新しくインポート
 
 function Navbar() {
   const { isAuthenticated, logout, user } = useAuth();
@@ -24,6 +25,11 @@ function Navbar() {
         <Nav>
           {isAuthenticated ? (
             <>
+              {/* ★★★ 2. ここに通知センターを配置 ★★★ */}
+              <div className="d-flex align-items-center me-2">
+                <NotificationCenter />
+              </div>
+
               {/* Superuserの場合: 管理機能をドロップダウンにまとめる */}
               {user?.roles?.includes('superuser') && (
                 <NavDropdown title={<><i className="bi bi-gear-wide-connected"></i> 管理メニュー</>} id="admin-menu-dropdown" align="end">

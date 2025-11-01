@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // ★ useCallbackをインポート
 import axios from 'axios'; // axiosをインポート
 import { format } from 'date-fns'; // ★ date-fnsからformatをインポート
 import { useAuth } from '../../../providers/AuthProvider';
@@ -48,18 +48,19 @@ function TodoPage() {
     fetchTodos();
   }, [queryOptions]); // queryOptionsが変更されたら再取得
 
-  const handleAddTodo = async (todoData) => {
+  // ★★★ useCallbackで関数をメモ化 ★★★
+  const handleAddTodo = useCallback(async (todoData) => {
     try {
       const response = await axios.post(API_URL, todoData);
       const newTodo = response.data; // サーバーから返された新しいTODOオブジェクト
 
-      setTodos([...todos, newTodo]);
+      setTodos(prevTodos => [...prevTodos, newTodo]); // ★ 依存関係をなくすため、関数形式で更新
       setIsCreateModalOpen(false); // 成功したらモーダルを閉じる
     } catch (error) {
       setError('TODOの追加に失敗しました。');
       console.error('TODOの追加中にエラーが発生しました:', error);
     }
-  };
+  }, []); // ★ 依存配列を空にすることで、この関数は初回レンダリング時に一度だけ生成される
 
   const handleToggleComplete = async (id) => {
     try {

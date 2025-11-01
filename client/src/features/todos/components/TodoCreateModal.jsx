@@ -57,8 +57,8 @@ function TodoCreateModal({ show, onClose, onAdd }) {
   }, [show, currentUser]); // ★ currentUserを依存配列に追加
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    // ★ 修正: チェックボックスの変更に対応
+    // ★★★ 修正: typeとcheckedもe.targetから取り出す ★★★
+    const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
     setFormData(prev => ({ ...prev, [name]: newValue }));
   };
@@ -182,7 +182,19 @@ function TodoCreateModal({ show, onClose, onAdd }) {
                 <div className="mt-2">
                   {formData.requester.map(userId => {
                     const user = assignableUsers.find(u => u._id === userId);
-                    return user ? <Badge key={userId} pill bg="primary" className="me-1 fw-normal">{user.username}</Badge> : null;
+                    return user ? (
+                      // ★★★ 修正: Badgeをクリック可能にし、削除機能を追加 ★★★
+                      <Badge
+                        key={userId}
+                        pill
+                        bg="primary"
+                        className="me-1 fw-normal"
+                        onClick={() => handleRequesterClick(userId)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {user.username} &times;
+                      </Badge>
+                    ) : null;
                   })}
                 </div>
               </div>

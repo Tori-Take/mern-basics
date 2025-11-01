@@ -28,6 +28,7 @@ app.use('/api/roles', rolesRouter);
 app.use('/api/tenants', tenantsRouter);
 app.use('/api/system', require('./domains/system/system.routes.js'));
 app.use('/api/applications', require('./domains/applications/applications.routes.js'));
+app.use('/api/notifications', require('./domains/notifications/notifications.routes.js')); // ★ 通知APIを登録
 
 // --- 本番環境用の設定 ---
 if (process.env.NODE_ENV === 'production') {
