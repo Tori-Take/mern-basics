@@ -2,6 +2,7 @@ const User = require('./user.model');
 const Tenant = require('../organization/tenant.model');
 const bcrypt = require('bcryptjs');
 const Role = require('../organization/role.model');
+const { Application } = require('../applications/application.model'); // ★ 分割代入で正しくインポート
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { getAccessibleTenantIds } = require('../../core/services/permissionService');
@@ -241,11 +242,6 @@ class UserController {
  * CSVからユーザーを一括登録・更新する
  */
 UserController.bulkImportUsers = async (req, res) => {
-  // ★★★ デバッグ用コンソールログを追加 ★★★
-  console.log('--- [DEBUG] Bulk Import API Called ---');
-  console.log('Request Body:', JSON.stringify(req.body, null, 2));
-  // ★★★ ここまで ★★★
-
   const { users: csvData } = req.body;
   const operator = req.user;
 
@@ -272,13 +268,18 @@ UserController.bulkImportUsers = async (req, res) => {
     const customRoles = await Role.find({ tenantId: operator.tenantId });
     const validRoleSet = new Set([...PROTECTED_ROLES, ...customRoles.map(r => r.name)]);
 
+    // 3. 利用可能な全アプリケーション権限をSet形式で取得 (permissionKey)
+    const allApplications = await Application.find({});
+    const validPermissionSet = new Set(allApplications.map(app => app.permissionKey));
+
     // --- 各行の処理 ---
     for (const [index, row] of csvData.entries()) {
       const rowNum = index + 2; // CSVの行番号 (ヘッダー分+1)
       let validationErrors = [];
 
       // --- 行ごとの検証（門番） ---
-      const { _id, username, email, password, tenantName, roles: rolesStr, status } = row;
+      // ★ 修正: 重複していた行を削除
+      const { _id, username, email, password, tenantName, roles: rolesStr, permissions: permissionsStr, status } = row;
 
       // 1. 必須項目のチェック
       if (!username) validationErrors.push('ユーザー名は必須です。');
@@ -312,7 +313,15 @@ UserController.bulkImportUsers = async (req, res) => {
         validationErrors.push(`ステータスは 'active' または 'inactive' である必要があります。`);
       }
 
-      // 5. 更新の場合、対象ユーザーへのアクセス権をチェック
+      // 5. 利用可能アプリの検証
+      const permissions = permissionsStr ? permissionsStr.split(',').map(p => p.trim()).filter(Boolean) : [];
+      for (const pKey of permissions) {
+        if (!validPermissionSet.has(pKey)) {
+          validationErrors.push(`利用可能アプリ「${pKey}」は存在しません。`);
+        }
+      }
+
+      // 6. 更新の場合、対象ユーザーへのアクセス権をチェック
       if (_id) {
           const userToUpdate = await User.findById(_id);
           if (!userToUpdate) {
@@ -338,6 +347,7 @@ UserController.bulkImportUsers = async (req, res) => {
           userToUpdate.email = email;
           userToUpdate.tenantId = targetTenantId;
           userToUpdate.roles = roles;
+          userToUpdate.permissions = permissions;
           if (status) userToUpdate.status = status;
           if (password) {
             const salt = await bcrypt.genSalt(10);
@@ -346,7 +356,7 @@ UserController.bulkImportUsers = async (req, res) => {
           await userToUpdate.save();
         } else {
           // 新規作成処理
-          await User.create({ username, email, password, tenantId: targetTenantId, roles, status: status || 'active' });
+          await User.create({ username, email, password, tenantId: targetTenantId, roles, permissions, status: status || 'active' });
         }
         results.successCount++;
       } catch (dbError) {
@@ -363,7 +373,7 @@ UserController.bulkImportUsers = async (req, res) => {
             userFriendlyMessage = '一意であるべき項目が重複しています。';
           }
         }
-        results.errors.push({ row: rowNum, messages: [userFriendlyMessage] });
+        results.errors.push({ row: rowNum, messages: [userFriendlyMessage] }); // ★ 修正: 重複していた行を削除
       }
     }
     res.status(200).json(results);

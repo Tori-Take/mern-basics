@@ -63,6 +63,7 @@ function AdminUserListPage() {
     { label: 'password', key: 'password' }, // ★ インポート用にパスワード列を追加
     { label: '所属部署', key: 'tenantName' },
     { label: '役割', key: 'roles' },
+    { label: '利用可能アプリ', key: 'permissions' },
     { label: 'ステータス', key: 'status' },
     { label: '作成日時', key: 'createdAt' },
     { label: '最終更新日時', key: 'updatedAt' },
@@ -77,6 +78,7 @@ function AdminUserListPage() {
       password: '', // ★ エクスポート時には常に空文字
       tenantName: allTenants.find(t => t._id === user.tenantId)?.name || 'N/A',
       roles: user.roles.join(', '), // 配列をカンマ区切りの文字列に変換
+      permissions: (user.permissions || []).join(', '), // ★ permissionsをカンマ区切りの文字列に変換
       status: user.status,
       createdAt: format(new Date(user.createdAt), 'yyyy/MM/dd HH:mm'),
       updatedAt: format(new Date(user.updatedAt), 'yyyy/MM/dd HH:mm'),
@@ -105,7 +107,7 @@ function AdminUserListPage() {
             try {
               const keyMapping = {
                 'ID': '_id', 'ユーザー名': 'username', 'メールアドレス': 'email',
-                'password': 'password', '所属部署': 'tenantName', '役割': 'roles',
+                'password': 'password', '所属部署': 'tenantName', '役割': 'roles', '利用可能アプリ': 'permissions',
                 'ステータス': 'status',
               };
               const mappedData = results.data.map(row =>
