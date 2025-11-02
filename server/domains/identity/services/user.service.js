@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const Tenant = require('../../organization/tenant.model');
+const User = require('../user.model'); // ★★★ Userモデルをインポート ★★★
 const Role = require('../../organization/role.model');
 const generateToken = require('../../../core/utils/generateToken');
 const tenantService = require('../../organization/services/tenant.service'); // ★ tenant.serviceをインポート
@@ -240,7 +241,6 @@ class UserService {
 
     // 3. ユーザーを取得し、tenantIdをpopulateする
     const users = await this.userRepository.findAssignable(allTenantIdsInOrg);
-    // Userモデルの静的populateメソッドを使い、取得済みの配列に対してpopulateを実行する
     return await User.populate(users, { path: 'tenantId', select: 'name' });
   }
 
