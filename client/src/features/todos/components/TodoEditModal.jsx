@@ -34,15 +34,11 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
       // 依頼可能なユーザーリストを取得
       const fetchAssignableUsers = async () => {
         try {
-          console.log('[DEBUG] EditModal: 1. Fetching assignable users...');
           const res = await axios.get('/api/users/assignable');
-          console.log('[DEBUG] EditModal: 2. API response data:', JSON.parse(JSON.stringify(res.data)));
           setAssignableUsers(res.data);
           // ユーザーを部署ごとにグループ化
           const grouped = res.data.reduce((acc, user) => {
-            // ★★★ ログ3: グループ化処理の内部を監視 ★★★
             if (!user.tenantId || typeof user.tenantId !== 'object') {
-              console.warn('[DEBUG] EditModal: 3a. Invalid tenantId found for user:', user.username, 'tenantId:', user.tenantId);
               return acc;
             }
             const tenantId = user.tenantId._id;
@@ -50,13 +46,11 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
               acc[tenantId] = { name: user.tenantId.name, users: [] };
             }
             acc[tenantId].users.push(user);
-            // console.log(`[DEBUG] EditModal: 3b. Processing user: ${user.username}, tenant: ${user.tenantId.name}`);
             return acc;
           }, {});
-          console.log('[DEBUG] EditModal: 4. Grouping finished. Result:', grouped);
           setGroupedUsers(grouped);
         } catch (error) {
-          console.error('[DEBUG] EditModal: 5. Error fetching or processing users:', error);
+          console.error('依頼可能なユーザーの取得に失敗しました。', error);
           setAssignableUsers([]); // エラー時は空にする
         }
       };

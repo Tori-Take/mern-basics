@@ -121,13 +121,9 @@ class UserController {
    */
   static async getAssignableUsers(req, res) {
     try {
-      // ★ログ1: コントローラーが呼び出されたことを確認
-      console.log('--- [DEBUG] UserController: getAssignableUsers called ---');
       const users = await userService.getAssignableUsers(req.user);
       res.json(users);
     } catch (err) {
-      // ★ログ4: もしここでエラーが起きたら詳細を出力
-      console.error('--- [DEBUG] UserController: Error caught ---', err);
       res.status(err.statusCode || 500).json({ message: err.message || 'サーバーエラーが発生しました。' });
     }  }
 
