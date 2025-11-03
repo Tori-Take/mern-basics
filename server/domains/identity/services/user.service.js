@@ -231,11 +231,12 @@ class UserService {
    */
   async getAssignableUsers(operator) {
     try {
-      // ★ログ2: サービスが呼び出され、引数の中身を確認
-      console.log('[DEBUG] UserService: getAssignableUsers called with operator:', operator.username);
+      // ★★★ 修正: tenantIdがオブジェクトでもObjectIdでも対応できるようにする ★★★
+      // operator.tenantId._id が存在すればそれ（populateされたオブジェクトの場合）を、
+      // そうでなければ operator.tenantId そのもの（ObjectIdまたは文字列の場合）を使用する。
+      const operatorTenantId = operator.tenantId?._id || operator.tenantId;
 
-      // 1. 操作者の組織のルートを見つける
-      const rootTenantId = await tenantService.findOrganizationRoot(operator.tenantId);
+      const rootTenantId = await tenantService.findOrganizationRoot(operatorTenantId);
       if (!rootTenantId) return [];
 
       // 2. ルート配下の全テナントIDを取得する
@@ -247,7 +248,7 @@ class UserService {
       // Userモデルの静的populateメソッドを使い、取得済みの配列に対してpopulateを実行する
       return await User.populate(users, { path: 'tenantId', select: 'name' });
     } catch (err) {
-      throw err; // エラーをコントローラーに再スローして、クライアントに500エラーを返す
+      throw err; // エラーをコントローラーに再スロー
     }
   }
 
