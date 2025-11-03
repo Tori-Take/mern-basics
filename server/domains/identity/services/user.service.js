@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const User = require('../user.model');
 const Tenant = require('../../organization/tenant.model');
 const Role = require('../../organization/role.model');
 const generateToken = require('../../../core/utils/generateToken');
