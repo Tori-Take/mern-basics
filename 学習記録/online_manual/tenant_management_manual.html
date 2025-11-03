@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テナント（組織・部署）管理 説明書</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #212529;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9fbfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+            color: #1a5276;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding: 10px 15px;
+        }
+
+        h3 {
+            font-size: 1.5em;
+            border-bottom-style: dashed;
+            border-bottom-width: 1px;
+            color: #1a5276;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .key-feature {
+            font-weight: bold;
+            color: #2980b9;
+        }
+
+        .warning-box {
+            background-color: #fef9e7;
+            border-left: 5px solid #f39c12;
+            padding: 25px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        .warning-box h3 {
+            color: #b7791f;
+            border-bottom-color: #f39c12;
+            margin-top: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>テナント（組織・部署）管理 説明書</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">管理者向けガイド</p>
+
+    <div class="card">
+        <h2>1. はじめに - 権限と役割</h2>
+        <p>
+            このマニュアルは、<code>admin</code>以上の権限を持つ管理者を対象としています。
+            テナント管理機能は、組織の構造を定義し、ユーザーの所属や権限を設定する、システムの根幹に関わる非常に強力な機能です。操作は慎重に行ってください。
+        </p>
+        <ul>
+            <li><strong>テナントとは？</strong>
+                <br>このシステムでは、「組織」や「部署」といった、ユーザーが所属するグループのことを「テナント」と呼びます。テナントは階層構造を持つことができます。（例：本社 → 営業部 → 営業1課）
+            </li>
+            <li><strong>あなたの役割:</strong>
+                <br>あなたは、自身が所属する組織（テナント）と、その配下にある全ての部署（サブテナント）を管理する権限を持っています。
+            </li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>2. 組織・部署管理ページ</h2>
+        <p>
+            管理者ポータルから「組織管理」カードをクリックすると、あなたが管理する組織・部署の一覧が表示されます。
+        </p>
+        <ol>
+            <li><strong>組織・部署の追加:</strong>
+                <ul>
+                    <li>一覧画面の<code>＋ 新規部署作成</code>ボタン、または各部署の詳細画面にある<code>サブ部署を追加</code>ボタンから、新しい部署を作成できます。</li>
+                </ul>
+            </li>
+            <li><strong>組織図での表示:</strong>
+                <ul>
+                    <li><code>組織図で表示</code>ボタンをクリックすると、組織の階層構造を視覚的に確認できます。</li>
+                </ul>
+            </li>
+            <li><strong>部署の詳細と編集:</strong>
+                <ul>
+                    <li>一覧の部署名をクリックすると、その部署の詳細ページに移動します。</li>
+                    <li>詳細ページでは、部署名の編集、サブ部署の追加、所属ユーザーの確認、そしてユーザーの新規追加が可能です。</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <div class="card">
+        <h2>3. ユーザー管理ページ</h2>
+        <p>
+            管理者ポータルから「ユーザー管理」カードをクリックすると、あなたが管理する組織・部署に所属する全ユーザーの一覧が表示されます。
+        </p>
+
+        <h3>ユーザーの新規作成</h3>
+        <p>
+            <code>＋ 新規ユーザー作成</code>ボタンから、新しいメンバーを組織に招待（作成）できます。所属部署は、あなたが管理できる部署の中から選択します。
+        </p>
+
+        <h3>ユーザー情報の編集</h3>
+        <p>
+            一覧のユーザー名をクリックすると、そのユーザーの詳細な編集ページに移動します。ここでは、以下の重要な設定を変更できます。
+        </p>
+        <ul>
+            <li><strong>所属部署の変更:</strong>
+                <ul>
+                    <li><code>変更</code>ボタンをクリックすると組織図が表示されます。異動させたい部署を選択し、<code>選択</code>ボタンを押した後、最後にフォーム全体の<code>更新</code>ボタンを押すことで所属部署が変更されます。
+                    </li>
+                </ul>
+            </li>
+            <li><strong>役割（ロール）の変更:</strong>
+                <ul>
+                    <li>ユーザーに与える権限（ロール）をチェックボックスで設定します。<code>admin</code>ロールを付与すると、そのユーザーも管理者となります。</li>
+                </ul>
+            </li>
+            <li><strong>利用可能アプリの変更:</strong>
+                <ul>
+                    <li>そのユーザーが利用できるアプリケーション（TODOアプリなど）をチェックボックスで設定します。チェックを外すと、そのユーザーは該当アプリにアクセスできなくなります。</li>
+                </ul>
+            </li>
+            <li><strong>アカウントの有効/無効化:</strong>
+                <ul>
+                    <li><code>アカウントを有効にする</code>スイッチで、ユーザーのログインを一時的に停止させることができます。</li>
+                </ul>
+            </li>
+        </ul>
+
+        <div class="warning-box">
+            <h3><i class="bi bi-exclamation-triangle-fill"></i> パスワードの強制リセット</h3>
+            <p>
+                ユーザーがパスワードを忘れてしまった場合など、緊急時には「パスワードを強制リセット」機能が利用できます。
+                新しい一時パスワードを設定すると、ユーザーは次回ログイン時にその一時パスワードでログインし、新しいパスワードを再設定するよう求められます。
+            </p>
+        </div>
+
+        <h3>ユーザーの削除</h3>
+        <p>
+            ユーザー編集ページの下部にある<code>削除</code>ボタンから、ユーザーを完全に削除できます。
+            <strong class="key-feature">この操作は元に戻せないため、実行には細心の注意が必要です。</strong>
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>4. CSVによる一括登録・更新</h2>
+        <p>
+            <code>tenant-superuser</code>以上の権限を持つ管理者は、ユーザー管理ページからCSVファイルを使って、複数のユーザー情報を一度に登録・更新できます。
+        </p>
+        <ol>
+            <li>まず<code>CSVエクスポート</code>ボタンで現在のユーザーリストをダウンロードし、テンプレートとして利用します。</li>
+            <li>ダウンロードしたCSVファイルを編集します。
+                <ul>
+                    <li><strong>新規登録の場合:</strong> <code>_id</code>列を空にし、<code>password</code>列に初期パスワードを必ず入力します。</li>
+                    <li><strong>更新の場合:</strong> <code>_id</code>列は変更せず、変更したい項目（ユーザー名、所属部署など）の値を修正します。</li>
+                </ul>
+            </li>
+            <li><code>CSVインポート</code>ボタンから、編集したファイルをアップロードし、<code>インポート実行</code>ボタンをクリックします。</li>
+            <li>処理結果（成功件数、失敗件数、エラー詳細）が画面に表示されます。</li>
+        </ol>
+    </div>
+
+</body>
+
+</html>

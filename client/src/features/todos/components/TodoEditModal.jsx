@@ -20,13 +20,11 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
       setFormData({
         text: todo.text || '',
         priority: todo.priority || '中',
-        dueDate: todo.dueDate ? todo.dueDate.split('T')[0] : null, // ★ nullを許容
+        dueDate: todo.dueDate ? new Date(todo.dueDate) : null, // ★ Dateオブジェクトに変換
         tags: (todo.tags || []).join(', '), // 配列をカンマ区切りの文字列に変換
         requester: (todo.requester || []).map(r => r._id), // ★ IDの配列を取得
-        startDate: todo.startDateTime ? todo.startDateTime.split('T')[0] : '',
-        startTime: todo.startDateTime ? format(parseISO(todo.startDateTime), 'HH:mm') : '',
-        endDate: todo.endDateTime ? todo.endDateTime.split('T')[0] : '',
-        endTime: todo.endDateTime ? format(parseISO(todo.endDateTime), 'HH:mm') : '',
+        startDateTime: todo.startDateTime ? new Date(todo.startDateTime) : null, // ★ Dateオブジェクトに変換
+        endDateTime: todo.endDateTime ? new Date(todo.endDateTime) : null, // ★ Dateオブジェクトに変換
         isAllDay: todo.isAllDay || false, // ★ 追加: 終日フラグをセット
       });
       setSelectedTenant(''); // 部署選択をリセット
@@ -88,8 +86,8 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
     const submissionData = {
       ...formData,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-      startDateTime: formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}` : null,
-      endDateTime: formData.endDate && formData.endTime ? `${formData.endDate}T${formData.endTime}` : null,
+      startDateTime: formData.startDateTime, // ★ Dateオブジェクトをそのまま送信
+      endDateTime: formData.endDateTime, // ★ Dateオブジェクトをそのまま送信
       isAllDay: formData.isAllDay, // ★ 追加: 終日フラグを送信
     };
     // creatorフィールドは送信データに含めない
@@ -144,8 +142,8 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
                   <label htmlFor="dueDate-edit" className="form-label">期日</label>
                   {/* ★★★ DatePickerコンポーネントに置換 ★★★ */}
                   <DatePicker
-                    selected={formData.dueDate ? new Date(formData.dueDate) : null}
-                    onChange={(date) => setFormData(prev => ({ ...prev, dueDate: date ? format(date, 'yyyy-MM-dd') : null }))}
+                    selected={formData.dueDate}
+                    onChange={(date) => setFormData(prev => ({ ...prev, dueDate: date }))}
                     className="form-control"
                     dateFormat="yyyy/MM/dd (E)"
                     locale={ja}
@@ -169,8 +167,8 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
               <Form.Group className="mb-3">
                 <Form.Label>開始日時</Form.Label>
                 <DatePicker
-                  selected={formData.startDate ? new Date(`${formData.startDate}T${formData.startTime || '00:00'}`) : null}
-                  onChange={(date) => setFormData(prev => ({ ...prev, startDate: date ? format(date, 'yyyy-MM-dd') : '', startTime: date ? format(date, 'HH:mm') : '' }))}
+                  selected={formData.startDateTime}
+                  onChange={(date) => setFormData(prev => ({ ...prev, startDateTime: date }))}
                   className="form-control"
                   dateFormat="yyyy/MM/dd (E) HH:mm"
                   locale={ja}
@@ -185,8 +183,8 @@ function TodoEditModal({ show, onClose, onSave, todo, onDelete }) {
               <Form.Group className="mb-3">
                 <Form.Label>終了日時</Form.Label>
                 <DatePicker
-                  selected={formData.endDate ? new Date(`${formData.endDate}T${formData.endTime || '00:00'}`) : null}
-                  onChange={(date) => setFormData(prev => ({ ...prev, endDate: date ? format(date, 'yyyy-MM-dd') : '', endTime: date ? format(date, 'HH:mm') : '' }))}
+                  selected={formData.endDateTime}
+                  onChange={(date) => setFormData(prev => ({ ...prev, endDateTime: date }))}
                   className="form-control"
                   dateFormat="yyyy/MM/dd (E) HH:mm"
                   locale={ja}

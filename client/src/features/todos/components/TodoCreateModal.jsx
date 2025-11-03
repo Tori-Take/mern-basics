@@ -10,14 +10,12 @@ import { Badge, Form, InputGroup } from 'react-bootstrap'; // ★ Form, InputGro
 const INITIAL_STATE = {
   text: '',
   priority: '中',
-  dueDate: '',
+  dueDate: null, // ★ 文字列からnullに変更
   tags: '',
   requester: [], // ★ 配列に変更
   // ★ 修正: 開始・終了の日時を追加
-  startDate: '',
-  startTime: '',
-  endDate: '',
-  endTime: '',
+  startDateTime: null, // ★ 文字列からnullに変更
+  endDateTime: null, // ★ 文字列からnullに変更
   isAllDay: false, // ★ 追加: 終日フラグ
 };
 
@@ -31,9 +29,6 @@ function TodoCreateModal({ show, onClose, onAdd }) {
   // モーダルが表示されるたびにフォームを初期化
   useEffect(() => {
     if (show) {
-      setFormData(INITIAL_STATE);
-      setSelectedTenant('');
-
       // 依頼可能なユーザーリストを取得
       const fetchAssignableUsers = async () => {
         try {
@@ -61,6 +56,8 @@ function TodoCreateModal({ show, onClose, onAdd }) {
       };
 
       fetchAssignableUsers();
+      setFormData(INITIAL_STATE); // ★ API取得後にフォームを初期化
+      setSelectedTenant('');
     }
   }, [show, currentUser]); // ★ currentUserを依存配列に追加
 
@@ -93,9 +90,9 @@ function TodoCreateModal({ show, onClose, onAdd }) {
     const submissionData = {
       ...formData,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-      // ★ 修正: 日付と時刻を結合して送信データを作成
-      startDateTime: formData.startDate && formData.startTime ? `${formData.startDate}T${formData.startTime}` : null,
-      endDateTime: formData.endDate && formData.endTime ? `${formData.endDate}T${formData.endTime}` : null,
+      // ★★★ 修正: Dateオブジェクトを直接ISO文字列に変換 ★★★
+      startDateTime: formData.startDateTime,
+      endDateTime: formData.endDateTime,
       isAllDay: formData.isAllDay, // ★ 追加: 終日フラグを送信
     };
     onAdd(submissionData);
@@ -138,8 +135,8 @@ function TodoCreateModal({ show, onClose, onAdd }) {
                   <Form.Label htmlFor="dueDate">期日</Form.Label>
                   {/* ★★★ DatePickerコンポーネントに置換 ★★★ */}
                   <DatePicker
-                    selected={formData.dueDate ? new Date(formData.dueDate) : null}
-                    onChange={(date) => setFormData(prev => ({ ...prev, dueDate: date ? format(date, 'yyyy-MM-dd') : '' }))}
+                    selected={formData.dueDate}
+                    onChange={(date) => setFormData(prev => ({ ...prev, dueDate: date }))}
                     className="form-control"
                     dateFormat="yyyy/MM/dd (E)"
                     locale={ja}
@@ -162,8 +159,8 @@ function TodoCreateModal({ show, onClose, onAdd }) {
               <Form.Group className="mb-3">
                 <Form.Label>開始日時</Form.Label>
                 <DatePicker
-                  selected={formData.startDate ? new Date(`${formData.startDate}T${formData.startTime || '00:00'}`) : null}
-                  onChange={(date) => setFormData(prev => ({ ...prev, startDate: date ? format(date, 'yyyy-MM-dd') : '', startTime: date ? format(date, 'HH:mm') : '' }))}
+                  selected={formData.startDateTime}
+                  onChange={(date) => setFormData(prev => ({ ...prev, startDateTime: date }))}
                   className="form-control"
                   dateFormat="yyyy/MM/dd (E) HH:mm"
                   locale={ja}
@@ -178,8 +175,8 @@ function TodoCreateModal({ show, onClose, onAdd }) {
               <Form.Group className="mb-3">
                 <Form.Label>終了日時</Form.Label>
                 <DatePicker
-                  selected={formData.endDate ? new Date(`${formData.endDate}T${formData.endTime || '00:00'}`) : null}
-                  onChange={(date) => setFormData(prev => ({ ...prev, endDate: date ? format(date, 'yyyy-MM-dd') : '' , endTime: date ? format(date, 'HH:mm') : '' }))}
+                  selected={formData.endDateTime}
+                  onChange={(date) => setFormData(prev => ({ ...prev, endDateTime: date }))}
                   className="form-control"
                   dateFormat="yyyy/MM/dd (E) HH:mm"
                   locale={ja}

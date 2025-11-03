@@ -1,6 +1,5 @@
 const bcrypt = require('bcryptjs');
 const Tenant = require('../../organization/tenant.model');
-const User = require('../user.model'); // ★★★ Userモデルをインポート ★★★
 const Role = require('../../organization/role.model');
 const generateToken = require('../../../core/utils/generateToken');
 const tenantService = require('../../organization/services/tenant.service'); // ★ tenant.serviceをインポート
@@ -231,17 +230,25 @@ class UserService {
    * @returns {Promise<User[]>} ユーザーの配列。
    */
   async getAssignableUsers(operator) {
-    // 1. 操作者の組織のルートを見つける
-    const rootTenantId = await tenantService.findOrganizationRoot(operator.tenantId);
-    if (!rootTenantId) return [];
+    try {
+      // ★ログ2: サービスが呼び出され、引数の中身を確認
+      console.log('[DEBUG] UserService: getAssignableUsers called with operator:', operator.username);
 
-    // 2. ルート配下の全テナントIDを取得する
-    const hierarchyTenants = await tenantService.getTenantHierarchy(rootTenantId);
-    const allTenantIdsInOrg = [rootTenantId, ...hierarchyTenants.map(t => t._id)];
+      // 1. 操作者の組織のルートを見つける
+      const rootTenantId = await tenantService.findOrganizationRoot(operator.tenantId);
+      if (!rootTenantId) return [];
 
-    // 3. ユーザーを取得し、tenantIdをpopulateする
-    const users = await this.userRepository.findAssignable(allTenantIdsInOrg);
-    return await User.populate(users, { path: 'tenantId', select: 'name' });
+      // 2. ルート配下の全テナントIDを取得する
+      const hierarchyTenants = await tenantService.getTenantHierarchy(rootTenantId);
+      const allTenantIdsInOrg = [rootTenantId, ...hierarchyTenants.map(t => t._id)];
+
+      // 3. ユーザーを取得し、tenantIdをpopulateする
+      const users = await this.userRepository.findAssignable(allTenantIdsInOrg);
+      // Userモデルの静的populateメソッドを使い、取得済みの配列に対してpopulateを実行する
+      return await User.populate(users, { path: 'tenantId', select: 'name' });
+    } catch (err) {
+      throw err; // エラーをコントローラーに再スローして、クライアントに500エラーを返す
+    }
   }
 
   /**

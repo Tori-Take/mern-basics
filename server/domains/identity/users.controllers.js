@@ -197,9 +197,14 @@ class UserController {
    */
   static async deleteUser(req, res) {
     try {
-      const result = await userService.deleteUserByAdmin(req.params.id, req.user.id, req.user.tenantId?._id);
+      // ★★★ 修正: 第3引数にユーザーオブジェクト全体を渡す ★★★
+      const result = await userService.deleteUserByAdmin(req.params.id, req.user.id, req.user);
       res.json(result);
     } catch (err) {
+      // ★ エラーハンドリングを追加
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('User Deletion Error:', err.message);
+      }
       res.status(err.statusCode || 500).json({ message: err.message || 'サーバーエラーが発生しました。' });
     }  }
 

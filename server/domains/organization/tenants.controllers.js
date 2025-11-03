@@ -13,8 +13,8 @@ class TenantController {
       // 階層データを取得
       const allTenantsInHierarchy = await tenantService.getTenantHierarchy(rootId);
 
-      // ログインユーザーがアクセス可能なテナントIDリストを取得
-      const accessibleTenantIds = await getAccessibleTenantIds(req.user.tenantId);
+      // ★★★ 修正: 引数にユーザーオブジェクト全体を渡す ★★★
+      const accessibleTenantIds = await getAccessibleTenantIds(req.user);
 
       // ツリー構造に変換（アクセス可能フラグを付与）
       const tenantTree = tenantService.buildTenantTree(allTenantsInHierarchy, accessibleTenantIds);

@@ -38,41 +38,23 @@ function AdminUserEditPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log('--- [DEBUG] Fetching data for user edit page ---'); // ★ログ1: 処理開始
         const [userRes, rolesRes, tenantsRes, appsRes] = await Promise.all([
           axios.get(`/api/users/${id}`),
           axios.get('/api/roles'),
           axios.get('/api/tenants/all'), // ★ 全テナント情報を取得するAPIに変更
           axios.get('/api/applications'), // ★ アプリケーション一覧を取得
         ]);
-
-        // ★ログ2: 取得したデータの中身を確認
-        console.log('[DEBUG] 1. Fetched User Data:', userRes.data);
-        console.log('[DEBUG] 2. Fetched All Tenants Data:', tenantsRes.data);
-        console.log('[DEBUG] 3. Fetched All Applications Data:', appsRes.data.data);
-
         setFormData(userRes.data);
         setAllRoles(rolesRes.data);
         setAllTenants(tenantsRes.data);
         setAllApplications(appsRes.data.data); // ★ 取得したデータをstateに保存
         setPermissionsString((userRes.data.permissions || []).join(', ')); // ★ 初期値を設定
-
         // ★ ユーザーが所属するテナントの利用可能権限を取得
         const userTenant = tenantsRes.data.find(t => t._id === userRes.data.tenantId);
-
-        // ★ログ4: テナント検索結果を確認
-        console.log('[DEBUG] 4. Found user\'s tenant from the list:', userTenant);
-
         if (userTenant) {
           setTenantAvailablePermissions(userTenant.availablePermissions || []);
-          // ★ログ5: 最終的にstateにセットされる権限リストを確認
-          console.log('[DEBUG] 5. Setting tenantAvailablePermissions to:', userTenant.availablePermissions || []);
-        } else {
-          console.warn('[DEBUG] 5. User\'s tenant could not be found in the tenants list. `tenantAvailablePermissions` will be empty.');
         }
       } catch (err) {
-        // ★ログ4: エラー発生時の詳細な報告
-        console.error('--- [DEBUG] Error fetching data ---', err);
         setError(err.response?.data?.message || `データの取得に失敗しました: ${err.message}`);
       } finally {
         setLoading(false);
@@ -176,7 +158,7 @@ function AdminUserEditPage() {
     }
   };
 
-  if (loading || !formData) { // ★ formDataがセットされるまでローディングを表示
+  if (loading) { // ★ formDataのチェックを削除し、loadingのみで判断
     return <div className="text-center"><Spinner animation="border" /></div>;
   }
 
@@ -189,7 +171,8 @@ function AdminUserEditPage() {
         {success && <Alert variant="success">{success}</Alert>}
         {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
 
-        <Form onSubmit={handleSubmit}>
+        {/* ★★★ formDataが存在する場合のみフォームを描画 ★★★ */}
+        {formData && <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="username">
             <Form.Label>ユーザー名</Form.Label>
             <Form.Control type="text" name="username" value={formData?.username || ''} onChange={handleInputChange} required />
@@ -271,7 +254,7 @@ function AdminUserEditPage() {
               {isSubmitting ? <><Spinner as="span" animation="border" size="sm" /> 更新中...</> : '更新'}
             </Button>
           </div>
-        </Form>
+        </Form>}
       </Card.Body>
       <Card.Footer className="text-end">
         <Button variant="outline-warning" size="sm" onClick={() => setShowResetModal(true)}>パスワードを強制リセット</Button>
