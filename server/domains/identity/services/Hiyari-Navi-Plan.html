@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>開発計画書: Hiyari-Navi</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 960px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #007bff;
+            margin: 0;
+        }
+
+        h2 {
+            font-size: 1.2em;
+            color: #555;
+            margin: 0;
+        }
+
+        h3 {
+            border-left: 5px solid #007bff;
+            padding-left: 10px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+
+        h4 {
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            margin-top: 30px;
+            font-size: 1.1em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: 600;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.9em;
+        }
+
+        code {
+            font-family: inherit;
+        }
+
+        .phase {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .phase-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #0056b3;
+        }
+
+        .phase-goal {
+            font-style: italic;
+            color: #555;
+            margin-bottom: 15px;
+            border-left: 3px solid #ffc107;
+            padding-left: 10px;
+        }
+
+        ol {
+            padding-left: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>開発計画書</h1>
+        <h2>ヒヤリハット分析システム「Hiyari-Navi」</h2>
+    </header>
+
+    <main>
+        <section id="overview">
+            <h3>1. プロジェクト概要</h3>
+            <p>組織内で発生する「ヒヤリハット」を簡単に記録・集約し、それらのデータを可視化・分析することで、潜在的なリスクを特定する。これにより、組織全体の安全意識を向上させ、重大な事故を未然に防ぐことを目指す。</p>
+        </section>
+
+        <section id="tech-stack">
+            <h3>2. 技術スタック</h3>
+            <p>TODOアプリ開発で培った経験を最大限に活かしつつ、「分析」というテーマに合わせて新しい技術を導入します。</p>
+            <ul>
+                <li><strong>バックエンド</strong>: Node.js, Express.js</li>
+                <li><strong>フロントエンド</strong>: React</li>
+                <li><strong>データベース</strong>: MongoDB</li>
+                <li><strong>UIフレームワーク</strong>: React-Bootstrap</li>
+                <li><strong>データ可視化</strong>: Chart.js (<code>react-chartjs-2</code>)</li>
+            </ul>
+        </section>
+
+        <section id="features">
+            <h3>3. 主要機能 (MVP)</h3>
+            <p>アプリケーションの核となる、実用最小限の製品（MVP）として以下の機能の実装を目指します。</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>機能分類</th>
+                        <th>機能名</th>
+                        <th>詳細</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>認証</strong></td>
+                        <td>ユーザー登録・ログイン</td>
+                        <td>TODOアプリの認証基盤を流用・発展させ、ユーザーを管理する。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>投稿</strong></td>
+                        <td>ヒヤリハット投稿</td>
+                        <td>日時、場所、詳細、カテゴリ、タグを記録できるフォーム。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>閲覧</strong></td>
+                        <td>投稿一覧</td>
+                        <td>自分が投稿したヒヤリハットを一覧で確認・検索できる。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>分析</strong></td>
+                        <td>ダッシュボード</td>
+                        <td>全ての投稿データを集計し、グラフで可視化する。（管理者向け）</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="db-design">
+            <h3>4. データベース設計 (Mongoose スキーマ)</h3>
+            <p>アプリケーションの心臓部となるデータ構造です。</p>
+            <pre><code>// HiyariHatto.model.js
+const hiyariHattoSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true },
+  incidentDate: { type: Date, required: true },
+  location: { type: String, trim: true },
+  details: { type: String, required: true },
+  category: { type: String, required: true, enum: ['転倒・つまずき', '衝突', '誤操作', '火災・感電', 'その他'] },
+  tags: [String],
+}, { timestamps: true });</code></pre>
+        </section>
+
+        <section id="roadmap">
+            <h3>5. 開発ロードマップ</h3>
+            <div class="phase">
+                <div class="phase-title">フェーズ1：バックエンド基盤の構築 (API開発)</div>
+                <p class="phase-goal">目標: ヒヤリハットを保存し、読み出すための「土台」を完成させる。</p>
+                <ol>
+                    <li>プロジェクトセットアップ</li>
+                    <li>モデル作成 (`HiyariHatto.model.js`)</li>
+                    <li>APIエンドポイント作成 (`POST /api/hiyarihattos`, `GET /api/hiyarihattos`)</li>
+                    <li>ルーティング設定 (`hiyarihattos.routes.js`)</li>
+                </ol>
+            </div>
+            <div class="phase">
+                <div class="phase-title">フェーズ2：フロントエンド実装 (投稿と一覧表示)</div>
+                <p class="phase-goal">目標: ユーザーが実際にヒヤリハットを投稿し、閲覧できる画面を完成させる。</p>
+                <ol>
+                    <li>投稿フォーム作成 (`HiyariHattoCreatePage.jsx`)</li>
+                    <li>投稿機能の実装 (API連携)</li>
+                    <li>一覧表示ページ作成 (`HiyariHattoListPage.jsx`)</li>
+                </ol>
+            </div>
+            <div class="phase">
+                <div class="phase-title">フェーズ3：分析機能の実装 (ダッシュボード)</div>
+                <p class="phase-goal">目標: 蓄積されたデータを「見える化」し、分析の第一歩を踏み出す。</p>
+                <ol>
+                    <li>データ可視化ライブラリ導入 (`Chart.js`)</li>
+                    <li>集計APIの作成 (`GET /api/hiyarihattos/stats`)</li>
+                    <li>ダッシュボード画面作成 (`DashboardPage.jsx`)</li>
+                </ol>
+            </div>
+            <div class="phase">
+                <div class="phase-title">フェーズ4：認証と権限管理</div>
+                <p class="phase-goal">目標: TODOアプリで実装した高度な認証・権限機能を統合し、アプリを完成させる。</p>
+                <ol>
+                    <li>認証機能の統合 (`auth`ミドルウェア適用)</li>
+                    <li>権限管理ロジックの実装 (編集・削除権限など)</li>
+                </ol>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>
