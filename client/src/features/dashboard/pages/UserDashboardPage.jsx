@@ -1,20 +1,51 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Row, Col, Spinner, Button } from 'react-bootstrap'; // ★ Card, Row, Col, Buttonをインポート
 import { useAuth } from '../../../providers/AuthProvider';
-
-// ★ 表示するアプリケーションのリストを定義
-const availableApps = [
-  { name: 'TODOリスト', path: '/todos', icon: 'bi-check2-square', description: '日々のタスクを管理します。', requiredPermission: 'CAN_USE_TODO' },
-  { name: 'スケジュール管理', path: '/schedule', icon: 'bi-calendar-week', description: 'チームの予定を共有します。', requiredPermission: 'CAN_USE_SCHEDULE' },
-  // 今後ここにアプリを追加していく
-];
+import axios from 'axios';
 
 function UserDashboardPage() {
   const { user } = useAuth();
+  const [availableApps, setAvailableApps] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchApps = async () => {
+      try {
+        const res = await axios.get('/api/applications');
+        // ★★★ 修正: APIのレスポンスオブジェクトから、実際のデータ配列(res.data.data)を取り出す ★★★
+        const applicationsArray = res.data.data;
+        console.log('1. APIから取得したアプリケーションリスト:', applicationsArray);
+        // APIから取得したデータをフロントエンドで使いやすい形式に変換
+        const appsData = applicationsArray.map(app => ({
+          name: app.name,
+          // ★★★ 修正2: 'app.permission' を 'app.permissionKey' に修正 ★★★
+          path: `/${app.permissionKey.replace('CAN_USE_', '').toLowerCase()}`, // 例: CAN_USE_TODO -> /todo
+          icon: app.permissionKey === 'CAN_USE_TODO' ? 'bi-check2-square' : 'bi-cone-striped', // アイコンを動的に設定
+          description: app.description,
+          requiredPermission: app.permissionKey,
+        }));
+        setAvailableApps(appsData);
+      } catch (error) {
+        console.error("アプリケーションリストの取得に失敗しました。", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchApps();
+  }, []);
 
   // userオブジェクトがまだ読み込まれていない場合は、ローディング表示をする
   if (!user) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
+        <Spinner animation="border" />
+      </div>
+    );
+  }
+
+  // アプリケーションリストの読み込み中
+  if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
         <Spinner animation="border" />

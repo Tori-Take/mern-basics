@@ -16,19 +16,32 @@ app.use(cors({
 }));
 app.use(express.json()); // JSON形式のリクエストボディを解析できるようにする
 
-// APIルートの設定
-const todosRouter = require('./domains/task/todos.routes.js');
+// --- APIルートの設定 ---
+//【開発ルール】循環参照を避けるため、以下のルールを厳守すること。
+// 1. 全てのルートファイルは、このセクションでrequireする。
+// 2. 依存される側（User, Tenantなど）のルートを先に読み込む。
+// 3. 新しい機能（ドメイン）を追加する際は、このセクションの一番下に追加する。
+
+// (A) 基本モデル（User, Tenant, Roleなど）を持つ、依存される側のルート
 const usersRouter = require('./domains/identity/users.routes.js');
 const rolesRouter = require('./domains/organization/roles.routes.js');
 const tenantsRouter = require('./domains/organization/tenants.routes.js');
 
-app.use('/api/todos', todosRouter);
+// (B) 他のモデルに依存する側のルート
+const todosRouter = require('./domains/task/todos.routes.js');
+const notificationRoutes = require('./domains/notifications/notifications.routes.js');
+const hiyariRoutes = require('./domains/hiyari/hiyari.routes.js');
+const systemRoutes = require('./domains/system/system.routes.js');
+const applicationRoutes = require('./domains/applications/applications.routes.js');
+
 app.use('/api/users', usersRouter);
 app.use('/api/roles', rolesRouter);
 app.use('/api/tenants', tenantsRouter);
-app.use('/api/system', require('./domains/system/system.routes.js'));
-app.use('/api/applications', require('./domains/applications/applications.routes.js'));
-app.use('/api/notifications', require('./domains/notifications/notifications.routes.js')); // ★ 通知APIを登録
+app.use('/api/todos', todosRouter);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/hiyari', hiyariRoutes); // ★ Hiyari-Naviのルートを登録
+app.use('/api/system', systemRoutes);
+app.use('/api/applications', applicationRoutes);
 
 // --- 本番環境用の設定 ---
 if (process.env.NODE_ENV === 'production') {

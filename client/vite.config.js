@@ -15,7 +15,8 @@ export default defineConfig({
     proxy: {
       // '/api'で始まるリクエストをバックエンドサーバー(ポート5000)に転送
       '/api': {
-        target: 'http://localhost:5000',
+        // ★★★ 'localhost' を '127.0.0.1' に変更してIPv4での接続を強制 ★★★
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
       },
     }

@@ -46,4 +46,31 @@ const getAccessibleTenantIds = async (operator) => {
   return resultIds;
 };
 
-module.exports = { getAccessibleTenantIds };
+/**
+ * ★★★ 新しく追加 ★★★
+ * 指定されたテナントIDが継承する全ての利用可能権限を取得します。
+ * @param {string | mongoose.Types.ObjectId} tenantId - 権限を取得する対象のテナントID。
+ * @returns {Promise<string[]>} 継承された権限キーの配列。
+ */
+async function getInheritedPermissionsForTenant(tenantId) {
+  if (!tenantId) {
+    return [];
+  }
+
+  const tenant = await Tenant.findById(tenantId).select('parent availablePermissions').lean();
+  if (!tenant) {
+    return [];
+  }
+
+  // 親部署から再帰的に権限を取得
+  const parentPermissions = tenant.parent ? await getInheritedPermissionsForTenant(tenant.parent) : [];
+
+  // Setを使って、親の権限と自身の権限をマージし、重複を除去する
+  const mergedPermissions = new Set([...parentPermissions, ...(tenant.availablePermissions || [])]);
+  return Array.from(mergedPermissions);
+}
+
+module.exports = {
+  getAccessibleTenantIds,
+  getInheritedPermissionsForTenant, // ★ エクスポートに追加
+};

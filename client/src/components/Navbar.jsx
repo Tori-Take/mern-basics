@@ -34,6 +34,8 @@ function Navbar() {
           <Nav className="me-auto">
             {/* ログイン中ユーザー共通のリンク */}
             {isAuthenticated && <Nav.Link as={Link} to="/">アプリポータル</Nav.Link>}
+            {/* TODO: 将来的には権限で表示を制御 */}
+            {isAuthenticated && <Nav.Link as={Link} to="/hiyari">Hiyari-Navi</Nav.Link>}
           </Nav>
           <Nav>
             {isAuthenticated ? (

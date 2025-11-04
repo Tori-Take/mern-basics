@@ -4,7 +4,7 @@ const Tenant = require('../../organization/tenant.model');
 const Role = require('../../organization/role.model');
 const generateToken = require('../../../core/utils/generateToken');
 const tenantService = require('../../organization/services/tenant.service'); // ★ tenant.serviceをインポート
-const { getAccessibleTenantIds } = require('../../../core/services/permissionService');
+const { getAccessibleTenantIds, getInheritedPermissionsForTenant } = require('../../../core/services/permissionService');
 
 /**
  * @class UserService
@@ -160,6 +160,14 @@ class UserService {
     const userObject = user.toObject();
     userObject.isTopLevelAdmin = user.roles.includes('admin') && user.tenantId?.parent === null;
     userObject.name = userObject.username;
+
+    // ★★★ ここからが新しい権限継承ロジック ★★★
+    // 1. ユーザーに直接割り当てられた権限
+    const directPermissions = userObject.permissions || [];
+    // 2. ユーザーの所属部署が継承する全ての利用可能権限
+    const inheritedTenantPermissions = await getInheritedPermissionsForTenant(userObject.tenantId?._id);
+    // 3. 両者をマージし、重複を除去して最終的な権限リストとする
+    userObject.permissions = [...new Set([...directPermissions, ...inheritedTenantPermissions])];
 
     return userObject;
   }
@@ -322,9 +330,9 @@ class UserService {
     if (permissions && !adminUser.roles.includes('superuser')) {
       // ユーザーが所属する(または異動する)テナントの情報を取得
       const targetTenantId = tenantId || user.tenantId;
-      const tenant = await Tenant.findById(targetTenantId);
-      const availablePermissions = tenant?.availablePermissions || [];
-      if (!permissions.every(p => availablePermissions.includes(p))) {
+      // ★★★ 修正: 継承された権限を取得して検証する ★★★
+      const inheritedPermissionsForTenant = await getInheritedPermissionsForTenant(targetTenantId);
+      if (!permissions.every(p => inheritedPermissionsForTenant.includes(p))) {
         const error = new Error('このテナントで許可されていない権限を付与することはできません。');
         error.statusCode = 403;
         throw error;

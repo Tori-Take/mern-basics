@@ -27,5 +27,3 @@ const startServer = async () => {
 };
 
 startServer();
-
-module.exports = app; // テスト用にエクスポート
