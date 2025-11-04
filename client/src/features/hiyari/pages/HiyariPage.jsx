@@ -116,7 +116,7 @@ function HiyariPage() {
     <Container>
       <Row className="my-4">
         <Col>
-          <h1>ヒヤリハット管理</h1>
+          <h1>ヒヤリ-Navi</h1>
         </Col>
       </Row>
 
@@ -178,7 +178,7 @@ function HiyariPage() {
           ) : (
             <>
               {/* ★★★ 自分の投稿一覧 ★★★ */}
-              <h2>自分の投稿</h2>
+              <h2>あなたの投稿</h2>
               <ListGroup className="mb-4">
                 {myHiyaris.length > 0 ? (
                   myHiyaris.map(item => (
@@ -210,7 +210,7 @@ function HiyariPage() {
               </ListGroup>
 
               {/* ★★★ 同じ組織の投稿一覧 ★★★ */}
-              <h2>同じ組織の投稿</h2>
+              <h2>みんなの投稿</h2>
               <ListGroup>
                 {teamHiyaris.length > 0 ? (
                   teamHiyaris.map(item => (
