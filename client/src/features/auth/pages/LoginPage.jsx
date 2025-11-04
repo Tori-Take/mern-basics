@@ -82,9 +82,10 @@ function LoginPage() {
               </Button>
             </div>
           </Form>
-          <p className="mt-3 text-center">
+          {/* ★★★ 組織の新規作成を一時的に非表示にする ★★★ */}
+          {/* <p className="mt-3 text-center">
             アカウントをお持ちでないですか？ <Link to="/register">新しい組織を登録</Link>
-          </p>
+          </p> */}
         </Card.Body>
       </Card>
     </div>
