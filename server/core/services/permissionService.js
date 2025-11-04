@@ -16,7 +16,8 @@ const getAccessibleTenantIds = async (operator) => {
   if (operator && operator.roles.includes('superuser')) {
     // もしSuperuserなら、全てのテナントIDを返す
     const allTenants = await Tenant.find({}).select('_id');
-    return allTenants.map(t => t._id);
+    const allTenantIds = allTenants.map(t => t._id);
+    return allTenantIds;
   }
   // ★★★ ここまで ★★★
 

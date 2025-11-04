@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getAccessibleTenantIds } = require('../../core/services/permissionService');
+const Role = require('../organization/role.model'); // ★ Roleモデルをインポート
 const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');
 const UserController = require('./users.controllers');

@@ -38,9 +38,11 @@ function AdminUserEditPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
+        // ★★★ 修正: API呼び出しを段階的に行う ★★★
+        // 1. 最初にユーザー情報と、それに依存しない情報を取得
         const [userRes, rolesRes, tenantsRes, appsRes] = await Promise.all([
           axios.get(`/api/users/${id}`),
-          axios.get('/api/roles'),
+          axios.get('/api/roles'), // ★ 修正: tenantIdを指定せずに、操作者のテナントのロールを取得
           axios.get('/api/tenants/all'), // ★ 全テナント情報を取得するAPIに変更
           axios.get('/api/applications'), // ★ アプリケーション一覧を取得
         ]);

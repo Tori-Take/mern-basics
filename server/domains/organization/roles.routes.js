@@ -1,42 +1,32 @@
-const router = require('express').Router();
+const express = require('express');
+const router = express.Router();
 const Role = require('./role.model');
-const User = require('../../domains/identity/user.model');
-const Tenant = require('./tenant.model');
 const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');
-
-// 保護された必須ロールのリスト
-const PROTECTED_ROLES = ['user', 'admin', 'tenant-superuser'];
-
-// 最上位管理者のみアクセスを許可するミドルウェア
-const topLevelAdminOnly = async (req, res, next) => {
-  try {
-    // ★ 修正: superuser または tenant-superuser であれば許可
-    const hasPermission = req.user.roles.includes('superuser') || req.user.roles.includes('tenant-superuser');
-
-    if (hasPermission) {
-      next();
-    } else {
-      res.status(403).json({ message: 'この操作を実行する権限がありません。' });
-    }
-  } catch (error) {
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
-};
-
-// --- 全てのロール管理APIは、ログイン済みかつ管理者である必要がある ---
-router.use(auth); // このファイル内のAPIは全てログイン必須
+const { getAccessibleTenantIds } = require('../../core/services/permissionService');
 
 /**
  * @route   GET /api/roles
- * @desc    全てのロールを取得
+ * @desc    テナントに属する全ロールを取得する
  * @access  Private (Admin)
  */
-router.get('/', admin, async (req, res) => {
+router.get('/', [auth, admin], async (req, res) => {
   try {
-    // ログイン中の管理者と同じテナントに所属するロールのみを取得
-    const roles = await Role.find({ tenantId: req.user.tenantId }).sort({ createdAt: 'asc' });
+    // 1. クエリパラメータからtenantIdを取得。なければ操作者自身のtenantIdを使用
+    const targetTenantId = req.query.tenantId || req.user.tenantId;
+
+    // 2. Superuserはどのテナントのロールでも取得できる。
+    //    Adminは自分がアクセス可能なテナントのロールのみ取得できる。
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user);
+    // targetTenantIdがObjectIdでない可能性を考慮し、toString()で比較
+    if (!accessibleTenantIds.some(id => id.toString() === targetTenantId.toString())) {
+      return res.status(403).json({ message: 'この組織のロールにアクセスする権限がありません。' });
+    }
+
+    // 3. 対象テナントのロールを検索して返す
+    const roles = await Role.find({ tenantId: targetTenantId });
     res.json(roles);
+
   } catch (err) {
     console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');
@@ -45,30 +35,33 @@ router.get('/', admin, async (req, res) => {
 
 /**
  * @route   POST /api/roles
- * @desc    新しいロールを作成
+ * @desc    新しいロールを作成する
  * @access  Private (Admin)
  */
-router.post('/', [admin, topLevelAdminOnly], async (req, res) => {
+router.post('/', [auth, admin], async (req, res) => {
   const { name, description } = req.body;
 
-  if (!name || name.trim() === '') {
+  // 基本的なバリデーション
+  if (!name) {
     return res.status(400).json({ message: 'ロール名は必須です。' });
   }
 
   try {
+    // 同じテナント内で同じ名前のロールが存在しないかチェック
+    const existingRole = await Role.findOne({ name, tenantId: req.user.tenantId });
+    if (existingRole) {
+      return res.status(400).json({ message: 'そのロール名は既に使用されています。' });
+    }
+
     const newRole = new Role({
-      tenantId: req.user.tenantId, // ★ 管理者と同じテナントに作成
-      name: name.trim(),
-      description: description || '',
+      name,
+      description,
+      tenantId: req.user.tenantId, // ロールは操作者のテナントに紐づける
     });
 
     const role = await newRole.save();
     res.status(201).json(role);
   } catch (err) {
-    // データ品質: 重複エラー(E11000)のハンドリング
-    if (err.code === 11000) {
-      return res.status(400).json({ message: 'そのロール名は既に使用されています。' });
-    }
     console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');
   }
@@ -76,34 +69,30 @@ router.post('/', [admin, topLevelAdminOnly], async (req, res) => {
 
 /**
  * @route   PUT /api/roles/:id
- * @desc    ロールを更新
+ * @desc    ロールを更新する
  * @access  Private (Admin)
  */
-router.put('/:id', [admin, topLevelAdminOnly], async (req, res) => {
+router.put('/:id', [auth, admin], async (req, res) => {
   const { name, description } = req.body;
 
   try {
-    // ★ IDとテナントIDの両方で検索し、他テナントのデータを操作できないようにする
-    const role = await Role.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
+    const role = await Role.findById(req.params.id);
+
     if (!role) {
       return res.status(404).json({ message: 'ロールが見つかりません。' });
     }
 
-    // ★ 修正: 保護されたロールは一切の変更を禁止する
-    if (PROTECTED_ROLES.includes(role.name)) {
-      return res.status(400).json({ message: `基本ロール「${role.name}」は変更できません。` });
+    // 権限チェック: 自分のテナントのロールしか編集できない
+    if (role.tenantId.toString() !== req.user.tenantId.toString()) {
+      return res.status(403).json({ message: 'このロールを編集する権限がありません。' });
     }
 
-    // 更新内容を適用
-    if (name) role.name = name;
-    if (description) role.description = description;
+    role.name = name || role.name;
+    role.description = description || role.description;
 
     const updatedRole = await role.save();
     res.json(updatedRole);
   } catch (err) {
-    if (err.code === 11000) {
-      return res.status(400).json({ message: 'そのロール名は既に使用されています。' });
-    }
     console.error(err.message);
     res.status(500).send('サーバーエラーが発生しました。');
   }
@@ -111,34 +100,12 @@ router.put('/:id', [admin, topLevelAdminOnly], async (req, res) => {
 
 /**
  * @route   DELETE /api/roles/:id
- * @desc    ロールを削除
+ * @desc    ロールを削除する
  * @access  Private (Admin)
  */
-router.delete('/:id', [admin, topLevelAdminOnly], async (req, res) => {
-  try {
-    // ★ IDとテナントIDの両方で検索
-    const roleToDelete = await Role.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
-    if (!roleToDelete) {
-      return res.status(404).json({ message: 'ロールが見つかりません。' });
-    }
-
-    // 安全性: 保護されたロールは削除させない
-    if (PROTECTED_ROLES.includes(roleToDelete.name)) {
-      return res.status(400).json({ message: `保護されたロール '${roleToDelete.name}' は削除できません。` });
-    }
-
-    // データ整合性: このロールを使用しているユーザーがいないか確認
-    const userCount = await User.countDocuments({ tenantId: req.user.tenantId, roles: roleToDelete.name });
-    if (userCount > 0) {
-      return res.status(400).json({ message: `このロールは ${userCount} 人のユーザーに割り当てられているため、削除できません。` });
-    }
-
-    await roleToDelete.deleteOne();
-    res.json({ message: 'ロールが正常に削除されました。' });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('サーバーエラーが発生しました。');
-  }
+router.delete('/:id', [auth, admin], async (req, res) => {
+  // この機能はまだ実装されていません
+  res.status(501).json({ message: 'この機能はまだ実装されていません。' });
 });
 
 module.exports = router;

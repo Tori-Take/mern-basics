@@ -85,7 +85,8 @@ class UserService {
     // --- 2. 新しいテナント用の基本ロールを作成 ---
     await Role.insertMany([
       { name: 'user', description: '一般ユーザー', tenantId: newTenant._id },
-      { name: 'admin', description: '管理者', tenantId: newTenant._id }
+      { name: 'admin', description: '管理者', tenantId: newTenant._id },
+      { name: 'tenant-superuser', description: '組織の最上位管理者', tenantId: newTenant._id } // ★ この行を追加
     ]);
 
     // --- 3. パスワードのハッシュ化 ---
