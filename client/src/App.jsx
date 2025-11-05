@@ -57,6 +57,7 @@ function AppContent() {
             {/* ▼▼▼ ここからがPermissionRouteによる保護 ▼▼▼ */}
             <Route element={<PermissionRoute permission="CAN_USE_TODO" />}>
               <Route path="/todos" element={<TodoPage />} />
+              <Route path="/todo" element={<TodoPage />} /> {/* ★★★ この行を追加 ★★★ */}
             </Route>
             {/* ▼▼▼ Hiyari-Naviのルートを追加 ▼▼▼ */}
             <Route element={<PermissionRoute permission="CAN_USE_HIYARI" />}>

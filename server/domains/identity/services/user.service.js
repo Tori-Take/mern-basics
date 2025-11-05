@@ -241,20 +241,11 @@ class UserService {
    */
   async getAssignableUsers(operator) {
     try {
-      // ★★★ 修正: tenantIdがオブジェクトでもObjectIdでも対応できるようにする ★★★
-      // operator.tenantId._id が存在すればそれ（populateされたオブジェクトの場合）を、
-      // そうでなければ operator.tenantId そのもの（ObjectIdまたは文字列の場合）を使用する。
-      const operatorTenantId = operator.tenantId?._id || operator.tenantId;
-
-      const rootTenantId = await tenantService.findOrganizationRoot(operatorTenantId);
-      if (!rootTenantId) return [];
-
-      // 2. ルート配下の全テナントIDを取得する
-      const hierarchyTenants = await tenantService.getTenantHierarchy(rootTenantId);
-      const allTenantIdsInOrg = [rootTenantId, ...hierarchyTenants.map(t => t._id)];
-
-      // 3. ユーザーを取得し、tenantIdをpopulateする
-      const users = await this.userRepository.findAssignable(allTenantIdsInOrg);
+      // ★★★ 新しい設計に沿ったシンプルなロジック ★★★
+      // 1. 操作者(operator)がアクセス可能な全てのテナントIDを取得する
+      const accessibleTenantIds = await getAccessibleTenantIds(operator);
+      // 2. それらのテナントに所属する全てのユーザーを取得する
+      const users = await this.userRepository.findAssignable(accessibleTenantIds);
       // Userモデルの静的populateメソッドを使い、取得済みの配列に対してpopulateを実行する
       return await User.populate(users, { path: 'tenantId', select: 'name' });
     } catch (err) {
@@ -363,7 +354,7 @@ class UserService {
 
     if (status) user.status = status;
     if (tenantId) user.tenantId = tenantId;
-    if (roles) user.roles = roles;
+    if (roles) user.roles = roles; // ★ シンプルにロールを更新
     if (permissions) user.permissions = permissions; // ★ permissionsを更新するロジックを追加
 
     return this.userRepository.save(user);

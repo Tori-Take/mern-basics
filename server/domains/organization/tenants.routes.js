@@ -171,6 +171,7 @@ router.post('/', [auth, admin], async (req, res) => {
     });
 
     const tenant = await newTenant.save();
+
     res.status(201).json(tenant);
   } catch (err) {
     // データ品質: 重複エラー(E11000)のハンドリング

@@ -4,6 +4,7 @@ const Role = require('./role.model');
 const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');
 const { getAccessibleTenantIds } = require('../../core/services/permissionService');
+const tenantService = require('./services/tenant.service'); // ★ tenantServiceをインポート
 
 /**
  * @route   GET /api/roles
@@ -12,19 +13,18 @@ const { getAccessibleTenantIds } = require('../../core/services/permissionServic
  */
 router.get('/', [auth, admin], async (req, res) => {
   try {
-    // 1. クエリパラメータからtenantIdを取得。なければ操作者自身のtenantIdを使用
+    // ★★★ ここからが新しいロジック ★★★
+    // 1. 基準となるテナントIDを取得 (クエリパラメータ or 操作者の所属テナント)
     const targetTenantId = req.query.tenantId || req.user.tenantId;
-
-    // 2. Superuserはどのテナントのロールでも取得できる。
-    //    Adminは自分がアクセス可能なテナントのロールのみ取得できる。
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user);
-    // targetTenantIdがObjectIdでない可能性を考慮し、toString()で比較
-    if (!accessibleTenantIds.some(id => id.toString() === targetTenantId.toString())) {
-      return res.status(403).json({ message: 'この組織のロールにアクセスする権限がありません。' });
+    if (!targetTenantId) {
+      return res.json([]); // 基準となるテナントがなければ空を返す
     }
 
-    // 3. 対象テナントのロールを検索して返す
-    const roles = await Role.find({ tenantId: targetTenantId });
+    // 2. 基準テナントIDから、その組織のルートテナントIDを見つけ出す
+    const rootTenantId = await tenantService.findOrganizationRoot(targetTenantId);
+
+    // 3. ルートテナントIDに紐づくロールを検索して返す
+    const roles = await Role.find({ tenantId: rootTenantId });
     res.json(roles);
 
   } catch (err) {
@@ -47,17 +47,21 @@ router.post('/', [auth, admin], async (req, res) => {
   }
 
   try {
-    // 同じテナント内で同じ名前のロールが存在しないかチェック
-    const existingRole = await Role.findOne({ name, tenantId: req.user.tenantId });
+    // ★★★ ここからが新しいロジック ★★★
+    // 1. 操作者の所属組織のルートテナントIDを見つけ出す
+    const rootTenantId = await tenantService.findOrganizationRoot(req.user.tenantId);
+    if (!rootTenantId) {
+      return res.status(400).json({ message: '所属組織が見つからないため、ロールを作成できません。' });
+    }
+
+    // 2. その組織内で同じ名前のロールが存在しないかチェック
+    const existingRole = await Role.findOne({ name, tenantId: rootTenantId });
     if (existingRole) {
       return res.status(400).json({ message: 'そのロール名は既に使用されています。' });
     }
 
-    const newRole = new Role({
-      name,
-      description,
-      tenantId: req.user.tenantId, // ロールは操作者のテナントに紐づける
-    });
+    // 3. ルートテナントIDに紐づけて新しいロールを作成
+    const newRole = new Role({ name, description, tenantId: rootTenantId });
 
     const role = await newRole.save();
     res.status(201).json(role);
