@@ -1,92 +1,95 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../providers/AuthProvider';
-import { Form, Button, Card, Alert, Spinner, InputGroup } from 'react-bootstrap';
+import { Form, Button, Card, Alert, Spinner } from 'react-bootstrap';
+import { QRCodeCanvas } from 'qrcode.react'; // ★ QRコード生成コンポーネントをインポート
 
 function LoginPage() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const { login, isAuthenticated, forceReset } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    // RegisterPageから渡された成功メッセージがあれば表示
-    if (location.state?.message) {
-      setSuccessMessage(location.state.message);
-      // メッセージを表示したら、stateをクリアしてリロード時に再表示されないようにする
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location, navigate]);
+  // ★★★ QRコードで表示するURLを定義 ★★★
+  const appUrl = 'https://mern-basics-bbld.onrender.com/';
 
-  // 認証状態の変更を監視して画面遷移を行う
-  useEffect(() => {
-    if (isAuthenticated) {
-      if (forceReset) {
-        navigate('/force-reset-password');
-      } else {
-        navigate('/');
-      }
-    }
-  }, [isAuthenticated, forceReset, navigate]);
+  const from = location.state?.from?.pathname || '/';
 
-  const { email, password } = formData;
-
-  const onChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const onSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setError('');
-    try {      
+    setLoading(true);
+    try {
       await login(email, password);
-      // ログイン成功後の画面遷移は上記のuseEffectに任せるため、ここでは何もしない
+      navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'ログインに失敗しました。');
-      setIsSubmitting(false);
+      setError(err.message || 'ログインに失敗しました。');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-      <Card style={{ width: '100%', maxWidth: '450px' }} className="shadow-sm">
+      <Card className="shadow-sm" style={{ width: '100%', maxWidth: '450px' }}>
         <Card.Header as="h2" className="text-center">ログイン</Card.Header>
         <Card.Body>
           {error && <Alert variant="danger">{error}</Alert>}
-          {successMessage && <Alert variant="success">{successMessage}</Alert>}
-          <Form onSubmit={onSubmit}>
-            <Form.Group className="mb-3" controlId="email">
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-3" controlId="formBasicEmail">
               <Form.Label>メールアドレス</Form.Label>
-              <Form.Control type="email" placeholder="メールアドレス" name="email" value={email} onChange={onChange} required />
+              <Form.Control
+                type="email"
+                placeholder="メールアドレスを入力"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </Form.Group>
-            <Form.Group className="mb-4" controlId="password">
+
+            <Form.Group className="mb-3" controlId="formBasicPassword">
               <Form.Label>パスワード</Form.Label>
-              <InputGroup>
-                <Form.Control type={showPassword ? 'text' : 'password'} placeholder="パスワード" name="password" value={password} onChange={onChange} required />
-                <Button variant="outline-secondary" onClick={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <i className="bi bi-eye-slash"></i> : <i className="bi bi-eye"></i>}
-                </Button>
-              </InputGroup>
+              <Form.Control
+                type="password"
+                placeholder="パスワード"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </Form.Group>
+
             <div className="d-grid">
-              <Button variant="primary" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <><Spinner as="span" animation="border" size="sm" /> ログイン中...</> : 'ログイン'}
+              <Button variant="primary" type="submit" disabled={loading}>
+                {loading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : 'ログイン'}
               </Button>
             </div>
           </Form>
-          {/* ★★★ 組織の新規作成を一時的に非表示にする ★★★ */}
-          {/* <p className="mt-3 text-center">
-            アカウントをお持ちでないですか？ <Link to="/register">新しい組織を登録</Link>
-          </p> */}
+
+          {/* ★★★ ここからがQRコード表示部分 ★★★ */}
+          <div className="text-center mt-4 pt-3 border-top">
+            <p className="text-muted small mb-2">スマートフォンでのアクセスはこちら</p>
+            <div className="d-inline-block p-2 border rounded">
+              <QRCodeCanvas
+                value={appUrl}
+                size={128}
+                bgColor={"#ffffff"}
+                fgColor={"#000000"}
+                level={"L"}
+                includeMargin={true}
+              />
+            </div>
+          </div>
+          {/* ★★★ ここまで ★★★ */}
+
         </Card.Body>
+        <Card.Footer className="text-center">
+          {/* <small className="text-muted">
+            アカウントをお持ちでないですか？ <Link to="/register">新規登録</Link>
+          </small> */}
+        </Card.Footer>
       </Card>
     </div>
   );
