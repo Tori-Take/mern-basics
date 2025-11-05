@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>次回の開発学習内容</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #343a40;
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f8f9fa;
+        }
+
+        h1,
+        h2 {
+            color: #005f73;
+            border-bottom: 2px solid #0a9396;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 4px;
+            font-size: 2.5em;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        ul {
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>次回の開発学習内容</h1>
+
+    <div class="card">
+        <h2>目標：ヒヤリハット報告機能の実装</h2>
+        <p>
+            堅牢なユーザー・組織管理基盤が完成した今、次はこのアプリケーションのビジネス価値をさらに高めるための新機能、「ヒヤリハット報告機能」の実装に着手します。
+        </p>
+        <p>
+            この機能は、ユーザーが日々の業務で感じた「ヒヤリ」としたことや「ハッ」としたことを手軽に報告・共有し、組織全体の安全意識向上と事故の未然防止に繋げることを目的とします。
+        </p>
+        <ul>
+            <li><strong>バックエンド (Mongoose & Express):</strong>
+                ヒヤリハット報告を保存するための新しいデータモデル(<code>Hiyari.model.js</code>)を設計・実装します。報告の作成(POST)、一覧取得(GET)、詳細取得(GET)、更新(PUT)、削除(DELETE)を行うためのAPIエンドポイントを構築します。
+            </li>
+            <li><strong>フロントエンド (React & Bootstrap):</strong>
+                ヒヤリハット報告を投稿するための新しいページ(<code>HiyariPage.jsx</code>)を作成します。フォームには、発生日時、場所、状況、対策案などの項目を含めます。また、投稿された報告を一覧で表示し、内容を確認できるUIを構築します。
+            </li>
+            <li><strong>権限連携:</strong>
+                ユーザーダッシュボードに「ヒヤリハット報告」へのリンクを表示させます。このリンクは、<code>CAN_USE_HIYARI</code>権限を持つユーザーにのみ表示されるように、<code>PermissionRoute</code>コンポーネントを活用してアクセス制御を実装します。
+            </li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

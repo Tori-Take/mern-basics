@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Tenant = require('../../domains/organization/tenant.model');
+const tenantService = require('../../domains/organization/services/tenant.service'); // ★ tenantServiceをインポート
 const User = require('../../domains/identity/user.model');
 
 /**
@@ -21,30 +22,22 @@ const getAccessibleTenantIds = async (operator) => {
   }
   // ★★★ ここまで ★★★
 
-  const operatorTenantId = operator.tenantId;
+  // ★★★ ここからが新しいTenantSuperuserのロジック ★★★
+  // 1. 操作者が所属する組織のルートテナントIDを見つけ出す
+  const rootTenantId = await tenantService.findOrganizationRoot(operator.tenantId);
 
-  // Ensure tenantId is a valid ObjectId
-  const tenantId = mongoose.Types.ObjectId.isValid(operatorTenantId) ? new mongoose.Types.ObjectId(operatorTenantId) : null;
-
-  if (!tenantId) {
+  if (!rootTenantId) {
+    // ルートが見つからない = 組織に正しく所属していない
     return [];
   }
 
-  const aggregationResult = await Tenant.aggregate([
-    { $match: { _id: tenantId } },
-    {
-      $graphLookup: {
-        from: 'tenants',
-        startWith: '$_id',
-        connectFromField: '_id',
-        connectToField: 'parent',
-        as: 'descendants'
-      }
-    }
-  ]);
+  // 2. ルートテナント配下の全てのテナント(部署)を取得する
+  // getTenantHierarchyはフラットな配列を返すように修正済みと仮定
+  const allTenantsInOrg = await tenantService.getTenantHierarchy(rootTenantId);
 
-  const resultIds = aggregationResult[0] ? [aggregationResult[0]._id, ...aggregationResult[0].descendants.map(d => d._id)] : [];
-  return resultIds;
+  // 3. 取得したテナントのIDリストを返す
+  const accessibleIds = allTenantsInOrg.map(t => t._id);
+  return accessibleIds;
 };
 
 /**

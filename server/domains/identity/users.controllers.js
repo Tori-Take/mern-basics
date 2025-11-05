@@ -5,6 +5,7 @@ const Role = require('../organization/role.model');
 const { Application } = require('../applications/application.model'); // ★ 分割代入で正しくインポート
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const tenantService = require('../organization/services/tenant.service'); // ★★★ tenantServiceをインポート ★★★
 const { getAccessibleTenantIds } = require('../../core/services/permissionService');
 const UserRepository = require('./repositories/user.repository');
 const UserService = require('./services/user.service');
@@ -247,10 +248,6 @@ class UserController {
  * CSVからユーザーを一括登録・更新する
  */
 UserController.bulkImportUsers = async (req, res) => {
-  // ★★★ デバッグ用コンソールログを追加 ★★★
-  console.log('--- [DEBUG] Bulk Import API Called ---');
-  console.log('Request Body:', JSON.stringify(req.body, null, 2));
-  // ★★★ ここまで ★★★
 
   const { users: csvData } = req.body;
   const operator = req.user;
@@ -290,9 +287,10 @@ UserController.bulkImportUsers = async (req, res) => {
     const tenantNameMap = new Map(accessibleTenants.map(t => [t.name, t._id]));
 
     // 2. 利用可能なロールをSet形式で取得 (名前)
-    const PROTECTED_ROLES = ['user', 'admin', 'tenant-superuser'];
-    const customRoles = await Role.find({ tenantId: operator.tenantId });
-    const validRoleSet = new Set([...PROTECTED_ROLES, ...customRoles.map(r => r.name)]);
+    // ★★★ 修正：ロールも組織のルートテナントから取得する ★★★
+    const rootTenantId = await tenantService.findOrganizationRoot(operator.tenantId);
+    const availableRoles = await Role.find({ tenantId: rootTenantId });
+    const validRoleSet = new Set(availableRoles.map(r => r.name));
 
     // 3. 利用可能な全アプリケーション権限をSet形式で取得 (permissionKey)
     const allApplications = await Application.find({});

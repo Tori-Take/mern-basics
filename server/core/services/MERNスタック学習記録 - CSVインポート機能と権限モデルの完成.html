@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERNスタック学習記録 - CSVインポート機能と権限モデルの完成</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #343a40;
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f8f9fa;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #005f73;
+            border-bottom: 2px solid #0a9396;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 4px;
+            font-size: 2.5em;
+        }
+
+        h2 {
+            background-color: #e9ecef;
+            padding: 12px 15px;
+            border-left: 6px solid #0a9396;
+            font-size: 1.8em;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #212529;
+            color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .milestone {
+            background-color: #d1ecf1;
+            border-left: 5px solid #0c5460;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .debug-story {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .tech-highlight {
+            background-color: #e0fbfc;
+            border-left: 5px solid #2ec4b6;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        ul,
+        ol {
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MERNスタック学習記録 - CSVインポート機能と権限モデルの完成</h1>
+
+    <div class="card milestone">
+        <h2>最大の達成：CSV一括登録機能の実装と、権限モデルの最終進化</h2>
+        <p>
+            今回の開発では、アプリケーションの運用効率を劇的に向上させる<strong>「ユーザーCSV一括登録・更新機能」</strong>を実装しました。
+            しかし、その価値は単なる機能追加に留まりません。この実装プロセスを通じて、私たちは<code>TenantSuperuser</code>の権限設計に潜んでいた根本的な課題を発見し、それを解決することで、アプリケーション全体の権限モデルをより堅牢で、より直感的なものへと進化させることに成功しました。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>実装ハイライト</h2>
+        <div class="tech-highlight">
+            <h3>1. CSVインポート機能 (フロントエンド & バックエンド)</h3>
+            <p>
+                ユーザー管理画面に、CSVファイルをアップロードしてユーザー情報を一括で処理する機能を実装しました。
+            </p>
+            <ul>
+                <li><strong>フロントエンド (<code>AdminUserListPage.jsx</code>):</strong>
+                    <code>react-bootstrap</code>の<code>Modal</code>コンポーネントでUIを構築。ファイル選択には<code>Papa.parse</code>ライブラリを利用してクライアントサイドでCSVを解析し、JSON形式でバックエンドに送信する、効率的な処理を実現しました。
+                </li>
+                <li><strong>バックエンド (<code>users.controllers.js</code>):</strong>
+                    <code>/api/users/bulk-import</code>エンドポイントを新設。受け取ったJSONデータに対し、一行ずつ厳密なバリデーション（所属部署の存在チェック、権限の妥当性チェックなど）を実行し、安全なデータのみをデータベースに登録・更新するロジックを構築しました。
+                </li>
+            </ul>
+        </div>
+
+        <div class="tech-highlight">
+            <h3>2. 権限モデルの最終設計：「組織」単位でのアクセス制御</h3>
+            <p>
+                CSVインポートのデバッグを通じて、<code>TenantSuperuser</code>の権限範囲が「自身の所属部署とその配下」に限定されているという、重大な設計上の制約を発見しました。これを解決するため、<code>permissionService.js</code>に大きな設計変更を加えました。
+            </p>
+            <ul>
+                <li><strong><code>findOrganizationRoot</code>の活用:</strong>
+                    <code>tenant.service.js</code>に、任意の部署IDから組織の最上位（ルート）を特定する<code>findOrganizationRoot</code>関数を実装しました。
+                </li>
+                <li><strong>権限範囲の拡張:</strong>
+                    <code>permissionService.js</code>の<code>getAccessibleTenantIds</code>を改修。<code>TenantSuperuser</code>の場合、まず組織のルートを特定し、そこから連なる全ての部署をアクセス可能範囲とすることで、<strong>組織全体の管理者</strong>として振る舞えるように権限を拡張しました。
+                </li>
+            </ul>
+            <pre><code>// server/core/services/permissionService.js の新しいロジック
+const rootTenantId = await tenantService.findOrganizationRoot(operator.tenantId);
+const allTenantsInOrg = await tenantService.getTenantHierarchy(rootTenantId);
+const accessibleIds = allTenantsInOrg.map(t => t._id);
+return accessibleIds;</code></pre>
+        </div>
+    </div>
+
+    <div class="card debug-story">
+        <h2>デバッグの物語：「判断基準」を可視化する</h2>
+        <p>
+            「成功: 0件, 失敗:
+            90件」というインポート結果は、一見すると不可解なものでした。しかし、私たちは闇雲にコードを修正するのではなく、まず<strong>「バックエンドが何を基準に判断しているのか」</strong>を可視化することから始めました。
+        </p>
+        <ol>
+            <li><strong>ログの仕込み:</strong>
+                <code>users.controllers.js</code>のインポート処理の冒頭に、検証に使われる「アクセス可能な部署リスト」や「利用可能な権限リスト」をコンソールに出力するログを仕込みました。
+            </li>
+            <li><strong>「判断基準」のズレを発見:</strong>
+                出力されたログと、インポートしようとしたCSVファイルの内容を比較した結果、「アクセス可能な部署リスト」が<code>['配電総括グループ']</code>のみになっており、CSVに記載された「配電工事グループ」などが含まれていないことが一目瞭然となりました。
+            </li>
+            <li><strong>根本原因の特定:</strong>
+                この「判断基準のズレ」から、問題がCSVインポート処理そのものではなく、より上位の権限判定サービス(<code>permissionService.js</code>)にあることを突き止め、的確な修正へと繋げることができました。
+            </li>
+        </ol>
+        <p>
+            この経験は、複雑な処理のデバッグにおいて、まず<strong>「システムの判断基準（コンテキスト）を可視化する」</strong>ことが、いかに問題解決を加速させるかを教えてくれる、貴重なレッスンでした。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>現在地と次のステップ</h2>
+        <p>
+            現在、アプリケーションは<strong>「組織単位での階層型アクセス制御」</strong>と<strong>「組織全体を管理できる<code>TenantSuperuser</code>」</strong>という、堅牢でスケーラブルな権限モデルを完全に確立しました。CSVによるユーザーの一括管理も可能となり、実運用に向けた大きな一歩を踏み出しました。
+        </p>
+        <p>
+            次のステップでは、この強力な基盤の上に、さらにアプリケーションの価値を高める機能を実装していきます。具体的には、ユーザーが日々の業務で利用する<strong>「ヒヤリハット報告機能」</strong>の開発に着手し、このシステムの利用シーンをさらに広げていきましょう。
+        </p>
+    </div>
+
+</body>
+
+</html>
+
+```
+
+#### 2. 更新されたディレクトリ構造
+
+```diff
+--- a/学習記録/アーカイブ/MERNスタック学習記録 - 階層型アクセス制御の完成.html
++++ b/学習記録/フルスタック近代化完了報告.html
