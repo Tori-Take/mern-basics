@@ -38,7 +38,6 @@ function AdminUserEditPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log(`--- [FE] Start Fetching Data for User ID: ${id} ---`);
         // ★★★ 修正: API呼び出しを段階的に行うように変更 ★★★
         // 1. 最初にユーザー情報と、それに依存しない情報を取得する
         const [userRes, tenantsRes, appsRes] = await Promise.all([
@@ -46,17 +45,13 @@ function AdminUserEditPage() {
           axios.get('/api/tenants/all'), // ★ 全テナント情報を取得するAPIに変更
           axios.get('/api/applications'), // ★ アプリケーション一覧を取得
         ]);
-        console.log('[FE] 1. Fetched User Data:', userRes.data);
 
         // 2. 取得したユーザーのtenantIdを使って、そのテナントに属するロールを取得する
         const userTenantId = userRes.data.tenantId;
-        console.log(`[FE] 2. Fetching roles for Tenant ID: ${userTenantId}`);
         const rolesRes = await axios.get(`/api/roles?tenantId=${userTenantId}`);
-        console.log('[FE] 3. Fetched Roles Data:', rolesRes.data);
 
         setFormData(userRes.data);
         setAllRoles(rolesRes.data);
-        console.log('[FE] 4. State `allRoles` has been set.');
         setAllTenants(tenantsRes.data);
         setAllApplications(appsRes.data.data); // ★ 取得したデータをstateに保存
         setPermissionsString((userRes.data.permissions || []).join(', ')); // ★ 初期値を設定
