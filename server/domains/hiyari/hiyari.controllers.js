@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler'); // ★ express-async-handlerをインポート
-const Hiyari = require('./Hiyari.model');
+const Hiyari = require('./hiyari.model'); // ★ Hiyariモデルをインポート (hを小文字に修正)
 const { getAccessibleTenantIds } = require('../../core/services/permissionService');
 
 /**

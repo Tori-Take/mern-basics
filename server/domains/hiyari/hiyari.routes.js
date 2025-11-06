@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../../core/middleware/auth');
-const Hiyari = require('./Hiyari.model');
+const Hiyari = require('./hiyari.model'); // ★ Hiyariモデルをインポート (hを小文字に修正)
 const HiyariController = require('./hiyari.controllers'); // ★ HiyariControllerをインポート
 
 /**
