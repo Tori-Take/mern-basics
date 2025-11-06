@@ -69,10 +69,6 @@ function HiyariEditModal({ show, onClose, onSave, hiyari }) {
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>発生場所</Form.Label>
-            <Form.Control type="text" name="location" value={formData.location} onChange={handleChange} />
-          </Form.Group>
-          <Form.Group className="mb-3">
             <Form.Label>カテゴリ</Form.Label>
             <Form.Select name="category" value={formData.category} onChange={handleChange}>
               <option>転倒・つまずき</option>
@@ -87,9 +83,14 @@ function HiyariEditModal({ show, onClose, onSave, hiyari }) {
             <Form.Control as="textarea" rows={4} name="description" value={formData.description} onChange={handleChange} required />
           </Form.Group>
           <Form.Group className="mb-3">
+            <Form.Label>発生場所</Form.Label>
+            <Form.Control type="text" name="location" value={formData.location} onChange={handleChange} />
+          </Form.Group>
+          {/* ★★★ タグ入力欄をコメントアウトして非表示に ★★★ */}
+          {/* <Form.Group className="mb-3">
             <Form.Label>タグ (カンマ区切り)</Form.Label>
             <Form.Control type="text" name="tags" value={formData.tags} onChange={handleChange} />
-          </Form.Group>
+          </Form.Group> */}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={onClose}>キャンセル</Button>

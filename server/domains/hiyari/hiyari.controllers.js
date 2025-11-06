@@ -108,6 +108,11 @@ class HiyariController {
     hiyari.tags = tags || hiyari.tags;
 
     const updatedHiyari = await hiyari.save();
+
+    // ★★★ ここからが新しいロジック ★★★
+    // レスポンスを返す前に、GETリクエストと同じようにpopulateを実行する
+    await updatedHiyari.populate('reportedBy', 'username');
+    await updatedHiyari.populate('tenantId', 'name');
     res.json(updatedHiyari);
   });
 }
