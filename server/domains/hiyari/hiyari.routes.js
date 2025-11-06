@@ -1,18 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../../core/middleware/auth');
+const Hiyari = require('./Hiyari.model');
+const HiyariController = require('./hiyari.controllers'); // ★ HiyariControllerをインポート
 
-// --- ★★★ 全てのhiyari APIを認証ミドルウェアで保護 ★★★ ---
-router.use(auth);
-
-// /api/hiyari というルートに対する設定
-router.route('/')
-  .post((req, res) => require('./hiyari.controllers').createHiyari(req, res))
-  .get((req, res) => require('./hiyari.controllers').getHiyaris(req, res));
-
-// /api/hiyari/:id というルートに対する設定
-router.route('/:id')
-  .put((req, res) => require('./hiyari.controllers').updateHiyari(req, res))
-  .delete((req, res) => require('./hiyari.controllers').deleteHiyari(req, res));
+/**
+ * @route   GET /api/hiyari
+ * @desc    アクセス可能なヒヤリハット報告を全て取得する
+ * @access  Private
+ */
+router.get('/', auth, HiyariController.getHiyariReports);
 
 module.exports = router;

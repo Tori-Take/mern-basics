@@ -27,17 +27,21 @@ function HiyariPage() {
   const { user } = useAuth(); // ★ ログインユーザー情報を取得
 
   // コンポーネントのマウント時にヒヤリハット一覧を取得
+  // ★ 修正: useEffectの依存配列からfetchHiyarisを削除
   useEffect(() => {
     fetchHiyaris();
   }, []);
 
   const fetchHiyaris = async () => {
     try {
+      console.log('[FE Hiyari] 1. Fetching hiyari reports from /api/hiyari...');
       setLoading(true);
       const res = await axios.get('/api/hiyari');
+      console.log('[FE Hiyari] 2. Successfully fetched data:', res.data);
       setHiyaris(res.data);
       setError('');
     } catch (err) {
+      console.error('[FE Hiyari] 2. Failed to fetch data:', err);
       setError('ヒヤリハットの取得に失敗しました。');
       console.error(err);
     } finally {
