@@ -13,17 +13,10 @@ class HiyariController {
    * @access  Private
    */
   static getHiyariReports = asyncHandler(async (req, res) => {
-    console.log('--- [BE /api/hiyari] Request Received ---');
-    console.log('[BE Hiyari] 1. Operator:', { id: req.user.id, username: req.user.username, roles: req.user.roles });
-
     const accessibleTenantIds = await getAccessibleTenantIds(req.user);
-    console.log('[BE Hiyari] 2. Accessible Tenant IDs:', accessibleTenantIds.map(id => id.toString()));
-
     const reports = await Hiyari.find({ tenantId: { $in: accessibleTenantIds } })
       .populate('reportedBy', 'username')
       .sort({ incidentDate: -1 });
-
-    console.log(`[BE Hiyari] 3. Found ${reports.length} reports.`);
     res.json(reports);
   });
 
@@ -33,9 +26,6 @@ class HiyariController {
    * @access  Private
    */
   static createHiyariReport = asyncHandler(async (req, res) => {
-    // ★★★ デバッグログを追加 ★★★
-    console.log('[BE Hiyari POST] Received request body:', req.body);
-
     const { incidentDate, location, description, measures, category, tags } = req.body;
 
     // ★★★ 修正: 必須項目チェックを緩和し、「場所」を任意項目にする ★★★

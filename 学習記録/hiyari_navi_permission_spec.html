@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヒヤリ-Navi 権限設計仕様書</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #2c3e50;
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f4f6f9;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #1a5276;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom-width: 5px;
+            font-size: 3em;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            border-left: 8px solid #3498db;
+            background-color: #ecf5fb;
+            padding: 10px 15px;
+        }
+
+        h3 {
+            font-size: 1.6em;
+            border-bottom-style: dashed;
+            border-bottom-width: 1px;
+            color: #2980b9;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #d6eaf8;
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .principle {
+            background-color: #eafaf1;
+            border-left: 5px solid #2ecc71;
+            padding: 25px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        .principle h3 {
+            color: #1e8449;
+            border-bottom-color: #2ecc71;
+            margin-top: 0;
+        }
+
+        .diagram {
+            background-color: #2c3e50;
+            color: #f2f2f2;
+            padding: 25px;
+            border-radius: 8px;
+            font-family: monospace;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #bdc3c7;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #34495e;
+            color: #ecf0f1;
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #fdfefe;
+        }
+
+        tbody tr:hover {
+            background-color: #eaf2f8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>ヒヤリ-Navi 権限設計仕様書</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #566573;">次のアプリケーション開発に向けた共通言語</p>
+
+    <div class="card">
+        <h2>1. はじめに - 私たちが確立した3つの原則</h2>
+        <p>
+            このドキュメントは、ヒヤリ-Naviアプリケーションにおける権限管理のルールを定義します。
+            私たちのアプリケーションは、以下の3つのシンプルな原則に基づいて、ユーザーの操作を制御します。
+        </p>
+        <div class="principle">
+            <h3>原則1：アプリの利用権限</h3>
+            <p><strong>「誰が、このアプリを使うことができるのか？」</strong>は、ユーザーに直接割り当てられる<code>permissions</code>配列によって決まる。</p>
+        </div>
+        <div class="principle">
+            <h3>原則2：データの閲覧範囲</h3>
+            <p><strong>「誰が、どの部署のデータを見ることができるのか？」</strong>は、ユーザーの役割(<code>roles</code>)と所属部署(<code>tenantId</code>)によって決まる。
+            </p>
+        </div>
+        <div class="principle">
+            <h3>原則3：データの操作権限</h3>
+            <p><strong>「誰が、個々のデータを編集・削除できるのか？」</strong>は、そのデータの所有者(<code>reportedBy</code>)であるか、または<code>admin</code>ロールを持っているかによって決まる。
+            </p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>2. 権限の詳細解説</h2>
+
+        <h3>2.1. アプリ利用権限 (<code>CAN_USE_HIYARI</code>)</h3>
+        <p>
+            ヒヤリ-Naviを利用するための最も基本的な「入場券」です。
+        </p>
+        <ul>
+            <li><strong>ルール:</strong>
+                ユーザーの最終的な権限リスト(<code>permissions</code>)に<code>"CAN_USE_HIYARI"</code>が含まれていなければ、ヒヤリ-Naviのページにアクセスすること自体ができません。
+            </li>
+            <li><strong>設定方法:</strong> この権限は、<code>Superuser</code>が「組織・部署管理」画面で、各部署（テナント）に対して「利用可能なアプリ」として設定します。</li>
+            <li><strong>特徴（権限の継承）:</strong> 親部署で許可されたアプリは、その配下の全ての子部署でも自動的に利用可能になります。</li>
+        </ul>
+
+        <h3>2.2. データ閲覧範囲 (<code>getAccessibleTenantIds</code>)</h3>
+        <p>
+            ユーザーがどの範囲のヒヤリハット報告を一覧で見ることができるかを決定します。このロジックは<code>permissionService.js</code>に集約されています。
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th>役割 (Role)</th>
+                    <th>閲覧できる範囲</th>
+                    <th>技術的解説</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>user</code></td>
+                    <td>自分が所属する部署の報告のみ</td>
+                    <td><code>getAccessibleTenantIds</code>は、ユーザーの<code>tenantId</code>のみを返します。</td>
+                </tr>
+                <tr>
+                    <td><code>admin</code></td>
+                    <td>自分が所属する部署、およびその配下の全ての部署の報告</td>
+                    <td><code>getAccessibleTenantIds</code>は、ユーザーの<code>tenantId</code>を起点に、再帰的に全ての子孫テナントIDを取得して返します。
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>tenant-superuser</code></td>
+                    <td>自分が所属する<strong>組織全体の全ての部署</strong>の報告</td>
+                    <td><code>getAccessibleTenantIds</code>は、まず組織のルートテナントを探し出し、そこから連なる全ての部署のIDを返します。</td>
+                </tr>
+                <tr>
+                    <td><code>superuser</code></td>
+                    <td>システムに存在する<strong>全ての組織の全ての報告</strong></td>
+                    <td><code>getAccessibleTenantIds</code>は、データベース上の全てのテナントIDを無条件で返します。</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>2.3. データ操作権限 (CRUD)</h3>
+        <p>
+            個々のヒヤリハット報告に対する、作成・更新・削除の権限です。
+        </p>
+        <div class="diagram">
+            <pre>
+// server/domains/hiyari/hiyari.controllers.js
+
+// 更新(PUT)・削除(DELETE)時の権限チェックロジック
+const isOwner = hiyari.reportedBy.toString() === req.user.id.toString();
+const isAdmin = req.user.roles.includes('admin');
+
+if (!isOwner && !isAdmin) {
+  // 権限がなければ403エラー
+  throw new Error('この報告を操作する権限がありません。');
+}
+            </pre>
+        </div>
+        <ul>
+            <li><strong>作成 (Create):</strong>
+                <code>CAN_USE_HIYARI</code>権限を持つ全てのユーザーが可能です。作成された報告には、作成者の<code>userId</code>と<code>tenantId</code>が自動的に記録されます。
+            </li>
+            <li><strong>更新 (Update):</strong> その報告の作成者(<code>isOwner</code>)であるか、または<code>admin</code>ロールを持っていれば可能です。
+            </li>
+            <li><strong>削除 (Delete):</strong>
+                更新と同様に、その報告の作成者(<code>isOwner</code>)であるか、または<code>admin</code>ロールを持っていれば可能です。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>3. 次のアプリ開発に向けて</h2>
+        <p>
+            この権限設計は、ヒヤリ-Naviだけでなく、今後開発する全てのアプリケーションの基盤となります。
+            例えば、次に「稟議書アプリ」を開発する場合も、
+        </p>
+        <ol>
+            <li><code>CAN_USE_RINGI</code>という新しい権限キーを追加する。</li>
+            <li>稟議書データに<code>tenantId</code>と<code>createdBy</code>フィールドを持たせる。</li>
+            <li>APIのロジックで、この仕様書に記載された<code>getAccessibleTenantIds</code>や<code>isOwner</code>,
+                <code>isAdmin</code>といった共通のパターンを再利用する。</li>
+        </ol>
+        <p>
+            これだけで、新しいアプリにも、私たちが築き上げた堅牢な権限管理機能を即座に組み込むことができます。
+            この「共通の土台」こそが、私たちの開発速度と品質を飛躍的に向上させる、最大の資産です。
+        </p>
+    </div>
+
+</body>
+
+</html>
