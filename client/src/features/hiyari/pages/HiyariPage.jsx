@@ -221,7 +221,7 @@ function HiyariPage() {
                         {item.description}
                         <div className="text-muted small mt-2">
                           発生日時: {new Date(item.incidentDate).toLocaleString('ja-JP')} | 
-                          投稿者: {item.reportedBy?.username || '不明'}
+                          投稿部署: {item.tenantId?.name || '不明'}
                         </div>
                       </div>
                       {/* こちらには編集・削除ボタンは表示しない */}

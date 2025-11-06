@@ -25,7 +25,7 @@ router.post('/bulk-import', [auth, canBulkImport], UserController.bulkImportUser
  * @desc    新しいテナントと、そのテナントの最初の管理者ユーザーを登録する
  * @access  Public
  */
-// router.post('/register', UserController.register);
+router.post('/register', UserController.register); // この行をコメントアウトします
 
 // @route   POST /api/users/login
 // @desc    ユーザーを認証し、トークンを取得する

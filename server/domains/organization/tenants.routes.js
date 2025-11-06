@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const Tenant = require('./tenant.model');
 const User = require('../../domains/identity/user.model'); // ★ Userモデルをインポート
+const Role = require('./role.model'); // ★ Roleモデルをインポート
+const Hiyari = require('../hiyari/hiyari.model'); // ★ Hiyariモデルをインポート
 const mongoose = require('mongoose'); // ★ Mongooseをインポート
 const auth = require('../../core/middleware/auth');
 const admin = require('../../core/middleware/admin');
@@ -278,36 +280,33 @@ router.put('/:id/permissions', [auth, (req, res, next) => {
  * @desc    テナント（部署）を削除する
  * @access  Private (Admin)
  */
-router.delete('/:id', [auth, admin], async (req, res) => {
+router.delete('/:id', [auth, (req, res, next) => {
+  // ★★★ Superuserのみを許可するインラインミドルウェアに修正 ★★★
+  if (!req.user.roles.includes('superuser')) {
+    return res.status(403).json({ message: 'この操作はスーパーユーザーのみ許可されています。' });
+  }
+  next();
+}], async (req, res) => {
   try {
     const tenantIdToDelete = req.params.id;
 
-    // --- セキュリティ強化 ---
-    const accessibleTenantIds = await getAccessibleTenantIds(req.user);
-    const isAllowed = accessibleTenantIds.some(id => id.equals(tenantIdToDelete));
-    if (!isAllowed) {
-      return res.status(403).json({ message: 'この部署を削除する権限がありません。' });
-    }
+    // ★★★ ここからが新しいカスケード削除ロジック ★★★
+    // 1. 削除対象の組織とその配下の全部署のIDを取得
+    const hierarchy = await tenantService.getTenantHierarchy(tenantIdToDelete);
+    const allTenantIdsToDelete = hierarchy.map(t => t._id);
 
+    // 2. 関連データを一括削除
+    // 2a. 該当する全ユーザーを削除
+    await User.deleteMany({ tenantId: { $in: allTenantIdsToDelete } });
 
-    // 安全装置1: 子テナント（サブ部署）が存在する場合は削除させない
-    const childCount = await Tenant.countDocuments({ parent: tenantIdToDelete });
-    if (childCount > 0) {
-      return res.status(400).json({ message: `この部署には ${childCount} 個のサブ部署が存在するため、削除できません。` });
-    }
+    // 2b. 該当する全ロールを削除
+    await Role.deleteMany({ tenantId: { $in: allTenantIdsToDelete } });
 
-    // 安全装置2: ユーザーが所属している場合は削除させない
-    const userCount = await User.countDocuments({ tenantId: tenantIdToDelete });
-    if (userCount > 0) {
-      // --- デバッグ用ログ ---
-      // どのユーザーが所属しているために削除できないのかを確認する
-      const usersInTenant = await User.find({ tenantId: tenantIdToDelete }).select('username email');
-      console.log(`【DELETE /api/tenants】削除ブロック: テナント ${tenantIdToDelete} には以下のユーザーが所属しています:`, usersInTenant);
-      // --- デバッグ用ログここまで ---
-      return res.status(400).json({ message: `この部署には ${userCount} 人のユーザーが所属しているため、削除できません。` });
-    }
+    // 2c. 該当する全ヒヤリハット報告を削除
+    await Hiyari.deleteMany({ tenantId: { $in: allTenantIdsToDelete } });
 
-    await Tenant.findByIdAndDelete(tenantIdToDelete);
+    // 3. 最後に、組織と配下の全部署自体を削除
+    await Tenant.deleteMany({ _id: { $in: allTenantIdsToDelete } });
 
     res.json({ message: 'テナントが正常に削除されました。' });
   } catch (err) {

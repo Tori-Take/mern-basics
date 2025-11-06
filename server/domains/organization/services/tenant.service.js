@@ -19,8 +19,8 @@ const getTenantHierarchy = async (tenantId) => {
       $graphLookup: {
         from: 'tenants',          // 同じ'tenants'コレクションを検索
         startWith: '$_id',        // 開始テナントのIDからスタート
-        connectFromField: '_id',  // 子テナントの'parent'フィールドと接続するキー
-        connectToField: 'parent', // 親テナントの'_id'フィールドと接続されるキー
+        connectFromField: '_id',  // ★ 修正: 親の接続点
+        connectToField: 'parent', // ★ 修正: 子の接続点
         as: 'descendants',        // 見つかった子孫を'descendants'という配列に格納
         depthField: 'depth'       // 階層の深さを'depth'フィールドに格納
       }

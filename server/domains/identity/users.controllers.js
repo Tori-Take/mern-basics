@@ -393,7 +393,11 @@ UserController.bulkImportUsers = async (req, res) => {
           await userToUpdate.save();
         } else {
           // 新規作成処理
-          await User.create({ username, email, password, tenantId: targetTenantId, roles, permissions, status: status || 'active' });
+          // ★★★ ここからが新しいロジック ★★★
+          // パスワードをハッシュ化する
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(password, salt);
+          await User.create({ username, email, password: hashedPassword, tenantId: targetTenantId, roles, permissions, status: status || 'active' });
         }
         results.successCount++;
       } catch (dbError) {

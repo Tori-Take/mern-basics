@@ -16,6 +16,7 @@ class HiyariController {
     const accessibleTenantIds = await getAccessibleTenantIds(req.user);
     const reports = await Hiyari.find({ tenantId: { $in: accessibleTenantIds } })
       .populate('reportedBy', 'username')
+      .populate('tenantId', 'name') // ★ 投稿部署の名前を取得するためにこの行を追加
       .sort({ incidentDate: -1 });
     res.json(reports);
   });
