@@ -11,4 +11,25 @@ const HiyariController = require('./hiyari.controllers'); // ★ HiyariControlle
  */
 router.get('/', auth, HiyariController.getHiyariReports);
 
+/**
+ * @route   POST /api/hiyari
+ * @desc    新しいヒヤリハット報告を作成する
+ * @access  Private
+ */
+router.post('/', auth, HiyariController.createHiyariReport);
+
+/**
+ * @route   DELETE /api/hiyari/:id
+ * @desc    ヒヤリハット報告を削除する
+ * @access  Private
+ */
+router.delete('/:id', auth, HiyariController.deleteHiyariReport);
+
+/**
+ * @route   PUT /api/hiyari/:id
+ * @desc    ヒヤリハット報告を更新する
+ * @access  Private
+ */
+router.put('/:id', auth, HiyariController.updateHiyariReport);
+
 module.exports = router;

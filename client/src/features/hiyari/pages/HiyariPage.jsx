@@ -11,7 +11,7 @@ import HiyariEditModal from '../components/HiyariEditModal'; // ★★★ 正し
 const INITIAL_STATE = {
   incidentDate: new Date(),
   location: '',
-  details: '',
+  description: '', // ★ 修正: 'details' から 'description' へ
   category: '転倒・つまずき', // デフォルトカテゴリ
   tags: '',
 };
@@ -113,8 +113,8 @@ function HiyariPage() {
   };
 
   // ★★★ 取得したデータを「自分の投稿」と「組織の投稿」に振り分ける ★★★
-  const myHiyaris = hiyaris.filter(item => item.user?._id === user?._id);
-  const teamHiyaris = hiyaris.filter(item => item.user?._id !== user?._id);
+  const myHiyaris = hiyaris.filter(item => item.reportedBy?._id === user?._id);
+  const teamHiyaris = hiyaris.filter(item => item.reportedBy?._id !== user?._id);
 
   return (
     <Container>
@@ -161,7 +161,7 @@ function HiyariPage() {
                 </Form.Group>
                 <Form.Group className="mb-3">
                   <Form.Label>詳細</Form.Label>
-                  <Form.Control as="textarea" rows={4} name="details" value={formData.details} onChange={handleChange} required />
+                  <Form.Control as="textarea" rows={4} name="description" value={formData.description} onChange={handleChange} required />
                 </Form.Group>
                 <Form.Group className="mb-3">
                   <Form.Label>タグ (カンマ区切り)</Form.Label>
@@ -189,14 +189,14 @@ function HiyariPage() {
                     <ListGroup.Item key={item._id}>
                       <div className="ms-2 me-auto">
                         <div className="fw-bold">{item.category}</div>
-                        {item.details}
+                        {item.description}
                         <div className="text-muted small mt-2">
                           発生日時: {new Date(item.incidentDate).toLocaleString('ja-JP')} | 
-                          投稿者: {item.user?.username || '不明'}
+                          投稿者: {item.reportedBy?.username || '不明'}
                         </div>
                       </div>
                       {/* 編集・削除ボタン */}
-                      {(user?._id === item.user?._id || user?.roles.includes('admin')) && (
+                      {(user?._id === item.reportedBy?._id || user?.roles.includes('admin')) && (
                         <div className="mt-2 text-end">
                           <Button variant="outline-secondary" size="sm" className="me-2" onClick={() => handleEditClick(item)}>
                             編集
@@ -221,10 +221,10 @@ function HiyariPage() {
                     <ListGroup.Item key={item._id}>
                       <div className="ms-2 me-auto">
                         <div className="fw-bold">{item.category}</div>
-                        {item.details}
+                        {item.description}
                         <div className="text-muted small mt-2">
                           発生日時: {new Date(item.incidentDate).toLocaleString('ja-JP')} | 
-                          投稿者: {item.user?.username || '不明'}
+                          投稿者: {item.reportedBy?.username || '不明'}
                         </div>
                       </div>
                       {/* こちらには編集・削除ボタンは表示しない */}

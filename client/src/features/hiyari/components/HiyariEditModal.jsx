@@ -14,7 +14,7 @@ function HiyariEditModal({ show, onClose, onSave, hiyari }) {
       setFormData({
         incidentDate: hiyari.incidentDate ? new Date(hiyari.incidentDate) : new Date(),
         location: hiyari.location || '',
-        details: hiyari.details || '',
+        description: hiyari.description || '', // ★ 修正: 'details' から 'description' へ
         category: hiyari.category || '転倒・つまずき',
         tags: (hiyari.tags || []).join(', '), // 配列をカンマ区切りの文字列に変換
       });
@@ -33,7 +33,7 @@ function HiyariEditModal({ show, onClose, onSave, hiyari }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.details.trim()) {
+    if (!formData.description.trim()) { // ★ 修正: 'details' から 'description' へ
       setError('詳細は必須項目です。');
       return;
     }
@@ -84,7 +84,7 @@ function HiyariEditModal({ show, onClose, onSave, hiyari }) {
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>詳細</Form.Label>
-            <Form.Control as="textarea" rows={4} name="details" value={formData.details} onChange={handleChange} required />
+            <Form.Control as="textarea" rows={4} name="description" value={formData.description} onChange={handleChange} required />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>タグ (カンマ区切り)</Form.Label>
