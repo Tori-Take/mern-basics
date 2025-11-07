@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../providers/AuthProvider';
-import { Form, Button, Card, Alert, Spinner } from 'react-bootstrap';
+import { Form, Button, Card, Alert, Spinner, InputGroup } from 'react-bootstrap'; // ★ InputGroup をインポート
 import { QRCodeCanvas } from 'qrcode.react'; // ★ QRコード生成コンポーネントをインポート
 
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // ★ パスワード表示状態を管理
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,6 +16,9 @@ function LoginPage() {
 
   // ★★★ QRコードで表示するURLを定義 ★★★
   const appUrl = 'https://mern-basics-bbld.onrender.com/';
+
+  // ★ パスワードの表示/非表示を切り替える関数
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   const from = location.state?.from?.pathname || '/';
 
@@ -26,7 +30,10 @@ function LoginPage() {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message || 'ログインに失敗しました。');
+      // ★★★ ここからが修正箇所 ★★★
+      // バックエンドからのエラーメッセージを元に、ユーザーフレンドリーなメッセージを設定
+      const backendMessage = err.response?.data?.message;
+      setError(backendMessage || 'メールアドレスまたはパスワードが正しくありません。');
     } finally {
       setLoading(false);
     }
@@ -52,13 +59,20 @@ function LoginPage() {
 
             <Form.Group className="mb-3" controlId="formBasicPassword">
               <Form.Label>パスワード</Form.Label>
-              <Form.Control
-                type="password"
-                placeholder="パスワード"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              {/* ★★★ ここからが修正箇所 ★★★ */}
+              <InputGroup>
+                <Form.Control
+                  type={showPassword ? 'text' : 'password'} // ★ stateに応じてtypeを切り替え
+                  placeholder="パスワード"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <Button variant="outline-secondary" onClick={togglePasswordVisibility}>
+                  {/* ★ stateに応じてアイコンを切り替え */}
+                  <i className={showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'}></i>
+                </Button>
+              </InputGroup>
             </Form.Group>
 
             <div className="d-grid">
