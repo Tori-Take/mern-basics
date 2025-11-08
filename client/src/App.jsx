@@ -26,6 +26,7 @@ import SystemOrganizationDetailPage from './features/system/pages/SystemOrganiza
 import TenantTreeViewPage from './features/admin/tenants/pages/TenantTreeViewPage'; // ★ 新しく追加
 
 import HiyariPage from './features/hiyari/pages/HiyariPage'; // ★ Hiyari-Naviページをインポート
+import HiyariAdminPage from './features/hiyari/pages/HiyariAdminPage'; // ★★★ 新しくインポート ★★★
 import PermissionRoute from './components/routes/PermissionRoute'; // ★ 新しくインポート
 // AppContentコンポーネントを新しく定義
 function AppContent() {
@@ -62,6 +63,7 @@ function AppContent() {
             {/* ▼▼▼ Hiyari-Naviのルートを追加 ▼▼▼ */}
             <Route element={<PermissionRoute permission="CAN_USE_HIYARI" />}>
               <Route path="/hiyari" element={<HiyariPage />} />
+              <Route path="/hiyari/admin" element={<HiyariAdminPage />} /> {/* ★★★ 管理ページへのルートを追加 ★★★ */}
             </Route>
           </Route>
 

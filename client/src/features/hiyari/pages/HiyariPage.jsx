@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Card, ListGroup, Alert, Spinner } from 'react-bootstrap';
+import { Link } from 'react-router-dom'; // ★★★ Linkコンポーネントをインポート ★★★
 import axios from 'axios';
 import { useAuth } from '../../../providers/AuthProvider'; // ★ ログインユーザー情報取得のためインポート
 import DatePicker from 'react-datepicker';
@@ -21,10 +22,19 @@ function HiyariPage() {
   const [hiyaris, setHiyaris] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+
   // ★★★ 編集モーダル用の状態管理 ★★★
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingHiyari, setEditingHiyari] = useState(null);
   const { user } = useAuth(); // ★ ログインユーザー情報を取得
+
+  // ★★★ ここからが新しいロジック ★★★
+  // ページネーションのためのstate
+  const [myHiyarisPage, setMyHiyarisPage] = useState(1);
+  const [teamHiyarisPage, setTeamHiyarisPage] = useState(1);
+  // ページごとの表示件数
+  const MY_POSTS_PAGE_SIZE = 3;
+  const TEAM_POSTS_PAGE_SIZE = 7;
 
   // コンポーネントのマウント時にヒヤリハット一覧を取得
   // ★ 修正: useEffectの依存配列からfetchHiyarisを削除
@@ -113,12 +123,55 @@ function HiyariPage() {
   const myHiyaris = hiyaris.filter(item => item.reportedBy?._id === user?._id);
   const teamHiyaris = hiyaris.filter(item => item.reportedBy?._id !== user?._id);
 
+  // ★★★ ここからが修正箇所 ★★★
+  // 表示する投稿を計算（ページ切り替え式）
+  const myHiyarisStartIndex = (myHiyarisPage - 1) * MY_POSTS_PAGE_SIZE;
+  const myHiyarisEndIndex = myHiyarisPage * MY_POSTS_PAGE_SIZE;
+  const visibleMyHiyaris = myHiyaris.slice(myHiyarisStartIndex, myHiyarisEndIndex);
+
+  const teamHiyarisStartIndex = (teamHiyarisPage - 1) * TEAM_POSTS_PAGE_SIZE;
+  const teamHiyarisEndIndex = teamHiyarisPage * TEAM_POSTS_PAGE_SIZE;
+  const visibleTeamHiyaris = teamHiyaris.slice(teamHiyarisStartIndex, teamHiyarisEndIndex);
+
+  // ページを操作する関数
+  const handleMyHiyarisPageChange = (newPage) => {
+    if (newPage > 0 && (newPage - 1) * MY_POSTS_PAGE_SIZE < myHiyaris.length) {
+      setMyHiyarisPage(newPage);
+    }
+  };
+  const handleTeamHiyarisPageChange = (newPage) => {
+    if (newPage > 0 && (newPage - 1) * TEAM_POSTS_PAGE_SIZE < teamHiyaris.length) {
+      setTeamHiyarisPage(newPage);
+    }
+  };
+
+  const resetView = () => {
+    setMyHiyarisPage(1);
+    setTeamHiyarisPage(1);
+  };
+
   return (
     <Container>
-      <Row className="my-4">
+      {/* ★★★ ここからが修正箇所 ★★★ */}
+      <Row className="my-4 align-items-center">
         <Col>
           <h1>ヒヤリ-Navi</h1>
         </Col>
+        <Col xs="auto">
+          {/* ★★★ 表示リセットボタンを追加 ★★★ */}
+          <Button variant="light" onClick={resetView} title="表示を最初の状態に戻します">
+            <i className="bi bi-arrow-clockwise"></i>
+          </Button>
+        </Col>
+        {/* 'hiyari-admin' ロールを持つユーザーにのみ管理パネルへのリンクを表示 */}
+        {user && user.roles.includes('hiyari-admin') && (
+          <Col xs="auto">
+            <Link to="/hiyari/admin" className="btn btn-outline-warning">
+              <i className="bi bi-shield-lock-fill me-2"></i>
+              管理パネル
+            </Link>
+          </Col>
+        )}
       </Row>
 
       {error && <Alert variant="danger">{error}</Alert>}
@@ -182,15 +235,16 @@ function HiyariPage() {
               {/* ★★★ 自分の投稿一覧 ★★★ */}
               <h2>あなたの投稿</h2>
               <ListGroup className="mb-4">
-                {myHiyaris.length > 0 ? (
-                  myHiyaris.map(item => (
+                {visibleMyHiyaris.length > 0 ? (
+                  visibleMyHiyaris.map(item => (
                     <ListGroup.Item key={item._id}>
                       <div className="ms-2 me-auto">
                         <div className="fw-bold">{item.category}</div>
                         {item.description}
                         <div className="text-muted small mt-2">
-                          発生日時: {new Date(item.incidentDate).toLocaleString('ja-JP')} | 
-                          投稿者: {item.reportedBy?.username || '不明'}
+                          {/* ★★★ ここからが修正箇所 ★★★ */}
+                          {item.location && `場所: ${item.location} | `}
+                          発生日時: {new Date(item.incidentDate).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
                       {/* 編集・削除ボタン */}
@@ -210,19 +264,40 @@ function HiyariPage() {
                   <p className="text-muted">あなたの投稿はまだありません。</p>
                 )}
               </ListGroup>
+              {/* ★★★ 「もっと見る」ボタン ★★★ */}
+              {(myHiyaris.length > MY_POSTS_PAGE_SIZE) && (
+                <div className="d-flex justify-content-center align-items-center mb-4">
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => handleMyHiyarisPageChange(myHiyarisPage - 1)}
+                    disabled={myHiyarisPage === 1}
+                  >
+                    <i className="bi bi-chevron-left"></i> 前へ
+                  </Button>
+                  <span className="mx-3 text-muted">{myHiyarisPage} / {Math.ceil(myHiyaris.length / MY_POSTS_PAGE_SIZE)}</span>
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => handleMyHiyarisPageChange(myHiyarisPage + 1)}
+                    disabled={myHiyarisEndIndex >= myHiyaris.length}
+                  >
+                    次へ <i className="bi bi-chevron-right"></i>
+                  </Button>
+                </div>
+              )}
 
               {/* ★★★ 同じ組織の投稿一覧 ★★★ */}
               <h2>みんなの投稿</h2>
               <ListGroup>
-                {teamHiyaris.length > 0 ? (
-                  teamHiyaris.map(item => (
+                {visibleTeamHiyaris.length > 0 ? (
+                  visibleTeamHiyaris.map(item => (
                     <ListGroup.Item key={item._id}>
                       <div className="ms-2 me-auto">
                         <div className="fw-bold">{item.category}</div>
                         {item.description}
                         <div className="text-muted small mt-2">
-                          発生日時: {new Date(item.incidentDate).toLocaleString('ja-JP')} | 
-                          投稿部署: {item.tenantId?.name || '不明'}
+                          {/* ★★★ ここからが修正箇所 ★★★ */}
+                          {item.location && `場所: ${item.location} | `}
+                          発生日時: {new Date(item.incidentDate).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
                       {/* こちらには編集・削除ボタンは表示しない */}
@@ -232,6 +307,26 @@ function HiyariPage() {
                   <p className="text-muted">組織内の他のメンバーの投稿はまだありません。</p>
                 )}
               </ListGroup>
+              {/* ★★★ 「もっと見る」ボタン ★★★ */}
+              {(teamHiyaris.length > TEAM_POSTS_PAGE_SIZE) && (
+                <div className="d-flex justify-content-center align-items-center mt-3">
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => handleTeamHiyarisPageChange(teamHiyarisPage - 1)}
+                    disabled={teamHiyarisPage === 1}
+                  >
+                    <i className="bi bi-chevron-left"></i> 前へ
+                  </Button>
+                  <span className="mx-3 text-muted">{teamHiyarisPage} / {Math.ceil(teamHiyaris.length / TEAM_POSTS_PAGE_SIZE)}</span>
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => handleTeamHiyarisPageChange(teamHiyarisPage + 1)}
+                    disabled={teamHiyarisEndIndex >= teamHiyaris.length}
+                  >
+                    次へ <i className="bi bi-chevron-right"></i>
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </Col>

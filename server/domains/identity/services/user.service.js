@@ -86,7 +86,8 @@ class UserService {
     await Role.insertMany([
       { name: 'user', description: '一般ユーザー', tenantId: newTenant._id },
       { name: 'admin', description: '管理者', tenantId: newTenant._id },
-      { name: 'tenant-superuser', description: '組織の最上位管理者', tenantId: newTenant._id } // ★ この行を追加
+      { name: 'tenant-superuser', description: '組織の最上位管理者', tenantId: newTenant._id }, // ★ この行を追加
+      { name: 'hiyari-admin', description: 'ヒヤリ-Navi管理者', tenantId: newTenant._id } // ★★★ 新しい役割を追加 ★★★
     ]);
 
     // --- 3. パスワードのハッシュ化 ---
@@ -139,8 +140,10 @@ class UserService {
       return { token, forceReset: true };
     }
 
-    const userToReturn = await this.userRepository.findUserForLoginResponse(user.id);
-    return { token, user: userToReturn };
+    // ★★★ ここからが修正箇所 ★★★
+    // ログイン時にも、ページリロード時と同じ完全なユーザー情報を返すように修正
+    const fullUserObject = await this.getAuthenticatedUser(user.id);
+    return { token, user: fullUserObject };
   }
 
   /**

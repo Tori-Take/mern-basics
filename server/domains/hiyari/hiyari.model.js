@@ -22,7 +22,6 @@ const HiyariSchema = new Schema({
   // 発生場所
   location: {
     type: String,
-    required: true,
     trim: true,
   },
   // 状況
@@ -35,6 +34,12 @@ const HiyariSchema = new Schema({
   measures: {
     type: String,
     trim: true,
+  },
+  // ★★★ 非表示フラグを追加 ★★★
+  isHidden: {
+    type: Boolean,
+    default: false,
+    required: true,
   },
 }, { timestamps: true });
 
