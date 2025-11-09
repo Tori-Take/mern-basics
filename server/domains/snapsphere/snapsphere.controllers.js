@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const cloudinary = require('cloudinary');
+const { getAccessibleTenantIds } = require('../../core/services/permissionService');
 const Post = require('./post.model'); // ★★★ Postモデルをインポート ★★★
 
 class SnapSphereController {
@@ -75,9 +76,26 @@ class SnapSphereController {
    * @route   GET /api/snapsphere/posts
    */
   static getPosts = asyncHandler(async (req, res) => {
-    // 現時点では、自分の所属するテナントの投稿を全て取得する
-    const posts = await Post.find({ tenantId: req.user.tenantId })
+    // ★★★ ここからが新しい閲覧権限ロジック ★★★
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user);
+    const userId = req.user.id;
+
+    const query = {
+      $or: [
+        // 1. 自分が投稿したプライベートな投稿
+        { visibility: 'private', postedBy: userId },
+        // 2. 自分が所属する部署内の投稿
+        { visibility: 'department', tenantId: req.user.tenantId },
+        // 3. 自分がアクセス可能な全ての組織・部署の投稿
+        { visibility: 'tenant', tenantId: { $in: accessibleTenantIds } },
+        // 4. (将来拡張用) 特定のユーザーに許可された投稿
+        // { visibility: 'specific_users', allowedUsers: userId },
+      ]
+    };
+
+    const posts = await Post.find(query)
       .populate('postedBy', 'username') // 投稿者のユーザー名を取得
+      .populate('tenantId', 'name') // 投稿部署名を取得
       .sort({ createdAt: -1 });
     res.json(posts);
   });

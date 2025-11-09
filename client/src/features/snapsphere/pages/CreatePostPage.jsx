@@ -6,6 +6,7 @@ import axios from 'axios';
 function CreatePostPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [visibility, setVisibility] = useState('department'); // ★★★ 公開範囲の状態管理を追加 ★★★
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [loading, setLoading] = useState(false);
@@ -85,6 +86,7 @@ function CreatePostPage() {
           public_id: cloudinaryResponse.data.public_id,
           secure_url: cloudinaryResponse.data.secure_url,
         },
+        visibility, // ★★★ 公開範囲のデータを追加 ★★★
         // shotDateとlocationは後のフェーズで実装
       };
 
@@ -155,6 +157,16 @@ function CreatePostPage() {
                 <Form.Group className="mb-3">
                   <Form.Label>説明</Form.Label>
                   <Form.Control as="textarea" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+                </Form.Group>
+
+                {/* ★★★ ここからが新しいコード ★★★ */}
+                <Form.Group className="mb-3">
+                  <Form.Label>公開範囲</Form.Label>
+                  <Form.Select value={visibility} onChange={(e) => setVisibility(e.target.value)}>
+                    <option value="private">自分のみ</option>
+                    <option value="department">同じ部署のメンバーに公開</option>
+                    <option value="tenant">同じ組織のメンバーに公開</option>
+                  </Form.Select>
                 </Form.Group>
 
                 <div className="d-grid">
