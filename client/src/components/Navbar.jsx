@@ -13,6 +13,9 @@ function Navbar() {
     navigate('/login');
   };
 
+  // ★★★ デバッグ用：現在のユーザー情報をコンソールに出力 ★★★
+  console.log('Navbarで認識しているユーザー情報:', user);
+
   return (
     <BootstrapNavbar bg="primary" variant="dark" expand="lg" sticky="top">
       <div className="container-fluid"> {/* ★ 全幅を使うために container-fluid に変更 */}
@@ -32,6 +35,11 @@ function Navbar() {
         <BootstrapNavbar.Toggle aria-controls="responsive-navbar-nav" />
         <BootstrapNavbar.Collapse id="responsive-navbar-nav">
           <Nav className="me-auto">
+            {/* ★★★ Snap-Sphereへのリンクを追加 ★★★ */}
+            {isAuthenticated && user?.permissions?.includes('CAN_USE_SNAPSPHERE') && (
+              <Nav.Link as={Link} to="/snapsphere">Snap-Sphere</Nav.Link>
+            )}
+
             {/* ログイン中ユーザー共通のリンク */}
           </Nav>
           <Nav>

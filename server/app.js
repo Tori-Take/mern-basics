@@ -1,9 +1,18 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const cloudinary = require('cloudinary'); // ★★★ Cloudinaryライブラリをインポート ★★★
 
 // 環境変数を .env ファイルから読み込む
 require('dotenv').config();
+
+// ★★★ ここからが新しいコード ★★★
+// Cloudinaryに.envファイルから読み込んだ設定を渡す
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const app = express();
 
@@ -33,6 +42,7 @@ const notificationRoutes = require('./domains/notifications/notifications.routes
 const hiyariRoutes = require('./domains/hiyari/hiyari.routes.js');
 const systemRoutes = require('./domains/system/system.routes.js');
 const applicationRoutes = require('./domains/applications/applications.routes.js');
+const snapSphereRoutes = require('./domains/snapsphere/snapsphere.routes.js'); // ★★★ Snap-Sphereのルートをインポート ★★★
 
 app.use('/api/users', usersRouter);
 app.use('/api/roles', rolesRouter);
@@ -42,6 +52,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/hiyari', hiyariRoutes); // ★ Hiyari-Naviのルートを登録
 app.use('/api/system', systemRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api/snapsphere', snapSphereRoutes); // ★★★ Snap-Sphereのルートを登録 ★★★
 
 // --- 本番環境用の設定 ---
 if (process.env.NODE_ENV === 'production') {

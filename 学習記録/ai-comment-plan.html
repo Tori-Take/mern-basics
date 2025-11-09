@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【実装計画書】AIコメント自動生成機能</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        ul,
+        ol {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        code {
+            background-color: #ecf0f1;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        pre {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        strong {
+            color: #e74c3c;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+            margin: 40px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>【実装計画書】AIコメント自動生成機能</h1>
+
+    <div class="card">
+        <h3>1. プロジェクトの目的とゴール</h3>
+        <ul>
+            <li><strong>目的</strong>:
+                投稿されたヒヤリハット報告に対し、AIが迅速かつ建設的なフィードバック（コメント）を自動生成することで、報告者のモチベーション向上と、組織全体の安全意識の底上げを図る。</li>
+            <li><strong>ゴール</strong>:
+                <ol>
+                    <li>ユーザーがヒヤリハットを投稿すると、数秒〜数十秒以内にAIが生成したコメントが自動的に投稿される。</li>
+                    <li>生成されるコメントは、報告への感謝、内容の要約、そして一般的な再発防止策の提案を含む、質の高いものとする。</li>
+                    <li>AIによるコメントであることが、ユーザーに明確に分かるように表示する。</li>
+                </ol>
+            </li>
+        </ul>
+    </div>
+
+    <hr>
+
+    <div class="card">
+        <h3>2. 機能のコンセプトとユーザー体験</h3>
+        <p>ユーザーが体験する流れは、非常にシンプルです。</p>
+        <ol>
+            <li><strong>ユーザー</strong>: ヒヤリハットを投稿します。</li>
+            <li><strong>システム (裏側)</strong>: 新しい投稿を検知し、その内容（カテゴリ、詳細など）を外部のAIサービス（例: OpenAIのGPT-4, GoogleのGemini
+                Proなど）に送信します。</li>
+            <li><strong>AI</strong>: 事前に私たちが設定した「指示書（プロンプト）」に基づき、投稿内容を分析し、適切なコメントを生成します。</li>
+            <li><strong>システム (裏側)</strong>: AIから返ってきたコメントを受け取り、データベースに保存します。</li>
+            <li><strong>ユーザー</strong>: 投稿後、詳細ページをリロードしたり、少し時間を置いてから見ると、まるで経験豊富な安全管理者が書き込んだかのような、洞察に満ちたコメントが追加されています。
+            </li>
+        </ol>
+    </div>
+
+    <hr>
+
+    <div class="card">
+        <h3>3. 実装に必要な「道具」と技術要素</h3>
+        <p>この機能を実現するためには、いくつかの新しい「道具」が必要になります。</p>
+        <ul>
+            <li><strong>大規模言語モデル (LLM) API</strong>:
+                <ul>
+                    <li>文章を生成するAIの頭脳部分です。有名なものに<strong>OpenAI (ChatGPTの会社) のAPI</strong>や、<strong>GoogleのGemini
+                            API</strong>などがあります。これらと契約し、APIキーを取得する必要があります。（多くは無料利用枠があります）</li>
+                </ul>
+            </li>
+            <li><strong>プロンプトエンジニアリング</strong>:
+                <ul>
+                    <li>AIにどのようなコメントを生成してほしいか、その「指示書」を作成する技術です。これがAIの性能を最大限に引き出す鍵となります。</li>
+                    <li>指示書の例:
+                        <pre><code>「あなたは、企業の安全衛生を推進するベテランの専門家です。以下のヒヤリハット報告に対し、150文字程度のコメントを作成してください。コメントには、①報告への感謝、②危険性の要約、③一般的な再発防止策の提案、の3つの要素を必ず含めてください。」</code></pre>
+                    </li>
+                </ul>
+            </li>
+            <li><strong>バックエンドの非同期処理</strong>:
+                <ul>
+                    <li>AIからの応答には数秒かかることがあるため、ユーザーを待たせないよう、投稿処理とは別の「バックグラウンド」でAIとの通信を行う仕組みが必要です。</li>
+                </ul>
+            </li>
+            <li><strong>コメント機能のデータモデル</strong>:
+                <ul>
+                    <li>「誰が」「いつ」「どの投稿に」「どんな内容を」コメントしたかを保存するための、新しいデータベース設計（<code>Comment</code>モデル）が必要になります。</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <hr>
+
+    <div class="card">
+        <h3>4. 実装ロードマップ (推奨される開発ステップ)</h3>
+        <p>この壮大な機能を、管理可能なステップに分割して進めましょう。</p>
+        <ol>
+            <li><strong>フェーズ1: 基盤整備</strong>
+                <ul>
+                    <li><strong>コメント機能の基本実装</strong>: まずはAIなしで、人間が手動でコメントを投稿・表示・削除できる基本的な機能を作成します。</li>
+                    <li><code>Comment</code>モデルをデータベースに作成します。</li>
+                    <li>ヒヤリハット詳細ページに、コメント一覧と投稿フォームを実装します。</li>
+                </ul>
+            </li>
+            <li><strong>フェーズ2: AIとの接続</strong>
+                <ul>
+                    <li><strong>APIキーの取得と設定</strong>: OpenAIやGoogle Cloud
+                        Platformでアカウントを作成し、APIキーを取得します。このキーは<code>.env</code>ファイルで厳重に管理します。</li>
+                    <li><strong>AI通信サービスの作成</strong>: バックエンドに、外部のAI APIと通信するための専用の処理（<code>AIService.js</code>など）を作成します。
+                    </li>
+                </ul>
+            </li>
+            <li><strong>フェーズ3: 自動化の実装</strong>
+                <ul>
+                    <li><strong>トリガーの設定</strong>: ヒヤリハットが新規投稿されたことを検知する「トリガー」をバックエンドに実装します。</li>
+                    <li><strong>プロンプトの作成と連携</strong>: 投稿内容を元にAIへの「指示書（プロンプト）」を組み立て、フェーズ2で作成したAI通信サービスを呼び出す処理を実装します。</li>
+                    <li><strong>コメントの自動保存</strong>: AIから返ってきたコメントを、システム（例:
+                        "AIアシスタント"という名前の架空のユーザー）からの投稿として、<code>Comment</code>モデルに保存します。</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+</body>
+
+</html>

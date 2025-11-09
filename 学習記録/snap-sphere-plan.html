@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【開発計画書】写真投稿アプリ『Snap-Sphere』</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            line-height: 1.7;
+            color: #333;
+            max-width: 960px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background-color: #f8f9fa;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #0056b3;
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        h2,
+        h3 {
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 8px;
+            margin-top: 40px;
+            color: #343a40;
+        }
+
+        h2 {
+            border-left: 6px solid #007bff;
+            padding-left: 15px;
+            background-color: #e7f1ff;
+        }
+
+        pre {
+            background-color: #212529;
+            color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.95em;
+        }
+
+        code {
+            font-family: inherit;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .phase-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #0056b3;
+        }
+
+        .phase-goal {
+            font-style: italic;
+            color: #6c757d;
+            margin-bottom: 15px;
+            border-left: 3px solid #ffc107;
+            padding-left: 10px;
+        }
+
+        ul,
+        ol {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>開発計画書</h1>
+        <p style="font-size: 1.5em; margin-top: 5px;">写真投稿アプリ『Snap-Sphere』</p>
+    </header>
+
+    <main>
+        <div class="card">
+            <h2>1. プロジェクトの目的とコンセプト</h2>
+            <ul>
+                <li><strong>アプリ名</strong>: <strong>Snap-Sphere (スナップスフィア)</strong>
+                    <ul>
+                        <li><em>「Sphere」には「範囲・領域」という意味があり、共有範囲を柔軟に設定できるこのアプリのコンセプトに合致します。</em></li>
+                    </ul>
+                </li>
+                <li><strong>目的</strong>:
+                    現場の写真、イベントの記録、共有したい風景などを、タイトル・説明・位置情報といった「コンテキスト」と共に、組織内の適切な範囲に簡単かつ安全に共有する。
+                </li>
+                <li><strong>ゴール</strong>:
+                    <ol>
+                        <li>ユーザーがスマートフォンやPCから写真を安全にアップロードできる。</li>
+                        <li>投稿ごとに、柔軟な公開範囲（非公開、部署内、組織内、特定ユーザーなど）を設定できる。</li>
+                        <li>投稿された写真が、時系列や地図上で閲覧できる、直感的で楽しいUIを提供する。</li>
+                    </ol>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>2. データベース設計 (Mongoose スキーマ)</h2>
+            <p>アプリケーションの心臓部となる、投稿データ<code>Post</code>の設計です。</p>
+            <pre><code>// server/domains/snapsphere/post.model.js (新設)
+const postSchema = new mongoose.Schema({
+  // --- 基本情報 ---
+  title: { type: String, required: true, trim: true },
+  description: { type: String, trim: true },
+  photo: {
+    public_id: { type: String, required: true }, // CloudinaryでのファイルID
+    secure_url: { type: String, required: true }, // HTTPSでの画像URL
+  },
+  
+  // --- コンテキスト情報 ---
+  shotDate: { type: Date, default: Date.now }, // 撮影日時
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'], // GeoJSON形式
+      default: 'Point',
+    },
+    coordinates: {
+      type: [Number], // [経度, 緯度] の順
+      index: '2dsphere' // 地図検索のためのインデックス
+    },
+    address: { type: String, trim: true } // (任意) 住所文字列
+  },
+
+  // --- 投稿者と所属 ---
+  postedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
+
+  // --- ★★★ 公開範囲設定 ★★★ ---
+  visibility: {
+    type: String,
+    required: true,
+    enum: ['private', 'department', 'tenant', 'specific_users', 'public'],
+    default: 'department',
+  },
+  // visibilityが 'specific_users' の場合に、許可されたユーザーIDのリスト
+  allowedUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+
+}, { timestamps: true });</code></pre>
+        </div>
+
+        <div class="card">
+            <h2>3. 技術的アプローチとアーキテクチャ</h2>
+            <ul>
+                <li><strong>画像ストレージ (Cloudinary)</strong>:
+                    <ul>
+                        <li>フロントエンドから直接Cloudinaryに画像をアップロードする<strong>「署名付きアップロード」</strong>方式を採用します。</li>
+                        <li>この方式により、画像データが私たちのサーバーを経由しないため、サーバー負荷を大幅に軽減できます。</li>
+                    </ul>
+                </li>
+                <li><strong>位置情報</strong>:
+                    <ul>
+                        <li>写真のEXIF情報から自動で取得するか、ユーザーが地図上でピンを指して設定できるようにします。（初期実装では手動入力を想定）</li>
+                    </ul>
+                </li>
+                <li><strong>バックエンド (API)</strong>:
+                    <ul>
+                        <li><code>server/domains/snapsphere/</code> ディレクトリを新設し、<code>post.model.js</code>,
+                            <code>post.routes.js</code>, <code>post.controllers.js</code> を作成します。</li>
+                        <li>ヒヤリハットアプリと同様に、<code>CAN_USE_SNAPSPHERE</code>という新しい利用権限を定義します。</li>
+                    </ul>
+                </li>
+                <li><strong>フロントエンド (UI)</strong>:
+                    <ul>
+                        <li><code>client/src/features/snapsphere/</code> ディレクトリを新設し、<code>pages</code>,
+                            <code>components</code> を作成します。</li>
+                        <li>ヒヤリハットアプリのUI構成を参考に、投稿フォームと投稿一覧（ギャラリー）ページを構築します。</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>4. 段階的実装ロードマップ (Phased Roadmap)</h2>
+            <p>この新しいアプリを、以下の4つのフェーズに分けて、一歩ずつ着実に構築していきましょう。</p>
+
+            <div class="phase">
+                <h3 class="phase-title">フェーズ1：バックエンド基盤の構築</h3>
+                <p class="phase-goal">目標: 画像をアップロードし、投稿を保存・取得するための「土台」を完成させる。</p>
+                <ol>
+                    <li>Cloudinaryのアカウントを作成し、APIキーを<code>.env</code>ファイルに設定。</li>
+                    <li><code>Post</code>モデル (<code>post.model.js</code>) を作成。</li>
+                    <li>バックエンドに、署名付きアップロードのためのAPI (<code>POST /api/snapsphere/upload-signature</code>) を作成。</li>
+                    <li>写真投稿の基本API (<code>POST /api/snapsphere/posts</code>) と一覧取得API
+                        (<code>GET /api/snapsphere/posts</code>) を作成。（この段階では、まだ複雑な公開範囲のロジックは含めない）</li>
+                </ol>
+            </div>
+
+            <div class="phase">
+                <h3 class="phase-title">フェーズ2：フロントエンドのMVP実装</h3>
+                <p class="phase-goal">目標: ユーザーが実際に写真を投稿し、閲覧できる最小限の画面を完成させる。</p>
+                <ol>
+                    <li>写真、題名、説明などを入力できる基本的な投稿フォーム (<code>CreatePostPage.jsx</code>) を作成。</li>
+                    <li><strong>★カメラ機能の実装:</strong> 投稿フォームに「ライブラリから選択」と「カメラで撮影」の2つのボタンを設置し、どちらからでも画像をアップロードできるようにする。
+                    </li>
+                    <li>フォームが送信されたら、フェーズ1で作成したAPIを呼び出して、CloudinaryへのアップロードとDBへの保存を実行するロジックを実装。</li>
+                    <li>投稿された写真が一覧で表示される、シンプルなギャラリーページ (<code>PostListPage.jsx</code>) を作成。</li>
+                </ol>
+            </div>
+
+            <div class="phase">
+                <h3 class="phase-title">フェーズ3：高度な機能の実装</h3>
+                <p class="phase-goal">目標: アプリの核となる「共有」と「位置情報」の機能を実装する。</p>
+                <ol>
+                    <li><strong>公開範囲設定</strong>:
+                        <ul>
+                            <li>投稿フォームに、公開範囲（部署内、組織内など）を選択するUIを追加。</li>
+                            <li>バックエンドの一覧取得APIに、ユーザーの権限に応じて閲覧可能な投稿だけを返すロジックを実装。</li>
+                        </ul>
+                    </li>
+                    <li><strong>位置情報</strong>:
+                        <ul>
+                            <li>投稿フォームに、地図上で場所を選択できるコンポーネント（<code>react-leaflet</code>など）を導入。</li>
+                            <li>投稿一覧に、地図上で写真がマッピングされるビューを追加。</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="phase">
+                <h3 class="phase-title">フェーズ4：統合と洗練</h3>
+                <p class="phase-goal">目標: アプリケーションを既存のシステムに完全に統合し、完成度を高める。</p>
+                <ol>
+                    <li><code>App.jsx</code>に新しいルートを追加し、<code>PermissionRoute</code>で保護。</li>
+                    <li><code>Navbar.jsx</code>やダッシュボードに、「Snap-Sphere」へのリンクを追加。</li>
+                    <li>全体のUI/UXを磨き込み、レスポンシブデザインを調整。</li>
+                </ol>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

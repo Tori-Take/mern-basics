@@ -27,6 +27,10 @@ import TenantTreeViewPage from './features/admin/tenants/pages/TenantTreeViewPag
 
 import HiyariPage from './features/hiyari/pages/HiyariPage'; // ★ Hiyari-Naviページをインポート
 import HiyariAdminPage from './features/hiyari/pages/HiyariAdminPage'; // ★★★ 新しくインポート ★★★
+
+// ★★★ Snap-Sphereのページをインポート ★★★
+import PostListPage from './features/snapsphere/pages/PostListPage';
+import CreatePostPage from './features/snapsphere/pages/CreatePostPage';
 import PermissionRoute from './components/routes/PermissionRoute'; // ★ 新しくインポート
 // AppContentコンポーネントを新しく定義
 function AppContent() {
@@ -64,6 +68,11 @@ function AppContent() {
             <Route element={<PermissionRoute permission="CAN_USE_HIYARI" />}>
               <Route path="/hiyari" element={<HiyariPage />} />
               <Route path="/hiyari/admin" element={<HiyariAdminPage />} /> {/* ★★★ 管理ページへのルートを追加 ★★★ */}
+            </Route>
+            {/* ▼▼▼ Snap-Sphereのルートを追加 ▼▼▼ */}
+            <Route element={<PermissionRoute permission="CAN_USE_SNAPSPHERE" />}>
+              <Route path="/snapsphere" element={<PostListPage />} />
+              <Route path="/snapsphere/new" element={<CreatePostPage />} />
             </Route>
           </Route>
 
