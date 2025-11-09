@@ -23,8 +23,17 @@ const postSchema = new Schema({
     default: Date.now
   }, // 撮影日時
   location: {
-    address: { type: String, trim: true } // (任意) 住所文字列
-    // GeoJSON形式のcoordinatesは、必要になったら後で追加
+    // ★★★ ここからが修正箇所 ★★★
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point',
+    },
+    coordinates: {
+      type: [Number], // [経度, 緯度] の順
+      index: '2dsphere' // 地図検索のためのインデックス
+    },
+    address: { type: String, trim: true } // (任意) 住所文字列 (将来用)
   },
 
   // --- 投稿者と所属 ---

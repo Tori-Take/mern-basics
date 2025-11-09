@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import DatePicker from 'react-datepicker'; // ★★★ DatePickerをインポート ★★★
 import { ja } from 'date-fns/locale'; // ★★★ 日本語化のためにインポート ★★★
 import 'react-datepicker/dist/react-datepicker.css'; // ★★★ DatePickerのCSSをインポート ★★★
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'; // ★★★ 地図ライブラリをインポート ★★★
+import 'leaflet/dist/leaflet.css'; // ★★★ 地図ライブラリのCSSをインポート ★★★
 import axios from 'axios';
 
 function CreatePostPage() {
@@ -11,6 +13,7 @@ function CreatePostPage() {
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState('department'); // ★★★ 公開範囲の状態管理を追加 ★★★
   const [shotDate, setShotDate] = useState(new Date()); // ★★★ 撮影日時の状態管理を追加 ★★★
+  const [position, setPosition] = useState(null); // ★★★ 地図上の位置情報を管理 ★★★
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,6 +23,16 @@ function CreatePostPage() {
   // ファイル選択ダイアログをプログラムから開くための参照
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+
+  // ★★★ 地図クリックイベントを処理するコンポーネント ★★★
+  function LocationMarker() {
+    useMapEvents({
+      click(e) {
+        setPosition(e.latlng);
+      },
+    });
+    return position === null ? null : <Marker position={position}></Marker>;
+  }
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -92,6 +105,12 @@ function CreatePostPage() {
         },
         visibility, // ★★★ 公開範囲のデータを追加 ★★★
         shotDate, // ★★★ 撮影日時のデータを追加 ★★★
+        // ★★★ 位置情報データを追加 ★★★
+        location: position ? {
+          type: 'Point',
+          // 経度、緯度の順で保存
+          coordinates: [position.lng, position.lat]
+        } : undefined,
       };
 
       const postResponse = await axios.post('/api/snapsphere/posts', postData);
@@ -185,6 +204,21 @@ function CreatePostPage() {
                     <option value="department">同じ部署のメンバーに公開</option>
                     <option value="tenant">同じ組織のメンバーに公開</option>
                   </Form.Select>
+                </Form.Group>
+
+                {/* ★★★ ここからが新しいコード ★★★ */}
+                <Form.Group className="mb-3">
+                  <Form.Label>撮影場所 (地図をクリックして指定)</Form.Label>
+                  <MapContainer center={[35.681236, 139.767125]} zoom={13} style={{ height: '300px', width: '100%' }}>
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    <LocationMarker />
+                  </MapContainer>
+                  {position && (
+                    <Form.Text className="text-muted">緯度: {position.lat.toFixed(6)}, 経度: {position.lng.toFixed(6)}</Form.Text>
+                  )}
                 </Form.Group>
 
                 <div className="d-grid">

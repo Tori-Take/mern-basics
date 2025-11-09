@@ -50,19 +50,28 @@ function PostListPage() {
             <Col key={post._id}>
               <Card className="shadow-sm h-100">
                 <Card.Img variant="top" src={post.photo.secure_url} style={{ aspectRatio: '4 / 3', objectFit: 'cover' }} />
-                <Card.Body className="d-flex flex-column">
+                <Card.Body className="d-flex flex-column pb-2">
                   <Card.Title>{post.title}</Card.Title>
                   <Card.Text className="flex-grow-1">{post.description}</Card.Text>
-                  {/* ★★★ ここからが新しいコード ★★★ */}
-                  <div className="mt-auto">
+                  <div className="mt-auto d-flex justify-content-between align-items-center">
                     <Badge 
                       bg={post.visibility === 'private' ? 'secondary' : post.visibility === 'tenant' ? 'info' : 'primary'}
-                      className="me-2"
                     >
                       {post.visibility === 'private' && <><i className="bi bi-lock-fill me-1"></i>自分のみ</>}
                       {post.visibility === 'department' && <><i className="bi bi-people-fill me-1"></i>部署内</>}
                       {post.visibility === 'tenant' && <><i className="bi bi-building me-1"></i>組織内</>}
                     </Badge>
+                    {/* ★★★ ここからが新しいコード ★★★ */}
+                    {post.location?.coordinates && (
+                      <a 
+                        href={`https://www.google.com/maps?q=${post.location.coordinates[1]},${post.location.coordinates[0]}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="small text-muted"
+                      >
+                        <i className="bi bi-geo-alt-fill me-1"></i>地図で見る
+                      </a>
+                    )}
                   </div>
                 </Card.Body>
                 <Card.Footer>
