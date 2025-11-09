@@ -49,7 +49,7 @@ class SnapSphereController {
    * @route   POST /api/snapsphere/posts
    */
   static createPost = asyncHandler(async (req, res) => {
-    const { title, description, photo, shotDate, location } = req.body;
+    const { title, description, photo, shotDate, location, visibility } = req.body; // ★ visibility を受け取る
 
     // 基本的なバリデーション
     if (!title || !photo || !photo.public_id || !photo.secure_url) {
@@ -63,6 +63,7 @@ class SnapSphereController {
       photo,
       shotDate,
       location,
+      visibility, // ★★★ この行を追加 ★★★
       postedBy: req.user.id,
       tenantId: req.user.tenantId,
     });

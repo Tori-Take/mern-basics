@@ -1,12 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { Container, Row, Col, Breadcrumb, Form, Button, Card, Spinner, Alert, Image } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
+import DatePicker from 'react-datepicker'; // ★★★ DatePickerをインポート ★★★
+import { ja } from 'date-fns/locale'; // ★★★ 日本語化のためにインポート ★★★
+import 'react-datepicker/dist/react-datepicker.css'; // ★★★ DatePickerのCSSをインポート ★★★
 import axios from 'axios';
 
 function CreatePostPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState('department'); // ★★★ 公開範囲の状態管理を追加 ★★★
+  const [shotDate, setShotDate] = useState(new Date()); // ★★★ 撮影日時の状態管理を追加 ★★★
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [loading, setLoading] = useState(false);
@@ -87,7 +91,7 @@ function CreatePostPage() {
           secure_url: cloudinaryResponse.data.secure_url,
         },
         visibility, // ★★★ 公開範囲のデータを追加 ★★★
-        // shotDateとlocationは後のフェーズで実装
+        shotDate, // ★★★ 撮影日時のデータを追加 ★★★
       };
 
       const postResponse = await axios.post('/api/snapsphere/posts', postData);
@@ -157,6 +161,20 @@ function CreatePostPage() {
                 <Form.Group className="mb-3">
                   <Form.Label>説明</Form.Label>
                   <Form.Control as="textarea" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+                </Form.Group>
+
+                {/* ★★★ ここからが新しいコード ★★★ */}
+                <Form.Group className="mb-3">
+                  <Form.Label>撮影日時</Form.Label>
+                  <DatePicker
+                    selected={shotDate}
+                    onChange={(date) => setShotDate(date)}
+                    className="form-control"
+                    dateFormat="yyyy/MM/dd HH:mm"
+                    locale={ja}
+                    showTimeSelect
+                    required
+                  />
                 </Form.Group>
 
                 {/* ★★★ ここからが新しいコード ★★★ */}
