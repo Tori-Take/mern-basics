@@ -100,6 +100,100 @@ class SnapSphereController {
       .sort({ createdAt: -1 });
     res.json(posts);
   });
+
+  /**
+   * @desc    IDで単一の写真投稿を取得する
+   * @route   GET /api/snapsphere/posts/:id
+   */
+  static getPostById = asyncHandler(async (req, res) => {
+    const post = await Post.findById(req.params.id)
+      .populate('postedBy', 'username')
+      .populate('tenantId', 'name');
+
+    if (!post) {
+      res.status(404);
+      throw new Error('投稿が見つかりません。');
+    }
+
+    // --- 閲覧権限チェック ---
+    // getPostsと同じロジックを、単一の投稿に対して適用する
+    const accessibleTenantIds = await getAccessibleTenantIds(req.user);
+    const isPrivate = post.visibility === 'private' && post.postedBy._id.toString() !== req.user.id.toString();
+    const isDepartment = post.visibility === 'department' && post.tenantId._id.toString() !== req.user.tenantId.toString();
+    const isTenant = post.visibility === 'tenant' && !accessibleTenantIds.some(id => id.equals(post.tenantId._id));
+
+    if (isPrivate || isDepartment || isTenant) {
+      res.status(403);
+      throw new Error('この投稿を閲覧する権限がありません。');
+    }
+
+    res.json(post);
+  });
+
+  /**
+   * @desc    写真投稿を更新する
+   * @route   PUT /api/snapsphere/posts/:id
+   */
+  static updatePost = asyncHandler(async (req, res) => {
+    const { title, description, visibility } = req.body;
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      res.status(404);
+      throw new Error('投稿が見つかりません。');
+    }
+
+    // --- 権限チェック ---
+    const isOwner = post.postedBy.toString() === req.user.id.toString();
+    const isAdmin = req.user.roles.includes('admin');
+
+    if (!isOwner && !isAdmin) {
+      res.status(403);
+      throw new Error('この投稿を編集する権限がありません。');
+    }
+
+    post.title = title || post.title;
+    post.description = description || post.description;
+    post.visibility = visibility || post.visibility;
+
+    const updatedPost = await post.save();
+
+    // フロントエンドのためにpopulateして返す
+    await updatedPost.populate('postedBy', 'username');
+    await updatedPost.populate('tenantId', 'name');
+    res.json(updatedPost);
+  });
+
+  /**
+   * @desc    写真投稿を削除する
+   * @route   DELETE /api/snapsphere/posts/:id
+   */
+  static deletePost = asyncHandler(async (req, res) => {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      res.status(404);
+      throw new Error('投稿が見つかりません。');
+    }
+
+    // --- 権限チェック ---
+    const isOwner = post.postedBy.toString() === req.user.id.toString();
+    const isAdmin = req.user.roles.includes('admin');
+
+    if (!isOwner && !isAdmin) {
+      res.status(403);
+      throw new Error('この投稿を削除する権限がありません。');
+    }
+
+    // --- Cloudinaryから画像を削除 ---
+    if (post.photo && post.photo.public_id) {
+      await cloudinary.v2.uploader.destroy(post.photo.public_id);
+    }
+
+    await post.deleteOne();
+
+    res.json({ message: '投稿が削除されました。' });
+  });
 }
 
 module.exports = SnapSphereController;

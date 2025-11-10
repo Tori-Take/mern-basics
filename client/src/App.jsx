@@ -31,6 +31,7 @@ import HiyariAdminPage from './features/hiyari/pages/HiyariAdminPage'; // ★★
 // ★★★ Snap-Sphereのページをインポート ★★★
 import PostListPage from './features/snapsphere/pages/PostListPage';
 import CreatePostPage from './features/snapsphere/pages/CreatePostPage';
+import PostDetailPage from './features/snapsphere/pages/PostDetailPage'; // ★★★ 新しくインポート ★★★
 import PermissionRoute from './components/routes/PermissionRoute'; // ★ 新しくインポート
 // AppContentコンポーネントを新しく定義
 function AppContent() {
@@ -73,6 +74,7 @@ function AppContent() {
             <Route element={<PermissionRoute permission="CAN_USE_SNAPSPHERE" />}>
               <Route path="/snapsphere" element={<PostListPage />} />
               <Route path="/snapsphere/new" element={<CreatePostPage />} />
+              <Route path="/snapsphere/:id" element={<PostDetailPage />} /> {/* ★★★ 詳細ページへのルートを追加 ★★★ */}
             </Route>
           </Route>
 

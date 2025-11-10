@@ -31,5 +31,26 @@ router.post('/posts', auth, SnapSphereController.createPost);
  */
 router.get('/posts', auth, SnapSphereController.getPosts);
 
+/**
+ * @route   GET /api/snapsphere/posts/:id
+ * @desc    IDで単一の写真投稿を取得する
+ * @access  Private
+ */
+router.get('/posts/:id', auth, SnapSphereController.getPostById);
+
+/**
+ * @route   PUT /api/snapsphere/posts/:id
+ * @desc    写真投稿を更新する
+ * @access  Private
+ */
+router.put('/posts/:id', auth, SnapSphereController.updatePost);
+
+/**
+ * @route   DELETE /api/snapsphere/posts/:id
+ * @desc    写真投稿を削除する
+ * @access  Private
+ */
+router.delete('/posts/:id', auth, SnapSphereController.deletePost);
+
 
 module.exports = router;
