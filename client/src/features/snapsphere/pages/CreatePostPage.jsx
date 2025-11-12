@@ -167,7 +167,7 @@ function CreatePostPage() {
       <Row className="my-4">
         <Col>
           <Breadcrumb>
-            <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/snapsphere" }}>Snap-Sphere</Breadcrumb.Item>
+            <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/snapsphere" }}>Snap-Share</Breadcrumb.Item>
             <Breadcrumb.Item active>新規投稿</Breadcrumb.Item>
           </Breadcrumb>
           <Card className="shadow-sm">

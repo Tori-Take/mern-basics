@@ -18,10 +18,23 @@ function UserDashboardPage() {
         console.log('1. APIから取得したアプリケーションリスト:', applicationsArray);
         // APIから取得したデータをフロントエンドで使いやすい形式に変換
         const appsData = applicationsArray.map(app => ({
-          name: app.name,
+          // ★★★ ここからが新しいコード ★★★
+          // 内部名は'Snap-Sphere'のままだが、表示名だけ'Snap-Share'に上書きする
+          name: app.permissionKey === 'CAN_USE_SNAPSPHERE' ? 'Snap-Share' : app.name,
           // ★★★ 修正2: 'app.permission' を 'app.permissionKey' に修正 ★★★
-          path: `/${app.permissionKey.replace('CAN_USE_', '').toLowerCase()}`, // 例: CAN_USE_TODO -> /todo
-          icon: app.permissionKey === 'CAN_USE_TODO' ? 'bi-check2-square' : 'bi-cone-striped', // アイコンを動的に設定
+          path: `/${app.permissionKey.replace('CAN_USE_', '').toLowerCase()}`, // 例: CAN_USE_SNAPSPHERE -> /snapsphere
+          icon: (() => { // ★★★ アイコン設定ロジックを修正 ★★★
+            switch (app.permissionKey) {
+              case 'CAN_USE_TODO':
+                return 'bi-check2-square';
+              case 'CAN_USE_HIYARI':
+                return 'bi-cone-striped';
+              case 'CAN_USE_SNAPSPHERE': // 内部的な権限名はsnapsphereのまま
+                return 'bi-camera-reels-fill'; // カメラアイコンに変更
+              default:
+                return 'bi-app-indicator'; // デフォルトアイコン
+            }
+          })(),
           description: app.description,
           requiredPermission: app.permissionKey,
         }));

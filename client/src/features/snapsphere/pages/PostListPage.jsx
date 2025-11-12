@@ -71,7 +71,7 @@ function PostListPage() {
     <Container>
       <Row className="my-4 align-items-center">
         <Col>
-          <h1>Snap-Sphere</h1>
+          <h1>Snap-Share</h1>
         </Col>
         <Col xs="auto">
           <Link to="/snapsphere/new" className="btn btn-primary">

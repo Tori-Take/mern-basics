@@ -86,7 +86,7 @@ function PostDetailPage() {
       <Row className="my-4">
         <Col>
           <Breadcrumb>
-            <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/snapsphere" }}>Snap-Sphere</Breadcrumb.Item>
+            <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/snapsphere" }}>Snap-Share</Breadcrumb.Item>
             <Breadcrumb.Item active>{post.title}</Breadcrumb.Item>
           </Breadcrumb>
 
