@@ -5,6 +5,7 @@ import DatePicker from 'react-datepicker'; // ★★★ DatePickerをインポ�
 import { ja } from 'date-fns/locale'; // ★★★ 日本語化のためにインポート ★★★
 import 'react-datepicker/dist/react-datepicker.css'; // ★★★ DatePickerのCSSをインポート ★★★
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'; // ★★★ 地図ライブラリをインポート ★★★
+import EXIF from 'exif-js'; // ★★★ EXIF-JSをインポート ★★★
 import 'leaflet/dist/leaflet.css'; // ★★★ 地図ライブラリのCSSをインポート ★★★
 import axios from 'axios';
 
@@ -15,6 +16,7 @@ function CreatePostPage() {
   const [shotDate, setShotDate] = useState(new Date()); // ★★★ 撮影日時の状態管理を追加 ★★★
   const [position, setPosition] = useState(null); // ★★★ 地図上の位置情報を管理 ★★★
   const [file, setFile] = useState(null);
+  const [locationSource, setLocationSource] = useState('manual'); // 'manual' or 'exif' ★★★ 位置情報のソースを管理 ★★★
   const [preview, setPreview] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,16 +36,66 @@ function CreatePostPage() {
     return position === null ? null : <Marker position={position}></Marker>;
   }
 
+  // ★★★ EXIF GPSデータを十進数に変換するヘルパー関数 ★★★
+  const convertDMSToDD = (dms, ref) => {
+    if (!dms || dms.length !== 3) return null;
+    const degrees = dms[0].numerator / dms[0].denominator;
+    const minutes = dms[1].numerator / dms[1].denominator;
+    const seconds = dms[2].numerator / dms[2].denominator;
+
+    let dd = degrees + (minutes / 60) + (seconds / 3600);
+    if (ref === 'S' || ref === 'W') {
+      dd = dd * -1;
+    }
+    return dd;
+  };
+
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
+      setLocationSource('manual'); // ファイルが選択されたら、一旦手動設定に戻す
+      setPosition(null); // 位置情報をリセット
+
       // プレビュー用のURLを生成
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result);
       };
       reader.readAsDataURL(selectedFile);
+
+      // ★★★ EXIF情報の読み取り ★★★
+      EXIF.getData(selectedFile, function() {
+        const exifData = EXIF.getAllTags(this);
+        
+        if (exifData.GPSLatitude && exifData.GPSLongitude && exifData.GPSLatitudeRef && exifData.GPSLongitudeRef) {
+          const lat = convertDMSToDD(exifData.GPSLatitude, exifData.GPSLatitudeRef);
+          const lng = convertDMSToDD(exifData.GPSLongitude, exifData.GPSLongitudeRef);
+
+          if (lat !== null && lng !== null) {
+            setPosition({ lat, lng });
+            setLocationSource('exif'); // EXIFから取得したことを記録
+            // 撮影日時もEXIFから取得できる場合は設定
+            if (exifData.DateTimeOriginal) {
+              // EXIFのDateTimeOriginalは "YYYY:MM:DD HH:MM:SS" 形式なので、Dateオブジェクトに変換
+              const [datePart, timePart] = exifData.DateTimeOriginal.split(' ');
+              const formattedDate = datePart.replace(/:/g, '-'); // "YYYY-MM-DD"
+              const dateTime = new Date(`${formattedDate}T${timePart}`);
+              if (!isNaN(dateTime)) { // 有効な日付かチェック
+                setShotDate(dateTime);
+              }
+            }
+          }
+        }
+        // EXIF情報から撮影日時を取得できなかった場合は、現在のshotDateを維持
+        // GPS情報がなかった場合は、positionはnullのままなので、手動設定を促す
+      });
+    } else {
+      // ファイルが選択されなかった場合、プレビューと位置情報をリセット
+      setFile(null);
+      setPreview('');
+      setPosition(null);
+      setLocationSource('manual');
     }
   };
 
@@ -69,6 +121,7 @@ function CreatePostPage() {
       formData.append('api_key', apiKey); // APIキーは署名検証の文脈外で必要
       formData.append('signature', signature);
       formData.append('timestamp', timestamp);
+      formData.append('public_id', publicId); // ★★★ この行を再度追加します ★★★
       formData.append('upload_preset', 'snapsphere_preset'); // ★★★ 作成した専用プリセット名に変更 ★★★
       formData.append('file', file);
       for (let [key, value] of formData.entries()) {
@@ -193,7 +246,11 @@ function CreatePostPage() {
                 {/* ★★★ ここからが新しいコード ★★★ */}
                 <Form.Group className="mb-3">
                   <Form.Label>撮影場所 (地図をクリックして指定)</Form.Label>
-                  <MapContainer center={[35.681236, 139.767125]} zoom={13} style={{ height: '300px', width: '100%' }}>
+                  {/* positionが設定されていればその位置を、なければ東京駅を中央に */}
+                  <MapContainer 
+                    center={position ? [position.lat, position.lng] : [35.681236, 139.767125]} 
+                    zoom={position ? 15 : 13} // 自動設定されたらズームを深くする
+                    style={{ height: '300px', width: '100%' }}>
                     <TileLayer
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -201,7 +258,13 @@ function CreatePostPage() {
                     <LocationMarker />
                   </MapContainer>
                   {position && (
-                    <Form.Text className="text-muted">緯度: {position.lat.toFixed(6)}, 経度: {position.lng.toFixed(6)}</Form.Text>
+                    <Form.Text className="text-muted">
+                      {locationSource === 'exif' ? (
+                        <><i className="bi bi-info-circle-fill me-1"></i>写真のGPS情報から自動設定されました。変更する場合は地図をクリックしてください。</>
+                      ) : (
+                        <>緯度: {position.lat.toFixed(6)}, 経度: {position.lng.toFixed(6)}</>
+                      )}
+                    </Form.Text>
                   )}
                 </Form.Group>
 
