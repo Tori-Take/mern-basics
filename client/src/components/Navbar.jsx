@@ -35,11 +35,6 @@ function Navbar() {
         <BootstrapNavbar.Toggle aria-controls="responsive-navbar-nav" />
         <BootstrapNavbar.Collapse id="responsive-navbar-nav">
           <Nav className="me-auto">
-            {/* ★★★ Snap-Sphereへのリンクを追加 ★★★ */}
-            {isAuthenticated && user?.permissions?.includes('CAN_USE_SNAPSPHERE') && (
-              <Nav.Link as={Link} to="/snapsphere">Snap-Sphere</Nav.Link>
-            )}
-
             {/* ログイン中ユーザー共通のリンク */}
           </Nav>
           <Nav>

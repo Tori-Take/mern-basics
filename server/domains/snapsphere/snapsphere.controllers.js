@@ -26,14 +26,11 @@ class SnapSphereController {
     const timestamp = Math.round((new Date).getTime() / 1000);
     const publicId = `snapsphere/${req.user.tenantId}/${req.user.id}/${timestamp}`; // フォルダ構造を定義
 
-    // ★★★ デバッグ用ログを追加 ★★★
     const paramsToSign = {
       timestamp: timestamp,
       public_id: publicId,
       upload_preset: 'snapsphere_preset', // ★★★ 作成した専用プリセット名に変更 ★★★
     };
-    console.log('[Backend] 署名生成に使用するパラメータ:', paramsToSign);
-
     const signature = cloudinary.utils.api_sign_request(
       paramsToSign,
       process.env.CLOUDINARY_API_SECRET
