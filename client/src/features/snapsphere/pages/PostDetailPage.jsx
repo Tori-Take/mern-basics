@@ -115,7 +115,7 @@ function PostDetailPage() {
                   {post.visibility === 'tenant' && <><i className="bi bi-building me-1"></i>組織内</>}
                 </Badge>
                 {post.location?.coordinates && (
-                  <a href={`https://www.google.com/maps?q=${post.location.coordinates[1]},${post.location.coordinates[0]}`} target="_blank" rel="noopener noreferrer">
+                  <a href={`https://www.google.com/maps?q=${post.location.coordinates[1].toFixed(6)},${post.location.coordinates[0].toFixed(6)}`} target="_blank" rel="noopener noreferrer">
                     <i className="bi bi-geo-alt-fill me-1"></i>地図で見る
                   </a>
                 )}

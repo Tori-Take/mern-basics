@@ -15,7 +15,7 @@
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "date-fns": "^4.1.0",
-    "exif-js": "^2.3.0",
+    "exifreader": "^4.32.0",
     "leaflet": "^1.9.4",
     "papaparse": "^5.5.3",
     "qrcode.react": "^4.2.0",
